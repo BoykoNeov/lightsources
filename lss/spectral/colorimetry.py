@@ -5,6 +5,7 @@ the 1 nm analysis grid, whose bin centres coincide with the CIE 1 nm tables;
 each bin's exact power is weighted by the table value at its centre.
 """
 
+import warnings
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -14,8 +15,8 @@ from lss.spectral.grids import analysis_grid
 from lss.spectral.spectrum import BinnedSpectrum
 from lss.spectral.units import K_M
 
-with __import__("warnings").catch_warnings():
-    __import__("warnings").simplefilter("ignore")  # matplotlib-absent notice at import
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")  # matplotlib-absent notice at import
     import colour
 
 OBSERVERS = {
@@ -100,7 +101,10 @@ class ColourRendering:
 
 def colour_rendering(binned: BinnedSpectrum) -> ColourRendering:
     sd = to_sd(binned)
-    cri = colour.colour_rendering_index(sd, additional_data=True)
-    tm30 = colour.colour_fidelity_index(sd, additional_data=True, method="ANSI/IES TM-30-18")
+    with warnings.catch_warnings():
+        # colour-science announces each internal resampling of its tables.
+        warnings.filterwarnings("ignore", message="Aligning .*")
+        cri = colour.colour_rendering_index(sd, additional_data=True)
+        tm30 = colour.colour_fidelity_index(sd, additional_data=True, method="ANSI/IES TM-30-18")
     ri = {int(i): float(spec.Q_a) for i, spec in cri.Q_as.items()}
     return ColourRendering(float(cri.Q_a), ri, float(tm30.R_f), float(tm30.R_g))
