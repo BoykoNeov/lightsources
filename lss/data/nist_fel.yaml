@@ -35,6 +35,28 @@ distance_cm: 50
 current_a: 8.200
 voltage_v: {F-455: 109.4, F-456: 109.8}
 
+# Its parts (report Table 2, k = 2, per cent; their quadrature sum is line IV.a below, within
+# 3 %). Most of it is systematic. The report does not say how any part correlates between
+# wavelengths: a systematic part may move the whole curve together (then it barely tests
+# shape) or not. The random parts, 0.1-0.2 % in the visible, are what a shape test can lean
+# on; the largest visible part, the transfer "model error", decides most of the answer
+# (design §4.1 L3; tests/test_nist_fel.py compares the treatments).
+uncertainty_components_k2_percent:
+  wavelengths_nm: [250, 350, 654.6, 900, 1300, 1600, 2000, 2400]
+  parts:
+    - {name: "I.a sphere source radiance, with respect to SI", kind: systematic,
+       values: [0.91, 0.65, 0.37, 0.33, 0.29, 0.31, 0.48, 0.78]}
+    - {name: "II.a radiance-to-irradiance transfer, systematic", kind: systematic,
+       values: [0.36, 0.31, 0.27, 0.26, 0.26, 0.25, 0.25, 0.25]}
+    - {name: "II.b radiance-to-irradiance transfer, random", kind: random,
+       values: [0.30, 0.10, 0.06, 0.56, 0.57, 0.97, 1.73, 3.82]}
+    - {name: "II.c radiance-to-irradiance transfer, model error", kind: systematic,
+       values: [1.38, 0.80, 0.78, 0.77, 0.77, 0.82, 1.00, 1.20]}
+    - {name: "III.a test lamp transfer, systematic", kind: systematic,
+       values: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]}
+    - {name: "III.b test lamp transfer, random", kind: random,
+       values: [0.59, 0.16, 0.11, 0.28, 0.45, 0.48, 1.06, 1.73]}
+
 # Relative expanded uncertainty (k = 2) with respect to SI units, per cent (report Table 2,
 # line IV.a; the same for both lamps). Between these wavelengths, interpolate linearly.
 uncertainty_k2_percent:

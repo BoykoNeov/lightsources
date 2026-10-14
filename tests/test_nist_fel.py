@@ -102,8 +102,9 @@ def scores():
 
 def test_better_tungsten_physics_scores_better_on_a_measured_lamp(scores):
     # Against real tungsten (unlike Illuminant A, a blackbody by definition) the ladder
-    # climbs: Planck, flat tungsten, coiled tungsten. Only the coil matches within the
-    # stated uncertainty (chi2 per node about 1).
+    # climbs: Planck, flat tungsten, coiled tungsten. Only the coil is within the total
+    # stated uncertainty point by point (chi2 per node about 1, nodes independent); as a
+    # test of shape that is generous (see the treatment test below).
     rows = [scores["halogen_nist_fel_f455", level] for level in (1, 2, 3)]
     assert rows[0].spectral_nrms > rows[1].spectral_nrms > rows[2].spectral_nrms
     assert rows[0].chi2_per_node > rows[1].chi2_per_node > 10.0 > 1.5 > rows[2].chi2_per_node
@@ -157,34 +158,71 @@ def test_uncertainty_objective_minimises_the_reported_chi2():
         fit.fit(lamps.load("incandescent_cie_a"), 2, objective="uncertainty")
 
 
-def _window_fit(lo, hi):
-    """Temperature and open fraction fitted to the nodes in [lo, hi] only, each node
-    weighted by its stated uncertainty (scale free within the window); values, standard
-    errors and chi2 per degree of freedom."""
+def _covariance(lam, treatment):
+    """Relative covariance (k = 1) of the F-455 table at ``lam`` from the report's
+    uncertainty parts: "independent" (each node's total, uncorrelated), "random" (random
+    parts only) or "correlated" (random parts plus each systematic part fully correlated
+    across wavelength). The report states no correlations; these bracket them."""
+    comp = references.data_file("nist_fel.yaml")["uncertainty_components_k2_percent"]
+    parts = [(np.interp(lam, comp["wavelengths_nm"], p["values"]) / 200.0, p["kind"]) for p in comp["parts"]]
+    rand = sum(u**2 for u, kind in parts if kind == "random")
+    systematic = [u for u, kind in parts if kind == "systematic"]
+    if treatment == "independent":
+        return np.diag(rand + sum(u**2 for u in systematic))
+    if treatment == "random":
+        return np.diag(rand)
+    return np.diag(rand) + sum(np.outer(u, u) for u in systematic)
+
+
+def _window_fit(lo, hi, treatment="independent"):
+    """Temperature and open fraction fitted to the nodes in [lo, hi] only, by generalised
+    least squares with the treatment's covariance (scale free within the window); values,
+    standard errors and chi2 per degree of freedom."""
     lamp = lamps.load("halogen_nist_fel_f455")
     ref = references.get(F455)
+    lam = ref.nodes[(ref.nodes >= max(lo, 300.0)) & (ref.nodes <= hi)]
+    cov = _covariance(lam, treatment)
 
-    def pulls(x):
+    def whitened(x):
         trial = fit.with_values(lamp, 3, {"filament_temperature": x[0], "coil_open_fraction": x[1]})
         c = report.compare(report.model_profile(trial, 3, ref), ref)
-        sel = (c.node_wavelengths >= lo) & (c.node_wavelengths <= hi)
-        m, r, w = c.node_model[sel], c.node_reference[sel], 1.0 / (c.node_sigma[sel] * c.node_reference[sel])
-        k = np.sum(m * r * w**2) / np.sum((m * w) ** 2)
-        return (k * m - r) * w
+        sel = np.isin(c.node_wavelengths, lam)
+        m, r = c.node_model[sel], c.node_reference[sel]
+        chol = np.linalg.cholesky(cov * np.outer(r, r))
+        wm, wr = np.linalg.solve(chol, m), np.linalg.solve(chol, r)
+        return (wm @ wr) / (wm @ wm) * wm - wr
 
-    sol = least_squares(pulls, [3075.0, 0.35], bounds=([2600.0, 0.05], [3200.0, 1.0]), x_scale=[100.0, 0.1])
-    sd = np.sqrt(np.diag(np.linalg.inv(sol.jac.T @ sol.jac)))  # weights are 1/sigma
+    sol = least_squares(whitened, [3075.0, 0.35], bounds=([2600.0, 0.05], [3200.0, 1.0]), x_scale=[100.0, 0.1])
+    sd = np.sqrt(np.diag(np.linalg.inv(sol.jac.T @ sol.jac)))  # whitened: covariance in absolute terms
     return sol.x, sd, np.sum(sol.fun**2) / (sol.fun.size - 3)
 
 
-def test_one_open_fraction_fits_the_whole_range_within_the_measurement():
-    # Design §4.1 L3. Weighted by the stated uncertainty, one (T, f_open) fits 300-2400 nm
-    # with chi2 per degree of freedom below 1.2, and the short- and long-wavelength halves
-    # give open fractions that agree within 2 standard errors (0.28 +- 0.05 against
-    # 0.42 +- 0.07 when written up). An unweighted fit had suggested they differ.
-    _, _, chi2 = _window_fit(300.0, 2400.0)
-    assert chi2 < 1.2
-    (t_s, f_s), (_, sd_s), _ = _window_fit(300.0, 800.0)
-    (t_l, f_l), (_, sd_l), _ = _window_fit(800.0, 2400.0)
-    assert abs(f_s - f_l) < 2.0 * np.hypot(sd_s, sd_l)
-    assert 0.2 < f_s < 0.4 and 0.3 < f_l < 0.55
+def test_uncertainty_parts_add_up_to_the_stated_total():
+    lam = references.get(F455).nodes
+    total = np.sqrt(np.diag(_covariance(lam, "independent")))
+    np.testing.assert_allclose(total, references.get(F455).node_sigma, rtol=0.04)
+    visible = (lam >= 380) & (lam <= 780)
+    assert np.all(np.sqrt(np.diag(_covariance(lam, "random")))[visible] < 0.0012)  # 0.1 % or less, k = 1
+
+
+def _split(treatment):
+    """Gap between the open fractions fitted to 300-800 and 800-2400 nm, in standard
+    errors (each window's scaled by sqrt(chi2/dof) where that exceeds 1)."""
+    (_, f_s), (_, sd_s), chi_s = _window_fit(300.0, 800.0, treatment)
+    (_, f_l), (_, sd_l), chi_l = _window_fit(800.0, 2400.0, treatment)
+    sd_s, sd_l = sd_s * np.sqrt(max(chi_s, 1.0)), sd_l * np.sqrt(max(chi_l, 1.0))
+    return (f_l - f_s) / np.hypot(sd_s, sd_l)
+
+
+def test_coil_shape_verdict_depends_on_how_the_uncertainty_correlates():
+    # Design §4.1 L3, the treatment table. With each node's total uncertainty treated as
+    # independent, one (T, f_open) fits 300-2400 nm and the two halves agree (1.7 sigma).
+    # NIST's random part is far smaller than its total: with the random parts only, or
+    # with each systematic part fully correlated, the fit fails (chi2/dof ~4-5) and the
+    # halves differ by ~2.5-2.8 sigma even after scaling by sqrt(chi2/dof). Likely a real
+    # shape miss; the report does not state the correlations that would settle it.
+    assert _window_fit(300.0, 2400.0, "independent")[2] < 1.2
+    assert 0.0 < _split("independent") < 2.0
+    for treatment in ("random", "correlated"):
+        assert _window_fit(300.0, 2400.0, treatment)[2] > 2.5
+        assert _split(treatment) > 2.3

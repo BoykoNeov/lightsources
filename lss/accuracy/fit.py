@@ -21,9 +21,11 @@ Rules
   NRMS. The ``colour`` objective matches chromaticity (Δu′v′) instead. The
   ``uncertainty`` objective, for a measured reference that states its uncertainty
   per wavelength, weights each node by it (least squares in units of the stated
-  uncertainty, scale free): the statistically right fit to a measurement. The
-  ``spectral`` one weights every node by the mean level, so bright regions outvote
-  dim ones whatever their uncertainty.
+  uncertainty, scale free, nodes treated as independent). The ``spectral`` one weights
+  every node by the mean level, so bright regions outvote dim ones whatever their
+  uncertainty. Treating the total uncertainty as independent ignores that most of it
+  is usually systematic and shared between wavelengths; a full treatment needs the
+  correlations, which calibration reports rarely state.
 * **Like with like.** A model that lacks a component the reference includes is
   not fitted at all.
 * **A value at a bound is a finding.** It means the model only matches with an

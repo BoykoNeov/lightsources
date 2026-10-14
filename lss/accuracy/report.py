@@ -70,8 +70,9 @@ class Row:
     reference_sampling_nm: float | None = None  # None: uneven, scored at its nodes
     reference_nodes: int | None = None  # nodes scored, for a table scored at its nodes
     #: Mean squared error per node in units of the reference's stated uncertainty, scale
-    #: free; about 1 means the model matches within the measurement. Only for references
-    #: that state one.
+    #: free, each node's total uncertainty treated as independent. About 1 means within the
+    #: total stated uncertainty point by point: generous as a test of shape, since most of a
+    #: calibration's uncertainty is systematic. Only for references that state one.
     chi2_per_node: float | None = None
     reference_bandpass_nm: float | None = None  # the model was sampled through it
     spectral_nrms: float | None = None
@@ -117,9 +118,10 @@ class Comparison:
 
     @property
     def pulls(self) -> np.ndarray | None:
-        """Each node's error in units of the reference's stated uncertainty, after the
-        scale that minimises them (a shape comparison: the luminous normalisation would
-        let the visible fix the scale). None where no uncertainty is stated."""
+        """Each node's error in units of the reference's stated total uncertainty (treated
+        as independent between nodes), after the scale that minimises them (a shape
+        comparison: the luminous normalisation would let the visible fix the scale). None
+        where no uncertainty is stated."""
         if self.node_sigma is None:
             return None
         m, w = self.node_model, 1.0 / (self.node_sigma * self.node_reference)

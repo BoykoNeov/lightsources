@@ -9,8 +9,9 @@ reference: nist-fel-f456
 #
 # Every level is fitted with the uncertainty objective: each of the table's wavelengths
 # weighted by NIST's stated uncertainty there. The default (spectral) objective weights
-# them by the mean level instead, so the bright IR outvotes the dim violet and UV, and
-# a model that is good to the measurement everywhere loses there (design §4.1 L3).
+# them by the mean level instead, so the bright IR outvotes the dim violet and UV. Each
+# node's total uncertainty is treated as independent, which is generous as a test of
+# shape (design §4.1 L3).
 #
 # The second lamp of the same model and batch, scored with F-455's fitted values,
 # deliberately NOT refitted: it tests whether the fits carry over to another lamp of
