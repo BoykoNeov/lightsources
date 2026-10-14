@@ -83,7 +83,7 @@ There are two representations, because physics accuracy and rendering cost pull 
 **3.2 Analysis grid (colorimetry and lamp sheets).**
 - 360–830 nm at 1 nm, matching the CIE tables. Colour metrics come from bin integrals of the exact spectrum.
 - Extended band for UV and IR quantities: 200–3000 nm, variable spacing. It is used for UV-A/UV-B dose and IR load.
-- **Total power is never a grid integral.** Thermal sources use analytic band integrals of the greybody, since at 2856 K about 75 % of the power lies beyond 1000 nm. Discharges use the generator's own energy budget (Stage C), which includes every line at every wavelength.
+- **Total power is never a grid integral.** Thermal sources use analytic band integrals of the Planck function (and, for a wavelength-dependent emissivity, a dedicated wide-range integral of ε(λ)·B_λ), since at 2856 K about 75 % of the power lies beyond 1000 nm. Discharges use the generator's own energy budget (Stage C), which includes every line at every wavelength.
 
 **3.3 Render grid (lighting maps).**
 - Coarse box bins over the renderer's wavelength range. The default is 10 nm; the bin width is a per-scene setting.
@@ -106,7 +106,7 @@ Every lamp preset has one **physical description** shared by all levels: geometr
 ### 4.1 Incandescent / halogen
 
 - **L1 — Planck** at filament temperature T.
-- **L2 — Tungsten greybody.** ε(λ, T) from De Vos (1954) / Larrabee tables. This is why tungsten's CCT exceeds its true temperature.
+- **L2 — Tungsten selective emitter.** ε(λ, T) from De Vos (1954) / Larrabee tables. Tungsten's emissivity falls with wavelength across the visible, and *that* is why its CCT exceeds its true temperature. (A true greybody, with constant ε, has exactly the chromaticity of Planck at the same T.)
 - **L3 — Coil geometry.** Coiled-coil cavity effect.
   - First step: ε_eff = ε / (ε + (1−ε)·f_open).
   - Accurate step: ray-trace the coil mesh in the renderer as an emitting tungsten surface with spectral BRDF 1−ε(λ, T) (virtual instrument, §9.5). This replaces f_open with geometry.
@@ -424,7 +424,7 @@ This form keeps the real exit code. The shorter `start /belownormal` form withou
   - D65 → (0.3127, 0.3290);
   - E → (1/3, 1/3);
   - our wrappers agree with `colour-science`.
-- **Tungsten:** a greybody at 2856 K has CCT above 2856 K.
+- **Tungsten (roadmap step 2, needs the De Vos data):** tungsten's selective ε(λ, T) at 2856 K gives a CCT above 2856 K, while a constant-ε greybody gives exactly the Planck chromaticity.
 - **Lines:**
   - rasterising a line list into bins conserves power for any bin width;
   - applying a sharp-edged filter to a line list gives the exact result, independent of the grid.
@@ -476,13 +476,14 @@ This form keeps the real exit code. The shorter `start /belownormal` form withou
 
 ```
 lss/
-  spectral/      line lists, grids (analysis, extended, render), resampling, units,
-                 colour (thin wrappers over colour-science)
+  spectral/      line lists, continua, filters, grids (analysis, extended, render), units,
+                 generic line profiles (Gaussian, Lorentzian, Voigt),
+                 colorimetry (thin wrappers over colour-science)
   physics/
     thermal/     planck.py, tungsten.py, filament.py (T from power, non-uniform T)
     led/         bands.py, phosphor.py, thermal.py
     lowpressure/ lines.py, uv_budget.py
-    hid/         lines.py (NIST import), profiles/ (voigt.py, quasistatic.py),
+    hid/         lines.py (NIST import), profiles/ (pressure-broadening widths, quasistatic.py),
                  lte.py (Saha, partition fns), transfer.py (Stage B),
                  arc.py (Stage C), electrodes.py, chemistry.py (optional)
   lamp/          physical description, components, EmissionProfile (zones), ProfileCache
@@ -493,8 +494,8 @@ lss/
   ui/            viewer, lamp editor, compare view, probe panels, lamp sheet
   data/          line lists, broadening/potentials, transport, emissivities, glass/PCA,
                  phosphor spectra, reference SPDs, ColorChecker (all with citations)
-  tests/
   cli.py         lampsheet / accuracy / fit / render / probe (headless)
+tests/           pytest suite (outside the package)
 ```
 
 CLI first:

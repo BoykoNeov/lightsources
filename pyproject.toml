@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lss"
+version = "0.1.0"
+description = "Light source simulator: physics-first spectral models of lamps"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "colour-science>=0.4.6",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+lss = "lss.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["lss"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = [
+    # colour-science warns once at import when matplotlib is absent; plotting is not used.
+    "ignore:.*Matplotlib.*:UserWarning",
+]
