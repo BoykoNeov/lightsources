@@ -27,6 +27,8 @@ packages = ["lss"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 filterwarnings = [
-    # colour-science warns once at import when matplotlib is absent; plotting is not used.
-    "ignore:.*Matplotlib.*:UserWarning",
+    # colour-science: matplotlib-absent notice (plotting is unused) and its notices
+    # when it resamples a table to the shape a metric needs.
+    "ignore:.*Matplotlib.*:Warning",
+    "ignore:Aligning .*:Warning",
 ]
