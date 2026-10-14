@@ -45,6 +45,11 @@ def _check_grid(binned: BinnedSpectrum) -> None:
         raise ValueError("colorimetry needs a spectrum binned on analysis_grid()")
 
 
+def cmfs(observer: str = "2") -> np.ndarray:
+    """Colour-matching functions at the analysis-grid bin centres, shape (bins, 3)."""
+    return _table("cmfs", OBSERVERS[observer])
+
+
 def tristimulus(binned: BinnedSpectrum, observer: str = "2") -> np.ndarray:
     """Unnormalised XYZ = Σ_bins cmf(centre) · power(bin), in spectrum units."""
     _check_grid(binned)

@@ -295,6 +295,9 @@ Swapping a component recomputes only what depends on it. A generator change touc
 - **Surface probe:** irradiance spectrum at a point. Probes are rendered as per-zone unit-spectrum irradiance values, so they re-colour instantly too. Derived quantities: illuminance, CCT/Duv, CRI Ra and R9, TM-30 Rf/Rg, S/P, melanopic EDI, UV dose.
 - **Lamp sheet:** SPD (zone-summed and per zone), radiant and luminous flux, efficacy, CCT/Duv, CRI, TM-30 colour-vector graphic, the parameters and data versions that produced it, and its accuracy score against the reference if one exists.
 - **No-render studies (instant, no 3D):** colour chart and test samples under a lamp, metameric pairs that match in daylight and split under HPS, CRI/TM-30. These are spectral products of lamp SPD and reflectance.
+  - *Built (step 2): colour chart* (`lss chart`, `lss/studies/`). It shows how far each sample's colour moves under the lamp, compared with the same sample under TM-30's reference light at the same CCT. The method is TM-30's: 10° observer, CIECAM02 with full adaptation, CAM02-UCS. So the chart and the lamp sheet's Rf measure the same thing; with TM-30's own 99 samples (`--samples ces`) the chart's mean gives Rf to 0.05. Each shift is split into lightness, chroma and hue. Display colours (`--svg`, lamp over reference) use the 2° observer and CAT02 adaptation to D65.
+  - Sample sets (`lss/data/reflectances.yaml`, read from colour-science datasets like the reference SPDs): the ColorChecker (BabelColor average of 30 charts, 380–730 nm at 10 nm), the CRI's TCS01–14 and TM-30's 99 samples. Tables are read piecewise linear and held at their end values beyond their range. That hold is an extrapolation, reported with each chart; the colour-matching functions are below 1 % of their peak there.
+  - First result: under CIE HP1 (HPS), the ColorChecker's mean shift is 8.7, four times the LED-B3 model's 2.1, and the red patch loses 19 of its chroma.
 - **Compare:** A/B split or slider over the same scene, difference image, difference of probe spectra, across lamps or across model levels.
 - **False colour:** illuminance, UV dose, "exceeds X lux" isolines.
 
@@ -464,6 +467,11 @@ This form keeps the real exit code. The shorter `start /belownormal` form withou
   - an empty layer passes the pump unchanged, and a flat absorber of depth τ passes 2E₃(τ) of the Lambertian pump;
   - blue leakage falls with emission angle, and with layer thickness;
   - Ce³⁺ absorption and emission peak S·ħω either side of the zero-phonon line, with widths growing as √coth(ħω/2kT).
+- **Colour chart** *(passes, step 2)*:
+  - a Planck lamp below 4500 K is its own TM-30 reference: every patch shifts by < 0.02;
+  - with TM-30's 99 samples the chart's fidelity equals the lamp sheet's Rf within 0.1 (FL2, HP1, LED-B3 L2);
+  - a perfect white displays as sRGB white under any lamp (full adaptation);
+  - sample tables sit on their nodes exactly and are held flat beyond them.
 - **Lines:**
   - rasterising a line list into bins conserves power for any bin width;
   - applying a sharp-edged filter to a line list gives the exact result, independent of the grid.
@@ -527,6 +535,7 @@ lss/
                  arc.py (Stage C), electrodes.py, chemistry.py (optional)
   lamp/          physical description, components, EmissionProfile (zones), ProfileCache
   accuracy/      reference library, fit.py, report.py
+  studies/       no-render studies: reflectance samples, appearance, colour chart, metameric pairs
   scene/         study description, reference lab, materials, probes
   render/        mitsuba adapter, emitter plugins, worker, lighting maps,
                  re-colouring, progress, instruments (sphere, goniophotometer)

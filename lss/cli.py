@@ -1,4 +1,4 @@
-"""Command-line interface (design §13): ``lss refs | lampsheet | accuracy | fit``."""
+"""Command-line interface (design §13): ``lss refs | lampsheet | accuracy | fit | chart``."""
 
 import argparse
 import json
@@ -101,6 +101,24 @@ def _cmd_fit(args) -> int:
     return 0 if result.success else 1
 
 
+def _cmd_chart(args) -> int:
+    from lss.lamp import lamp as lamps
+    from lss.studies import appearance, chart, samples
+
+    lamp = lamps.load(args.lamp)
+    level = args.level if args.level is not None else max(lamp.models)
+    result = chart.make(appearance.lamp_light(lamp, level), samples.get(args.samples))
+    if args.json:
+        print(json.dumps(result.as_dict(), indent=2))
+    else:
+        print(chart.format_text(result))
+    if args.svg:
+        path = Path(args.svg)
+        path.write_text(chart.svg(result), encoding="utf-8")
+        print(f"\nswatches written to {path.resolve()}", file=sys.stderr)
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="lss", description="Light source simulator")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -135,6 +153,17 @@ def main(argv=None) -> int:
                    help="out-of-sample check: fit the shared shapes to the other lamps, then score this one")
     p.add_argument("--json", action="store_true", help="machine-readable output")
     p.set_defaults(func=_cmd_fit)
+
+    p = sub.add_parser("chart", help="colour chart under a lamp: each sample's colour shift against "
+                                     "TM-30's reference light at the same CCT")
+    p.add_argument("lamp", help="preset, YAML file, or ref:<id>")
+    p.add_argument("--level", type=int, help="model level (default: the highest)")
+    p.add_argument("--samples", default="colorchecker", choices=["colorchecker", "cri", "ces"],
+                   help="colorchecker: 24 ColorChecker patches (default); cri: CIE 13.3 TCS01-14; "
+                        "ces: the 99 TM-30 samples")
+    p.add_argument("--json", action="store_true", help="machine-readable output")
+    p.add_argument("--svg", metavar="PATH", help="also write swatches (lamp over reference) as SVG")
+    p.set_defaults(func=_cmd_chart)
 
     args = parser.parse_args(argv)
     for stream in (sys.stdout, sys.stderr):

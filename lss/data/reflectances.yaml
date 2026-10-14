@@ -1,0 +1,39 @@
+# Reflectance sample sets for the no-render studies (design §7): colour chart and
+# test samples under a lamp, metameric pairs.
+#
+# Fields
+#   id           stable identifier used by the CLI (lss chart --samples <id>)
+#   description  what the samples are
+#   source       type colour-science reads the named dataset shipped with the
+#                colour-science package (no copied data), as references.yaml does
+#   kind         measurement | standard-set
+#   uncertainty  stated measurement uncertainty, or "not stated"
+#   citation     publication
+#
+# The studies evaluate on the 1 nm analysis grid (360-830 nm). Each table is read
+# as piecewise linear between its nodes and held at its end values beyond its
+# range (CIE 15 practice). That hold is an extrapolation: the loader records the
+# measured range, and the chart reports it. Its effect is small because the
+# colour-matching functions are below 1 % of their peak there, but it is not data.
+
+sets:
+  - id: colorchecker
+    description: "X-Rite (Macbeth) ColorChecker Classic, 24 patches; average of 30 charts"
+    source: {type: colour-science, dataset: colourchecker, key: BabelColor Average}
+    kind: measurement
+    uncertainty: "not stated; chart-to-chart spread is documented by BabelColor"
+    citation: "D. Pascale, BabelColor (2012), The ColorChecker (since 1976!), ColorChecker RGB and spectra; via colour-science SDS_COLOURCHECKERS"
+
+  - id: cri
+    description: "CIE 13.3 test colour samples TCS01-TCS14 (R1-R14 of the CRI)"
+    source: {type: colour-science, dataset: tcs-cie1995, key: CIE 1995}
+    kind: standard-set
+    uncertainty: exact by definition
+    citation: "CIE 13.3-1995 Method of measuring and specifying colour rendering properties of light sources; via colour-science SDS_TCS"
+
+  - id: ces
+    description: "99 colour evaluation samples of CIE 224:2017 and ANSI/IES TM-30-18 (the Rf samples)"
+    source: {type: colour-science, dataset: tcs-cie2017, key: "1"}
+    kind: standard-set
+    uncertainty: exact by definition
+    citation: "CIE 224:2017 Colour fidelity index for accurate scientific use; ANSI/IES TM-30-18; via colour-science load_TCS_CIE2017"
