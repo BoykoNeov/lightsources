@@ -39,6 +39,12 @@ class EmissionProfile:
             raise ValueError("an emission profile needs at least one zone")
 
     @property
+    def empirical_count(self) -> int:
+        """Empirical parameters this model actually used (from ``metadata["params"]``,
+        which every generator fills with the parameters it read)."""
+        return sum(bool(p.get("empirical")) for p in self.metadata.get("params", {}).values())
+
+    @property
     def spectrum(self) -> Spectrum:
         """Zone-summed spectrum."""
         total = self.zones[0].spectrum

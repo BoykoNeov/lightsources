@@ -26,6 +26,7 @@ def _reference(lamp, spec) -> EmissionProfile:
             "generator": "reference",
             "level": spec.level,
             "reference": ref.id,
+            "params": {},  # measured data: no model parameters
             "valid_range_nm": ref.valid_range,
             "data_versions": [ref.data_version],
         },

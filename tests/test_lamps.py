@@ -47,7 +47,20 @@ def test_presets_generate_every_level(preset):
         assert profile.metadata["level"] == level
         assert profile.metadata["data_versions"]
         assert profile.spectrum.total() > 0
-        assert lamp.empirical_count(level) == 0
+        assert profile.empirical_count == 0
+
+
+def test_empirical_count_covers_only_parameters_a_level_uses():
+    lamp = lamps.lamp_from_dict({
+        "id": "t", "family": "incandescent", "reference": "cie-a",
+        "physical": {
+            "filament_temperature": {"value": 2800, "unit": "K", "empirical": True, "reason": "fitted"},
+            "coil_factor": {"value": 0.3, "unit": "", "empirical": True, "reason": "unused here"},
+        },
+        "models": {0: {"generator": "reference"}, 1: {"generator": "planck"}},
+    })
+    assert lamp.generate(0).empirical_count == 0
+    assert lamp.generate(1).empirical_count == 1
 
 
 def test_reference_shortcut_builds_level_zero_lamp():

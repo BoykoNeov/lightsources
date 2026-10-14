@@ -80,7 +80,7 @@ def score(lamp, level: int) -> Row:
     ref = references.get(lamp.reference)
     profile = lamp.generate(level)
     base = dict(lamp_id=lamp.id, level=level, generator=profile.metadata.get("generator", ""), reference=ref.id,
-                empirical_params=lamp.empirical_count(level))
+                empirical_params=profile.empirical_count)
 
     missing = ref.includes - profile.includes
     if missing:

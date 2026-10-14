@@ -47,12 +47,6 @@ class Lamp:
         except KeyError:
             raise KeyError(f"{self.id}: parameter {name!r} is not in the physical description") from None
 
-    def empirical_count(self, level: int) -> int:
-        """Empirical (non-physical) parameters a level uses; part of the accuracy report."""
-        spec = self.models[level]
-        used = {**self.physical, **spec.params}
-        return sum(p.empirical for p in used.values())
-
 
 def _params(d: dict | None) -> dict[str, Parameter]:
     return {k: Parameter.from_dict(v) for k, v in (d or {}).items()}
