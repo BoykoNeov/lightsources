@@ -3,5 +3,74 @@ name: Phosphor-converted blue LED (CIE LED-B3)
 family: led
 reference: cie-led-b3
 
+# The blue pump is shared by every level; the phosphor shape is Level 1's own,
+# because Level 2 derives it from the phosphor layer instead. Widths follow the
+# convention in lss/physics/led/bands.py: measured on the per-energy shape, in nm.
+physical:
+  pump_peak:
+    value: 448.587
+    unit: nm
+    empirical: true
+    reason: >-
+      fitted by `lss fit` (spectral objective) to cie-led-b3 on 2026-10-14: NRMS 8.12e-02,
+      du'v' 2.3e-03, dCCT +29.60 K
+    # InGaN pump dies for white LEDs ("royal blue") are made at about 440-460 nm.
+    bounds: [435, 470]
+  pump_fwhm:
+    value: 25.4096
+    unit: nm
+    empirical: true
+    reason: >-
+      fitted by `lss fit` (spectral objective) to cie-led-b3 on 2026-10-14: NRMS 8.12e-02,
+      du'v' 2.3e-03, dCCT +29.60 K. The reference is a 5 nm table read piecewise
+      linearly, which flattens a ~20 nm peak, so this width is probably biased wide.
+    # Blue InGaN emitters are 18-25 nm wide; the margin allows for the coarse table.
+    bounds: [12, 35]
+
 models:
   0: {generator: reference}
+  1:
+    # One asymmetric phosphor band. FINDING: the short-wavelength half width sits at
+    # its bound, and the fit is short in the cyan valley (~500 nm) and around 600 nm.
+    # A neutral-white LED like this one uses a blend of phosphors (yellow-green
+    # garnet plus a red nitride), which one Ce3+ band cannot imitate. A second band
+    # with free shape did not fix it cleanly (its peaks ran to their bounds), so the
+    # next rung is Level 2's phosphor blend with measured emission spectra.
+    generator: led_two_band
+    params:
+      phosphor_peak:
+        value: 599.015
+        unit: nm
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b3 on 2026-10-14: NRMS 8.12e-02,
+          du'v' 2.3e-03, dCCT +29.60 K
+        # From green LuAG:Ce (~520 nm) to a red-shifted garnet or blend centre (~650 nm).
+        bounds: [520, 650]
+      phosphor_half_width_short:
+        value: 80
+        unit: nm
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b3 on 2026-10-14: NRMS 8.12e-02,
+          du'v' 2.3e-03, dCCT +29.60 K; at its upper bound (see the finding above)
+        # A single Ce3+ garnet band is ~45-55 nm on its short side; 80 nm is generous.
+        bounds: [20, 80]
+      phosphor_half_width_long:
+        value: 70.9838
+        unit: nm
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b3 on 2026-10-14: NRMS 8.12e-02,
+          du'v' 2.3e-03, dCCT +29.60 K
+        # Ce3+ garnets have the longer tail on the red side, ~60-80 nm.
+        bounds: [30, 120]
+      phosphor_to_pump:
+        value: 5.98002
+        unit: "1"
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b3 on 2026-10-14: NRMS 8.12e-02,
+          du'v' 2.3e-03, dCCT +29.60 K
+        # Converted to leaked radiant power: from a bluish cool white to deep warm white.
+        bounds: [0.5, 30]

@@ -122,6 +122,9 @@ Every lamp preset has one **physical description** shared by all levels: geometr
 - **L1 — Two-band fit.**
   - Pump: Gaussian *in energy*, ~450 nm, FWHM 18–25 nm, with an optional low-energy tail.
   - Phosphor: YAG:Ce, asymmetric, fitted with a split Gaussian or the sum of two Gaussians.
+  - *Built (step 2):* generator `led_two_band` (`lss/physics/led/bands.py`). Both bands are Gaussians in photon energy; the phosphor has a separate width on each side. Widths are in nm, measured on the energy shape (peak to half maximum). Six parameters, all empirical and fitted: pump peak and width (shared by every level), phosphor peak, two half widths and phosphor-to-pump power ratio (Level 1's own).
+  - *Finding:* one phosphor band fits a cool-white LED (CIE LED-B5: Δu′v′ 7×10⁻⁴, ΔRa −0.8, no parameter at a bound). It does not fit a neutral-white one (LED-B3: Δu′v′ 2.3×10⁻³, ΔRa −5.2), whose short-side width runs to its bound. B3 is a blend of phosphors. A pump with a red tail did not help. A second free phosphor band gave unstable fits with peaks at their bounds, so the blend belongs in L2, with measured phosphor spectra.
+  - The fitted pump widths (25–27 nm) are probably biased wide: the 5 nm reference tables flatten a ~20 nm peak.
 - **L2 — Phosphor conversion.** Beer–Lambert absorption of the pump (thickness × concentration), measured excitation and emission spectra, quantum efficiency, Stokes loss. Blue leakage emerges from thickness, including its angle dependence: the path through the layer grows as 1/cos θ. Multi-phosphor (red nitride) for high-CRI parts. Output: one spectrum per emission-angle zone.
 - **L3 — Thermal.** Junction temperature from thermal resistance × dissipated power. Effects: pump peak shift (~0.03–0.05 nm/K), pump efficiency droop, phosphor thermal quenching.
 - **L4 — Volumetric phosphor.** Phosphor as a scattering, absorbing, re-emitting medium. This runs *inside the generator* (its own small Monte-Carlo on the package geometry), not in the scene renderer, because the scene renderer does no fluorescence. It predicts the per-angle-zone spectra from first principles.
@@ -516,7 +519,7 @@ The GUI wraps the same library.
    - Reference library with provenance; Level-0 lamps.
    - CLI lamp sheet; accuracy-report scaffolding.
    - Core tests in §12 pass, except the tungsten test, which needs the De Vos data and moves to step 2.
-2. **Thermal, LED and fluorescent models.** *In progress: incandescent L2 and `lss fit` done (2026-10-14).* Incandescent L1–L4, LED L1–L3, fluorescent L1–L2, each with `fit` against references and scores in the accuracy report. No-render studies: colour chart, metameric pairs, CRI/TM-30.
+2. **Thermal, LED and fluorescent models.** *In progress: incandescent L2, `lss fit` and LED L1 done (2026-10-14).* Incandescent L1–L4, LED L1–L3, fluorescent L1–L2, each with `fit` against references and scores in the accuracy report. No-render studies: colour chart, metameric pairs, CRI/TM-30.
 3. **HID Stage A + B on line-local fine grids.**
    - Voigt profiles, (b, θ) chords, zone spectra.
    - HP-Hg and HPS presets; self-reversal tests.

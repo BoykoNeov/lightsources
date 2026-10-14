@@ -6,6 +6,8 @@ Each generator produces bare emission plus whatever it already folds in
 * ``reference`` — Level 0: the measured or tabulated spectrum itself.
 * ``planck`` — thermal Level 1: a blackbody at the filament temperature.
 * ``tungsten`` — thermal Level 2: tungsten's measured selective emissivity × Planck.
+* ``led_two_band`` — LED Level 1: a blue pump band plus one asymmetric phosphor band,
+  both shaped in photon energy, with fitted shapes.
 """
 
 from lss.lamp.profile import EmissionProfile, Zone
@@ -79,7 +81,42 @@ def _tungsten(lamp, spec) -> EmissionProfile:
     )
 
 
-GENERATORS = {"reference": _reference, "planck": _planck, "tungsten": _tungsten}
+def _nm(lamp, spec, name):
+    p = lamp.parameter(name, spec)
+    if p.unit != "nm":
+        raise ValueError(f"{name} must be in nm")
+    return p
+
+
+def _led_two_band(lamp, spec) -> EmissionProfile:
+    from lss.physics.led.bands import EnergyBand
+
+    pump_peak, pump_fwhm = _nm(lamp, spec, "pump_peak"), _nm(lamp, spec, "pump_fwhm")
+    ph_peak = _nm(lamp, spec, "phosphor_peak")
+    ph_short = _nm(lamp, spec, "phosphor_half_width_short")
+    ph_long = _nm(lamp, spec, "phosphor_half_width_long")
+    ratio = lamp.parameter("phosphor_to_pump", spec)
+    if ratio.unit != "1":
+        raise ValueError("phosphor_to_pump is a power ratio, unit 1")
+    pump = EnergyBand.symmetric(pump_peak.value, pump_fwhm.value)
+    phosphor = EnergyBand.split(ph_peak.value, ph_short.value, ph_long.value, power=ratio.value)
+    used = {"pump_peak": pump_peak, "pump_fwhm": pump_fwhm, "phosphor_peak": ph_peak,
+            "phosphor_half_width_short": ph_short, "phosphor_half_width_long": ph_long,
+            "phosphor_to_pump": ratio}
+    return EmissionProfile(
+        zones=(Zone(Spectrum.of(pump, phosphor, name="LED two-band"), name="package"),),
+        power=None,  # relative: no drive current or efficiency at this level
+        includes=frozenset({"phosphor"}),  # the phosphor band is the converted light
+        metadata={
+            "generator": "led_two_band",
+            "level": spec.level,
+            "params": {k: p.as_dict() for k, p in used.items()},
+            "data_versions": ["analytic band shapes, no tabulated data"],
+        },
+    )
+
+
+GENERATORS = {"reference": _reference, "planck": _planck, "tungsten": _tungsten, "led_two_band": _led_two_band}
 
 
 def run(lamp, spec) -> EmissionProfile:

@@ -52,9 +52,10 @@ class LampSheet:
 
 def _all_wavelength_total(spectrum: Spectrum) -> float | None:
     """Radiant total over all wavelengths if every component is unbounded physics, else None."""
+    from lss.physics.led.bands import EnergyBand
     from lss.spectral.continuum import PlanckContinuum
 
-    if all(isinstance(c.source, PlanckContinuum) for c in spectrum.components):
+    if all(isinstance(c.source, (PlanckContinuum, EnergyBand)) for c in spectrum.components):
         return spectrum.total()
     return None
 

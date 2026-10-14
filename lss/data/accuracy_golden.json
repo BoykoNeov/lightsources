@@ -56,5 +56,63 @@
     "reference": "cie-a",
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.02033867385913995
+  },
+  "led_cie_b3@L1": {
+    "band_nrms": {
+      "380-480": 0.10326566268014772,
+      "480-580": 0.0794244015686587,
+      "580-680": 0.04935784836401041,
+      "680-780": 0.1340534039788347
+    },
+    "comparable": true,
+    "delta_cct_k": 29.620183174462,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": -5.216730816417368,
+    "delta_rf": -4.265454088289573,
+    "delta_uv_prime": 0.002294616817087116,
+    "empirical_params": 6,
+    "generator": "led_two_band",
+    "lamp_id": "led_cie_b3",
+    "level": 1,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      380.0,
+      780.0
+    ],
+    "reference": "cie-led-b3",
+    "reference_sampling_nm": 5.0,
+    "spectral_nrms": 0.08118386026981135
+  },
+  "led_cie_b5@L1": {
+    "band_nrms": {
+      "380-480": 0.09404193532230277,
+      "480-580": 0.034418367555968304,
+      "580-680": 0.01719057430471441,
+      "680-780": 0.07244389148028471
+    },
+    "comparable": true,
+    "delta_cct_k": -39.86271898746418,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": -0.8016625712226215,
+    "delta_rf": -0.5855222797721211,
+    "delta_uv_prime": 0.0007035541129294723,
+    "empirical_params": 6,
+    "generator": "led_two_band",
+    "lamp_id": "led_cie_b5",
+    "level": 1,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      380.0,
+      780.0
+    ],
+    "reference": "cie-led-b5",
+    "reference_sampling_nm": 5.0,
+    "spectral_nrms": 0.062302696700268584
   }
 }

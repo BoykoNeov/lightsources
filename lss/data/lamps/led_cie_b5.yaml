@@ -1,0 +1,70 @@
+id: led_cie_b5
+name: Phosphor-converted blue LED, cool white (CIE LED-B5)
+family: led
+reference: cie-led-b5
+
+# A cool-white LED: mostly one yellow garnet phosphor, so Level 1's single
+# phosphor band is a fair model here (compare led_cie_b3). Widths follow the
+# convention in lss/physics/led/bands.py: measured on the per-energy shape, in nm.
+physical:
+  pump_peak:
+    value: 451.991
+    unit: nm
+    empirical: true
+    reason: >-
+      fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.23e-02,
+      du'v' 7.0e-04, dCCT -39.87 K
+    # InGaN pump dies for white LEDs ("royal blue") are made at about 440-460 nm.
+    bounds: [435, 470]
+  pump_fwhm:
+    value: 27.0136
+    unit: nm
+    empirical: true
+    reason: >-
+      fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.23e-02,
+      du'v' 7.0e-04, dCCT -39.87 K. The reference is a 5 nm table read piecewise
+      linearly, which flattens a ~20 nm peak, so this width is probably biased wide.
+    # Blue InGaN emitters are 18-25 nm wide; the margin allows for the coarse table.
+    bounds: [12, 35]
+
+models:
+  0: {generator: reference}
+  1:
+    generator: led_two_band
+    params:
+      phosphor_peak:
+        value: 572.282
+        unit: nm
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.23e-02,
+          du'v' 7.0e-04, dCCT -39.87 K
+        # From green LuAG:Ce (~520 nm) to a red-shifted garnet or blend centre (~650 nm).
+        bounds: [520, 650]
+      phosphor_half_width_short:
+        value: 65.6893
+        unit: nm
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.23e-02,
+          du'v' 7.0e-04, dCCT -39.87 K
+        # A single Ce3+ garnet band is ~45-55 nm on its short side; 80 nm is generous.
+        bounds: [20, 80]
+      phosphor_half_width_long:
+        value: 77.4882
+        unit: nm
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.23e-02,
+          du'v' 7.0e-04, dCCT -39.87 K
+        # Ce3+ garnets have the longer tail on the red side, ~60-80 nm.
+        bounds: [30, 120]
+      phosphor_to_pump:
+        value: 2.89298
+        unit: "1"
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.23e-02,
+          du'v' 7.0e-04, dCCT -39.87 K
+        # Converted to leaked radiant power: from a bluish cool white to deep warm white.
+        bounds: [0.5, 30]
