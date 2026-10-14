@@ -33,6 +33,9 @@ class Lamp:
     reference: str | None
     models: dict[int, ModelSpec]
     envelope: Envelope | None = None  # applied after the generator (design §5)
+    #: Trial values for shared phosphor-library parameters (a joint fit sets these);
+    #: they stay library values, unlike a value the lamp sets in its own description.
+    library_overrides: dict[str, Parameter] = field(default_factory=dict)
 
     def generate(self, level: int) -> EmissionProfile:
         from lss.lamp.generators import run
@@ -40,6 +43,13 @@ class Lamp:
         if level not in self.models:
             raise KeyError(f"{self.id} has no level {level}; available: {sorted(self.models)}")
         return run(self, self.models[level])
+
+    def reads_from_library(self, name: str, spec: ModelSpec | None = None) -> bool:
+        """True if ``name`` resolves to the shared phosphor library, not to this lamp."""
+        from lss.lamp import phosphors
+
+        own = (spec is not None and name in spec.params) or name in self.physical
+        return not own and phosphors.is_shared(name)
 
     def parameter(self, name: str, spec: ModelSpec | None = None) -> Parameter:
         """A model's own parameter if it sets one, else the physical description's, else
@@ -51,7 +61,7 @@ class Lamp:
         from lss.lamp import phosphors
 
         if phosphors.is_shared(name):
-            return phosphors.parameters()[name]
+            return self.library_overrides.get(name, phosphors.parameters()[name])
         raise KeyError(f"{self.id}: parameter {name!r} is not in the physical description")
 
 

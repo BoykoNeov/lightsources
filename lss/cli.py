@@ -64,15 +64,37 @@ def _cmd_fit(args) -> int:
     from lss.accuracy import fit, references
     from lss.lamp import lamp as lamps
 
-    lamp = lamps.load(args.lamp)
+    loaded = [lamps.load(name) for name in args.lamp]
     ref = references.get(args.ref) if args.ref else None
+    if ref is not None and len(loaded) > 1:
+        print("error: --ref applies to a single lamp; a joint fit scores each lamp against its own", file=sys.stderr)
+        return 2
     try:
-        result = fit.fit(lamp, args.level, ref, args.objective, args.param or None)
+        if args.hold_out:
+            ids = [lamp.id for lamp in loaded]
+            if args.hold_out not in ids:
+                print(f"error: --hold-out {args.hold_out} is not one of the lamps given", file=sys.stderr)
+                return 2
+            joint, result = fit.hold_out([(lamp, args.level, None) for lamp in loaded], ids.index(args.hold_out),
+                                         args.objective)
+        elif len(loaded) > 1:
+            result = fit.fit_joint([(lamp, args.level, None) for lamp in loaded], args.objective)
+        else:
+            result = fit.fit(loaded[0], args.level, ref, args.objective, args.param or None, shared=args.shared)
     except ValueError as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
     if args.json:
         print(json.dumps(result.as_dict(), indent=2))
+    elif args.hold_out:
+        print(f"Out-of-sample check: shared shapes fitted without {args.hold_out}, "
+              "then only its own mix fitted with them.
+")
+        print(fit.format_text(result))
+    elif len(loaded) > 1:
+        print(fit.format_joint(result))
+        print()
+        print(fit.joint_yaml_snippet(result), end="")
     else:
         print(fit.format_text(result))
         print()
@@ -99,14 +121,19 @@ def main(argv=None) -> int:
     p.add_argument("--update-golden", action="store_true", help="accept current scores as the new baseline")
     p.set_defaults(func=_cmd_accuracy)
 
-    p = sub.add_parser("fit", help="fit a model level's bounded parameters to a reference")
-    p.add_argument("lamp")
+    p = sub.add_parser("fit", help="fit a model level's bounded parameters to a reference; with several "
+                                   "lamps, fit the shared phosphor shapes to all of them at once")
+    p.add_argument("lamp", nargs="+", help="one lamp, or several for a joint fit of their shared shapes")
     p.add_argument("--level", type=int, required=True, help="model level to fit")
     p.add_argument("--ref", help="reference id (default: the lamp's own; see `lss refs`)")
     p.add_argument("--objective", choices=["spectral", "colour"], default="spectral",
                    help="spectral: the report's NRMS (default); colour: chromaticity du'v'")
     p.add_argument("--param", action="append", metavar="NAME",
                    help="fit only this parameter (repeatable; default: every bounded one)")
+    p.add_argument("--shared", action="store_true",
+                   help="one lamp: also free the shared phosphor-library shapes (fits them to this lamp alone)")
+    p.add_argument("--hold-out", metavar="LAMP",
+                   help="out-of-sample check: fit the shared shapes to the other lamps, then score this one")
     p.add_argument("--json", action="store_true", help="machine-readable output")
     p.set_defaults(func=_cmd_fit)
 
