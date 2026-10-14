@@ -16,6 +16,7 @@ uv pip install --python .venv/Scripts/python.exe -e ".[dev]"
 lss refs                         # list the reference spectra
 lss lampsheet incandescent_cie_a # lamp sheet for a preset (or ref:<id>)
 lss accuracy                     # score models against references
+lss fit incandescent_cie_a --level 2   # fit a level's bounded parameters to its reference
 ```
 
 ## Tests

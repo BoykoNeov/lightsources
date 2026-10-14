@@ -26,6 +26,7 @@ from lss.lamp import lamp as lamps
 from lss.spectral import colorimetry as cm
 from lss.spectral.filters import Transmission
 from lss.spectral.grids import analysis_grid
+from lss.spectral.spectrum import BinnedSpectrum
 
 GOLDEN_PATH = Path(str(resources.files("lss.data").joinpath("accuracy_golden.json")))
 BANDS_NM = [(380.0, 480.0), (480.0, 580.0), (580.0, 680.0), (680.0, 780.0)]
@@ -76,17 +77,30 @@ def _nrms(model: np.ndarray, ref: np.ndarray) -> float:
     return float(np.sqrt(np.mean((model - ref) ** 2)) / np.mean(ref))
 
 
-def score(lamp, level: int) -> Row:
-    ref = references.get(lamp.reference)
-    profile = lamp.generate(level)
-    base = dict(lamp_id=lamp.id, level=level, generator=profile.metadata.get("generator", ""), reference=ref.id,
-                empirical_params=profile.empirical_count)
+@dataclass(frozen=True)
+class Comparison:
+    """A model and its reference on the analysis grid, cut to the scored range and
+    normalised to equal luminous flux. The report and the fitter both use this, so a
+    fit minimises exactly the error the report shows."""
 
-    missing = ref.includes - profile.includes
-    if missing:
-        return Row(**base, comparable=False,
-                   note=f"reference includes {', '.join(sorted(missing))}; no quick-path model for it yet")
+    model: BinnedSpectrum
+    reference: BinnedSpectrum
+    range_nm: tuple[float, float]
+    inside: np.ndarray  # bins strictly inside the range
 
+    @property
+    def residuals(self) -> np.ndarray:
+        """Per-bin density error relative to the mean reference density; its RMS is the NRMS."""
+        rd = self.reference.density[self.inside]
+        return (self.model.density[self.inside] - rd) / np.mean(rd)
+
+
+def missing_components(profile, ref) -> frozenset[str]:
+    """Components the reference includes that the model does not (like with like)."""
+    return ref.includes - profile.includes
+
+
+def compare(profile, ref) -> Comparison:
     grid = analysis_grid()
     # Score only where the reference has data and the colour tables exist.
     lo, hi = max(ref.valid_range[0], grid.lo), min(ref.valid_range[1], grid.hi)
@@ -95,10 +109,26 @@ def score(lamp, level: int) -> Row:
     r = ref.spectrum.filtered(window).bin(grid)
     k = cm.luminous(r) / cm.luminous(m)
     m = type(m)(m.grid, m.values * k, m.below * k, m.above * k, r.quantity)
+    return Comparison(m, r, (lo, hi), (grid.centres > lo) & (grid.centres < hi))
 
-    inside = (grid.centres > lo) & (grid.centres < hi)
-    md, rd = m.density[inside], r.density[inside]
-    centres = grid.centres[inside]
+
+def score(lamp, level: int, ref=None) -> Row:
+    """Score one model level; ``ref`` defaults to the lamp's own reference."""
+    ref = ref if ref is not None else references.get(lamp.reference)
+    profile = lamp.generate(level)
+    base = dict(lamp_id=lamp.id, level=level, generator=profile.metadata.get("generator", ""), reference=ref.id,
+                empirical_params=profile.empirical_count)
+
+    missing = missing_components(profile, ref)
+    if missing:
+        return Row(**base, comparable=False,
+                   note=f"reference includes {', '.join(sorted(missing))}; no quick-path model for it yet")
+
+    c = compare(profile, ref)
+    m, r = c.model, c.reference
+    lo, hi = c.range_nm
+    md, rd = m.density[c.inside], r.density[c.inside]
+    centres = m.grid.centres[c.inside]
     bands = {}
     for b_lo, b_hi in BANDS_NM:
         sel = (centres > max(b_lo, lo)) & (centres < min(b_hi, hi))

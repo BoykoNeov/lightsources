@@ -44,4 +44,6 @@ class Parameter:
         if self.empirical:
             d["empirical"] = True
             d["reason"] = self.reason
+        if self.bounds is not None:
+            d["bounds"] = list(self.bounds)
         return d

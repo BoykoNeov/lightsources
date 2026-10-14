@@ -401,7 +401,7 @@ This section is what makes "maximum accuracy" a direction rather than a slogan.
   **Like is compared with like:** a generator's bare output is first passed through whatever the reference already includes (its `includes` flags: envelope, phosphor, reflector), via the quick path or the instrument path (§5), and only then scored. The path used is recorded in the report.
 
   It runs in CI-style on every physics change; results are stored as golden files. An error increase beyond tolerance fails the run. Improvements are visible as numbers.
-- **Parameter fitting** (`lss fit`). Fits a model's free *physical* parameters to a reference with `scipy.optimize.least_squares`, within physically plausible bounds. It reports the fitted values and how close they sit to the bounds. A fit that only works with implausible parameters is the signal of missing physics, and it points at which rung to build next.
+- **Parameter fitting** (`lss fit`). Fits a model's free *physical* parameters to a reference with `scipy.optimize.least_squares`, within physically plausible bounds. It reports the fitted values and how close they sit to the bounds. A fit that only works with implausible parameters is the signal of missing physics, and it points at which rung to build next. *Built (step 2):* the free parameters are those a level reads that have `bounds` in the preset. The default objective uses the report's own residuals, so a fit minimises exactly the NRMS the report shows; `--objective colour` matches chromaticity instead. A model lacking a component its reference includes is refused. The tool prints the fitted value as preset YAML tagged `empirical`; it never edits presets.
 - **No hidden fudge factors.** Every parameter is either a physical quantity with units and a source, or explicitly tagged `empirical` with a reason. Climbing the ladder means replacing `empirical` parameters with mechanisms. The count of `empirical` parameters per model is part of the accuracy report.
 - **Uncertainty propagation** (later rung). Monte-Carlo over input-data uncertainties (broadening coefficients, transport data, potentials) gives error bands on spectra and efficacy. A disagreement with a measurement larger than these bands means the model is missing physics, not just short of data.
 - **Provenance everywhere.** Every lamp sheet and render records model level, parameters, data versions and code version.
@@ -516,7 +516,7 @@ The GUI wraps the same library.
    - Reference library with provenance; Level-0 lamps.
    - CLI lamp sheet; accuracy-report scaffolding.
    - Core tests in §12 pass, except the tungsten test, which needs the De Vos data and moves to step 2.
-2. **Thermal, LED and fluorescent models.** *In progress: incandescent L2 done (2026-10-14).* Incandescent L1–L4, LED L1–L3, fluorescent L1–L2, each with `fit` against references and scores in the accuracy report. No-render studies: colour chart, metameric pairs, CRI/TM-30.
+2. **Thermal, LED and fluorescent models.** *In progress: incandescent L2 and `lss fit` done (2026-10-14).* Incandescent L1–L4, LED L1–L3, fluorescent L1–L2, each with `fit` against references and scores in the accuracy report. No-render studies: colour chart, metameric pairs, CRI/TM-30.
 3. **HID Stage A + B on line-local fine grids.**
    - Voigt profiles, (b, θ) chords, zone spectra.
    - HP-Hg and HPS presets; self-reversal tests.

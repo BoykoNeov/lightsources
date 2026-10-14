@@ -14,6 +14,10 @@ physical:
     reason: >-
       true filament temperature chosen so the level-2 tungsten spectrum has the CCT of
       Illuminant A (2855.7 K); a one-off calibration until `lss fit` replaces it
+    # Plausible for a gas-filled general-service filament (vacuum lamps run near
+    # 2400 K, halogen up to ~3300 K); the top is also where the De Vos emissivity,
+    # extrapolated, stops being defined.
+    bounds: [2400, 3200]
 
 models:
   0: {generator: reference}

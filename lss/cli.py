@@ -1,4 +1,4 @@
-"""Command-line interface (design §13): ``lss refs | lampsheet | accuracy``."""
+"""Command-line interface (design §13): ``lss refs | lampsheet | accuracy | fit``."""
 
 import argparse
 import json
@@ -60,6 +60,26 @@ def _cmd_accuracy(args) -> int:
     return 0
 
 
+def _cmd_fit(args) -> int:
+    from lss.accuracy import fit, references
+    from lss.lamp import lamp as lamps
+
+    lamp = lamps.load(args.lamp)
+    ref = references.get(args.ref) if args.ref else None
+    try:
+        result = fit.fit(lamp, args.level, ref, args.objective, args.param or None)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    if args.json:
+        print(json.dumps(result.as_dict(), indent=2))
+    else:
+        print(fit.format_text(result))
+        print()
+        print(fit.yaml_snippet(result), end="")
+    return 0 if result.success else 1
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="lss", description="Light source simulator")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -78,6 +98,17 @@ def main(argv=None) -> int:
     p = sub.add_parser("accuracy", help="score model levels against references")
     p.add_argument("--update-golden", action="store_true", help="accept current scores as the new baseline")
     p.set_defaults(func=_cmd_accuracy)
+
+    p = sub.add_parser("fit", help="fit a model level's bounded parameters to a reference")
+    p.add_argument("lamp")
+    p.add_argument("--level", type=int, required=True, help="model level to fit")
+    p.add_argument("--ref", help="reference id (default: the lamp's own; see `lss refs`)")
+    p.add_argument("--objective", choices=["spectral", "colour"], default="spectral",
+                   help="spectral: the report's NRMS (default); colour: chromaticity du'v'")
+    p.add_argument("--param", action="append", metavar="NAME",
+                   help="fit only this parameter (repeatable; default: every bounded one)")
+    p.add_argument("--json", action="store_true", help="machine-readable output")
+    p.set_defaults(func=_cmd_fit)
 
     args = parser.parse_args(argv)
     for stream in (sys.stdout, sys.stderr):
