@@ -98,6 +98,10 @@ class ColourRendering:
     ri: dict[int, float]  # special indices R1 … R14
     rf: float  # ANSI/IES TM-30-18 fidelity
     rg: float  # ANSI/IES TM-30-18 gamut
+    # TM-30-18 per hue bin, 16 bins of 22.5° starting at red (the colour-vector graphic's data):
+    rf_h: tuple[float, ...] = ()  # local fidelity Rf,hj
+    rcs_h: tuple[float, ...] = ()  # local chroma shift Rcs,hj in % (−20 = 20 % less chroma)
+    rhs_h: tuple[float, ...] = ()  # local hue shift Rhs,hj (radians)
 
     @property
     def r9(self) -> float:
@@ -112,4 +116,6 @@ def colour_rendering(binned: BinnedSpectrum) -> ColourRendering:
         cri = colour.colour_rendering_index(sd, additional_data=True)
         tm30 = colour.colour_fidelity_index(sd, additional_data=True, method="ANSI/IES TM-30-18")
     ri = {int(i): float(spec.Q_a) for i, spec in cri.Q_as.items()}
-    return ColourRendering(float(cri.Q_a), ri, float(tm30.R_f), float(tm30.R_g))
+    return ColourRendering(float(cri.Q_a), ri, float(tm30.R_f), float(tm30.R_g),
+                           tuple(float(v) for v in tm30.R_fs), tuple(float(v) for v in tm30.R_cs),
+                           tuple(float(v) for v in tm30.R_hs))

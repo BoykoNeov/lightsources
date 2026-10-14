@@ -70,3 +70,15 @@ def test_cli_refs_and_errors(capsys):
     assert cli.main(["refs", "--family", "led"]) == 0
     assert "cie-led-b3" in capsys.readouterr().out
     assert cli.main(["lampsheet", "no_such_lamp"]) == 2
+
+
+def test_sheet_carries_cri_and_tm30_hue_detail():
+    sheet = lampsheet.make(lamps.load("hps_cie_hp1"), 0)
+    assert sorted(sheet.cri_ri) == list(range(1, 15)) and sheet.cri_ri[9] == sheet.r9
+    for key in ("rf", "rcs", "rhs"):
+        assert len(sheet.tm30_hue_bins[key]) == 16
+    # HPS: the reds and greens (bins 1 and 7) lose chroma, the oranges (bins 3-4) gain it.
+    rcs = sheet.tm30_hue_bins["rcs"]
+    assert rcs[0] < 0 and rcs[6] < 0 and max(rcs[2], rcs[3]) > 0
+    text = lampsheet.format_text(sheet)
+    assert "TM-30 by hue" in text and "CRI R1-R14" in text

@@ -86,3 +86,19 @@ def test_luminous_efficacy_of_monochromatic_555nm_is_683():
 def test_rejects_other_grids():
     with pytest.raises(ValueError):
         cm.xy(cie_table("A").__class__(render_grid(), np.ones(len(render_grid())), 0.0, 0.0))
+
+
+def test_tm30_hue_bins_match_the_ies_calculator_for_fl2():
+    # IES TM-30-18 Excel calculator (media.ies.org/docs/errata/TM-30-18_tools_etc.zip) for CIE FL2,
+    # as transcribed in colour-science's own tests (colour/quality/tests/test_tm3018.py). The
+    # calculator rounds to whole numbers (Rcs in %) and hundredths (Rhs in rad); we read the
+    # 5 nm table piecewise linear where it interpolates, hence the tolerance.
+    cr = cm.colour_rendering(cie_table("FL2"))
+    assert cr.rf == pytest.approx(70, abs=0.6)
+    assert cr.rg == pytest.approx(86, abs=0.6)
+    np.testing.assert_allclose(cr.rf_h, [60, 61, 53, 68, 80, 88, 77, 73, 76, 62, 70, 77, 81, 71, 64, 65], atol=1.0)
+    np.testing.assert_allclose(cr.rcs_h, [-25, -18, -9, 5, 11, 4, -8, -15, -17, -15, -4, 5, 11, 7, -6, -16],
+                               atol=1.0)
+    np.testing.assert_allclose(cr.rhs_h, [-0.02, 0.14, 0.24, 0.20, 0.09, -0.07, -0.12, -0.08,
+                                          0.01, 0.17, 0.19, 0.11, -0.08, -0.15, -0.26, -0.17], atol=0.015)
+    assert sorted(cr.ri) == list(range(1, 15))

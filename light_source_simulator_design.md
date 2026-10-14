@@ -294,6 +294,7 @@ Swapping a component recomputes only what depends on it. A generator change touc
 - **Pixel probe:** spectrum arriving at a pixel (from the lighting maps × zone spectra), luminance, chromaticity, CCT.
 - **Surface probe:** irradiance spectrum at a point. Probes are rendered as per-zone unit-spectrum irradiance values, so they re-colour instantly too. Derived quantities: illuminance, CCT/Duv, CRI Ra and R9, TM-30 Rf/Rg, S/P, melanopic EDI, UV dose.
 - **Lamp sheet:** SPD (zone-summed and per zone), radiant and luminous flux, efficacy, CCT/Duv, CRI, TM-30 colour-vector graphic, the parameters and data versions that produced it, and its accuracy score against the reference if one exists.
+  - *Built (step 2):* CRI R1–R14 and TM-30's per-hue numbers (local fidelity, chroma shift and hue shift for each of the 16 hue bins), in text and JSON. They are the colour-vector graphic's data; the graphic itself comes with the viewer (step 6).
 - **No-render studies (instant, no 3D):** colour chart and test samples under a lamp, metameric pairs that match in daylight and split under HPS, CRI/TM-30. These are spectral products of lamp SPD and reflectance.
   - *Built (step 2): colour chart* (`lss chart`, `lss/studies/`). It shows how far each sample's colour moves under the lamp, compared with the same sample under TM-30's reference light at the same CCT. The method is TM-30's: 10° observer, CIECAM02 with full adaptation, CAM02-UCS. So the chart and the lamp sheet's Rf measure the same thing; with TM-30's own 99 samples (`--samples ces`) the chart's mean gives Rf to 0.05. Each shift is split into lightness, chroma and hue. Display colours (`--svg`, lamp over reference) use the 2° observer and CAT02 adaptation to D65.
   - Sample sets (`lss/data/reflectances.yaml`, read from colour-science datasets like the reference SPDs): the ColorChecker (BabelColor average of 30 charts, 380–730 nm at 10 nm), the CRI's TCS01–14 and TM-30's 99 samples. Tables are read piecewise linear and held at their end values beyond their range. That hold is an extrapolation, reported with each chart; the colour-matching functions are below 1 % of their peak there.
@@ -460,7 +461,8 @@ This form keeps the real exit code. The shorter `start /belownormal` form withou
   - CIE Illuminant A → CCT 2856 K, Ra ≈ 100;
   - D65 → (0.3127, 0.3290);
   - E → (1/3, 1/3);
-  - our wrappers agree with `colour-science`.
+  - our wrappers agree with `colour-science`;
+  - TM-30 for CIE FL2 matches the IES TM-30-18 calculator: Rf, Rg and all 16 per-hue fidelity, chroma-shift and hue-shift values.
 - **Tungsten** *(passes, step 2)*: tungsten's selective ε(λ, T) at 2856 K gives a CCT above 2856 K (about 2916 K), while a constant-ε greybody gives exactly the Planck chromaticity. The emissivity table itself must pass a physics check: ε changes monotonically with T at each wavelength, falling at short wavelengths and rising at long ones, with one crossover near 1.25 µm.
 - **LED phosphor layer** *(passes, step 2)*:
   - photon balance: every pump photon leaves the layer or is lost (die reflectance < 1, quantum yield < 1);

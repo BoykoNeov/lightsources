@@ -38,6 +38,8 @@ class LampSheet:
     r9: float
     rf: float
     rg: float
+    cri_ri: dict[int, float]  # CIE 13.3 special indices R1 … R14
+    tm30_hue_bins: dict[str, list[float]]  # TM-30 per hue bin: rf, rcs (%), rhs (rad); 16 bins from red
     ler_lm_per_w: float  # luminous efficacy of the radiation
     ler_basis: str  # what the radiant watts in LER cover
     visible_fraction: float | None  # 380–780 nm share of all-wavelength radiant power
@@ -106,6 +108,8 @@ def make(lamp: Lamp, level: int) -> LampSheet:
         r9=cr.r9,
         rf=cr.rf,
         rg=cr.rg,
+        cri_ri=cr.ri,
+        tm30_hue_bins={"rf": list(cr.rf_h), "rcs": list(cr.rcs_h), "rhs": list(cr.rhs_h)},
         ler_lm_per_w=float(lum / radiant),
         ler_basis=basis,
         visible_fraction=visible,
@@ -134,6 +138,13 @@ def format_text(sheet: LampSheet) -> str:
         row("Duv", f"{sheet.duv:+.4f}"),
         row("CRI Ra / R9", f"{sheet.ra:.1f} / {sheet.r9:.1f}"),
         row("TM-30 Rf / Rg", f"{sheet.rf:.1f} / {sheet.rg:.1f}"),
+        row("CRI R1-R14", " ".join(f"{sheet.cri_ri[i]:.0f}" for i in sorted(sheet.cri_ri))),
+        "",
+        "TM-30 by hue (16 bins of 22.5 deg, from red)",
+        row("hue bin", "".join(f"{j:>6}" for j in range(1, 17))),
+        row("local fidelity Rf,h", "".join(f"{v:6.0f}" for v in sheet.tm30_hue_bins["rf"])),
+        row("chroma shift Rcs,h %", "".join(f"{v:+6.0f}" for v in sheet.tm30_hue_bins["rcs"])),
+        row("hue shift Rhs,h rad", "".join(f"{v:+6.2f}" for v in sheet.tm30_hue_bins["rhs"])),
         "",
         "Power",
         row("efficacy of radiation", f"{sheet.ler_lm_per_w:.1f} lm/W  (radiant W: {sheet.ler_basis})"),
