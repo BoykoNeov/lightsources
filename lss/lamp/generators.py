@@ -8,13 +8,17 @@ Each generator produces bare emission plus whatever it already folds in
 * ``tungsten`` — thermal Level 2: tungsten's measured selective emissivity × Planck.
 * ``led_two_band`` — LED Level 1: a blue pump band plus one asymmetric phosphor band,
   both shaped in photon energy, with fitted shapes.
+* ``led_phosphor_layer`` — LED Level 2: the die's blue light through a layer of a Ce³⁺
+  garnet and a red Eu²⁺ nitride (Beer–Lambert absorption, re-emission, re-absorption),
+  one spectrum per emission-angle zone.
 * ``fluorescent_triband`` — fluorescent Level 1: the visible Hg lines in measured
   ratios plus the rare-earth tri-phosphor blend, with shapes from the shared phosphor
   library and this lamp's own mix.
 """
 
+from lss.lamp import phosphors
 from lss.lamp.profile import EmissionProfile, Zone
-from lss.spectral.continuum import PlanckContinuum
+from lss.spectral.continuum import PlanckContinuum, TabulatedContinuum
 from lss.spectral.spectrum import Spectrum
 
 
@@ -119,6 +123,58 @@ def _led_two_band(lamp, spec) -> EmissionProfile:
     )
 
 
+def _unit(lamp, spec, name, unit, used):
+    p = lamp.parameter(name, spec)
+    if p.unit != unit:
+        raise ValueError(f"{name} must be in {unit}")
+    used[name] = p
+    return p.value
+
+
+#: Reflectance of the die and package under the phosphor layer. A perfect mirror at this
+#: rung: with relative spectra a lower value mainly trades against the optical depths.
+DIE_REFLECTANCE = 1.0
+
+
+def _led_phosphor_layer(lamp, spec) -> EmissionProfile:
+    from lss.physics.led import layer
+
+    used = {}
+
+    def val(name, unit):
+        return _unit(lamp, spec, name, unit, used)
+
+    t_j = val("junction_temperature", "K")
+    pump = layer.die_emission(val("die_peak", "nm"), val("die_fwhm", "nm"), t_j)
+    # The phosphor runs at the junction temperature at this rung (Level 3 heats each part).
+    g_abs, g_em = layer.ce_garnet(val("garnet_zero_phonon", "cm-1"), val("garnet.huang_rhys", "1"),
+                                  val("garnet.phonon_energy", "cm-1"), t_j,
+                                  val("garnet.inhomogeneous_fwhm", "cm-1"), val("garnet.ground_splitting", "cm-1"),
+                                  val("garnet.ratio_2f7_2f5", "1"))
+    n_abs, n_em = layer.eu_nitride(val("nitride.emission_peak", "nm"), val("nitride.emission_fwhm", "nm"),
+                                   val("nitride.absorption_edge", "nm"), val("nitride.edge_width", "cm-1"))
+    phosphors_ = [layer.Phosphor(g_abs, g_em, val("garnet_optical_depth", "1")),
+                  layer.Phosphor(n_abs, n_em, val("nitride_optical_depth", "1"))]
+    out = layer.transfer(pump, phosphors_, die_reflectance=DIE_REFLECTANCE)
+    zones = tuple(
+        Zone(Spectrum.of(TabulatedContinuum(layer.GRID_NM, out.power_per_nm(i)), name=f"LED layer {lo:g}-{hi:g} deg"),
+             shape=f"polar {lo:g}-{hi:g} deg", name=f"emission {lo:g}-{hi:g} deg")
+        for i, (lo, hi) in enumerate(out.zones_deg))
+    return EmissionProfile(
+        zones=zones,
+        power=None,  # relative: no drive current, and the quantum yields are taken as 1
+        includes=frozenset({"phosphor"}),
+        metadata={
+            "generator": "led_phosphor_layer",
+            "level": spec.level,
+            "params": {k: p.as_dict() for k, p in used.items()},
+            "shared": sorted(k for k in used if lamp.reads_from_library(k, spec)),
+            "zones": "polar angle inside the layer; refraction at its surface not modelled",
+            "data_versions": [phosphors.LIBRARY_PATH],
+        },
+    )
+
+
 def _ratio(lamp, spec, name):
     p = lamp.parameter(name, spec)
     if p.unit != "1":
@@ -127,7 +183,6 @@ def _ratio(lamp, spec, name):
 
 
 def _fluorescent_triband(lamp, spec) -> EmissionProfile:
-    from lss.lamp import phosphors
     from lss.physics.discharge import mercury
 
     used = {}
@@ -161,7 +216,7 @@ def _fluorescent_triband(lamp, spec) -> EmissionProfile:
 
 
 GENERATORS = {"reference": _reference, "planck": _planck, "tungsten": _tungsten, "led_two_band": _led_two_band,
-              "fluorescent_triband": _fluorescent_triband}
+              "led_phosphor_layer": _led_phosphor_layer, "fluorescent_triband": _fluorescent_triband}
 
 
 def run(lamp, spec) -> EmissionProfile:

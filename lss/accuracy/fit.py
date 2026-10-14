@@ -239,13 +239,16 @@ def _entry(p: FittedParameter, reason: str) -> list[str]:
 
 
 def _library_block(params: list[FittedParameter], reason: str) -> list[str]:
-    """Library parameters grouped as they sit in lss/data/phosphors.yaml."""
-    out = [f"# lss fit: replace in {phosphors.LIBRARY_PATH}, under phosphors: <phosphor>: bands: <band>:"]
+    """Library parameters grouped as they sit in lss/data/phosphors.yaml: a band phosphor's
+    ``<phosphor>.<band>.<field>`` under its band, an LED phosphor's ``<phosphor>.<constant>``
+    under its ``params``."""
+    out = [f"# lss fit: replace in {phosphors.LIBRARY_PATH}, under phosphors: <phosphor>: bands: <band>: "
+           "or led_phosphors: <phosphor>: params:"]
     groups: dict[str, list[FittedParameter]] = {}
     for p in params:
         groups.setdefault(p.name.rsplit(".", 1)[0], []).append(p)
     for key, ps in groups.items():
-        ph, band = key.split(".", 1)
+        ph, band = key.split(".", 1) if "." in key else (key, "params")
         out.append(f"# {ph} / {band}")
         for p in ps:
             out += _entry(p, reason)

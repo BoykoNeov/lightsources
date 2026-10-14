@@ -1,4 +1,4 @@
-"""Shared phosphor library (``lss/data/phosphors.yaml``, design §4.3 L1).
+"""Shared phosphor library (``lss/data/phosphors.yaml``, design §4.2 L2, §4.3 L1).
 
 A phosphor's emission shape belongs to the phosphor, not to a lamp: every lamp
 using the rare-earth tri-phosphor blend shares the same bands and differs only
@@ -6,6 +6,13 @@ in how much of each phosphor it has. A lamp reads a library parameter by its
 full name, ``<phosphor>.<band>.<field>`` (e.g. ``LAP.7F6.share``), through
 :meth:`lss.lamp.lamp.Lamp.parameter`; a value the lamp sets itself overrides it,
 which is how a fit tries new shapes without editing the library.
+
+Two kinds of entry:
+
+* ``phosphors`` (fluorescent Level 1): emission bands, each a shape plus a share.
+* ``led_phosphors`` (LED Level 2): the constants of a physical model of the
+  phosphor's absorption and emission, named ``<phosphor>.<constant>`` (e.g.
+  ``garnet.huang_rhys``); :mod:`lss.physics.led.layer` says what each means.
 """
 
 from collections.abc import Callable
@@ -45,8 +52,12 @@ def _doc() -> dict:
 
 
 def fitted_to() -> frozenset[str]:
-    """Reference ids the shared shapes were fitted to: scores against them are in-sample."""
-    return frozenset(_doc().get("fitted_to", ()))
+    """Reference ids any shared shape was fitted to: scores against them are in-sample."""
+    doc = _doc()
+    ids = set(doc.get("fitted_to", ()))
+    for ph in (doc.get("led_phosphors") or {}).values():
+        ids.update(ph.get("fitted_to", ()))
+    return frozenset(ids)
 
 
 @lru_cache(maxsize=1)
@@ -70,6 +81,11 @@ def _load() -> tuple[dict[str, Phosphor], dict[str, Parameter]]:
         if ph["main"] not in ph["bands"]:
             raise ValueError(f"{pid}: main band {ph['main']!r} is not one of its bands")
         phosphors[pid] = Phosphor(pid, ph["name"], ph["main"], tuple(bands))
+    for pid, ph in (doc.get("led_phosphors") or {}).items():
+        if "." in pid or pid in phosphors:
+            raise ValueError(f"LED phosphor id {pid!r} contains '.' or repeats a phosphor id")
+        for name, d in ph["params"].items():
+            params[f"{pid}.{name}"] = Parameter.from_dict(d)
     return phosphors, params
 
 

@@ -1,9 +1,10 @@
 """EmissionProfile: what every lamp model produces (design §2).
 
 The renderer never sees a lamp, only zones: fixed grey spatial/angular shapes,
-each with its own spectrum. Step 1 has only one shape, ``isotropic``; real
-zone shapes (bands in impact parameter and angle, emission-angle bands, bands
-along a filament) arrive with the renderer.
+each with its own spectrum. Most lamps have one shape, ``isotropic``. LED
+Level 2 gives emission-angle bands, ``polar <lo>-<hi> deg`` (polar angle inside
+its phosphor layer); the renderer gives these shapes their geometry, and adds
+the rest (bands in impact parameter and angle, bands along a filament).
 """
 
 from dataclasses import dataclass, field

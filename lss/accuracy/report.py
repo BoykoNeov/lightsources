@@ -149,8 +149,9 @@ def score(lamp, level: int, ref=None) -> Row:
     m, r = c.model, c.reference
     from lss.lamp import phosphors
 
+    section = {"led": "§4.2", "fluorescent": "§4.3"}.get(lamp.family, "§4")
     note = ("in-sample: the shared phosphor shapes were fitted to this reference (leave-one-out scores: "
-            "design doc §4.3)") if shared and ref.id in phosphors.fitted_to() else ""
+            f"design doc {section})") if shared and ref.id in phosphors.fitted_to() else ""
     lo, hi = c.range_nm
     md, rd = m.density[c.inside], r.density[c.inside]
     centres = m.grid.centres[c.inside]

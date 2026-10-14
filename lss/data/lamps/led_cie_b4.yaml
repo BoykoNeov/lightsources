@@ -1,0 +1,143 @@
+id: led_cie_b4
+name: Phosphor-converted blue LED, cool white (CIE LED-B4)
+family: led
+reference: cie-led-b4
+
+# A cool-white LED (about 5100 K). Level 1's pump band is the blue that leaks out,
+# so it is Level 1's own; Level 2 derives it from the die and the phosphor layer.
+# Widths follow the convention in lss/physics/led/bands.py: measured on the per-energy shape, in nm.
+physical:
+  # The blue die (read by Level 2; Level 1 fits the leaked blue as its own pump band).
+  die_peak:
+    value: 460.415
+    unit: nm
+    empirical: true
+    reason: >-
+      fitted by `lss fit` (spectral objective) to cie-led-b4, jointly with cie-led-b1,
+      cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS 5.06e-02, du'v'
+      2.4e-04, dCCT -14.30 K
+    # InGaN pump dies for white LEDs ("royal blue") are made at about 440-460 nm; this is
+    # the centre of the die's disorder-broadened band, before its blue Boltzmann tail.
+    bounds: [435, 470]
+  die_fwhm:
+    value: 20.6663
+    unit: nm
+    empirical: true
+    reason: >-
+      fitted by `lss fit` (spectral objective) to cie-led-b4, jointly with cie-led-b1,
+      cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS 5.06e-02, du'v'
+      2.4e-04, dCCT -14.30 K
+    # Blue InGaN emitters are typically 18-25 nm wide; the margin allows broader dies.
+    bounds: [12, 35]
+  junction_temperature:
+    value: 360.328
+    unit: K
+    empirical: true
+    reason: >-
+      fitted by `lss fit` (spectral objective) to cie-led-b4, jointly with cie-led-b1,
+      cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS 5.06e-02, du'v'
+      2.4e-04, dCCT -14.30 K
+    # Sets the die's blue tail (kT) and the phosphor's phonon widths. White LEDs run
+    # their junctions at roughly 25-150 C.
+    bounds: [300, 420]
+
+models:
+  0: {generator: reference}
+  1:
+    generator: led_two_band
+    params:
+      pump_peak:
+        value: 451.428
+        unit: nm
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b4 on 2026-10-14: NRMS
+          6.46e-02, du'v' 4.7e-04, dCCT -12.70 K
+        # InGaN pump dies for white LEDs ("royal blue") are made at about 440-460 nm.
+        bounds: [435, 470]
+      pump_fwhm:
+        value: 26.2613
+        unit: nm
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b4 on 2026-10-14: NRMS
+          6.46e-02, du'v' 4.7e-04, dCCT -12.70 K
+        # Blue InGaN emitters are typically 18-25 nm wide; the margin allows broader dies.
+        bounds: [12, 35]
+      phosphor_peak:
+        value: 576.116
+        unit: nm
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b4 on 2026-10-14: NRMS
+          6.46e-02, du'v' 4.7e-04, dCCT -12.70 K
+        # From green LuAG:Ce (~520 nm) to a red-shifted garnet or blend centre (~650 nm).
+        bounds: [520, 650]
+      phosphor_half_width_short:
+        value: 60.0871
+        unit: nm
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b4 on 2026-10-14: NRMS
+          6.46e-02, du'v' 4.7e-04, dCCT -12.70 K
+        # One Ce3+ garnet band has its longer tail to the red, so this is the narrower
+        # of its two half widths; 80 nm is generous.
+        bounds: [20, 80]
+      phosphor_half_width_long:
+        value: 81.3498
+        unit: nm
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b4 on 2026-10-14: NRMS
+          6.46e-02, du'v' 4.7e-04, dCCT -12.70 K
+        # Ce3+ garnets have the longer tail on the red side, ~60-80 nm.
+        bounds: [30, 120]
+      phosphor_to_pump:
+        value: 3.61486
+        unit: "1"
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b4 on 2026-10-14: NRMS
+          6.46e-02, du'v' 4.7e-04, dCCT -12.70 K
+        # Converted to leaked radiant power: from a bluish cool white to deep warm white.
+        bounds: [0.5, 30]
+  2:
+    # The die's blue light through a layer of a Ce3+ garnet and a red Eu2+ nitride
+    # (lss/physics/led/layer.py): the leaked blue, the garnet-to-nitride balance and the
+    # nitride's take of the garnet's green follow from how much of each the light crosses.
+    # The phosphor constants are shared (lss/data/phosphors.yaml); this lamp sets its
+    # garnet's composition and the two optical depths. The layer does not scatter, so
+    # the depths are effective values.
+    generator: led_phosphor_layer
+    params:
+      garnet_zero_phonon:
+        value: 20277.5
+        unit: cm-1
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b4, jointly with
+          cie-led-b1, cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS
+          5.06e-02, du'v' 2.4e-04, dCCT -14.30 K
+        # Ce3+ zero-phonon line: 20450 cm-1 in YAG (Bachmann et al., Chem. Mater. 21, 2077
+        # (2009)); Lu and Ga raise it (greener), Gd lowers it (more orange).
+        bounds: [19500, 22000]
+      garnet_optical_depth:
+        value: 1.65003
+        unit: "1"
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b4, jointly with
+          cie-led-b1, cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS
+          5.06e-02, du'v' 2.4e-04, dCCT -14.30 K
+        # Along the normal, at the garnet's absorption peak.
+        bounds: [0, 8]
+      nitride_optical_depth:
+        value: 0.0904914
+        unit: "1"
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-led-b4, jointly with
+          cie-led-b1, cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS
+          5.06e-02, du'v' 2.4e-04, dCCT -14.30 K
+        # Along the normal, on the nitride's blue absorption plateau.
+        bounds: [0, 4]

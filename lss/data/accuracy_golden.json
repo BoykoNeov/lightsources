@@ -154,6 +154,130 @@
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.02033867385913995
   },
+  "led_cie_b1@L1": {
+    "band_nrms": {
+      "380-480": 0.13098161083139148,
+      "480-580": 0.09725452151648847,
+      "580-680": 0.04391586014225597,
+      "680-780": 0.11039415038418603
+    },
+    "comparable": true,
+    "delta_cct_k": 46.46721404325535,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": -2.94305939522539,
+    "delta_rf": -2.9539747986615623,
+    "delta_uv_prime": 0.0024492420616406946,
+    "empirical_params": 6,
+    "empirical_shared": 0,
+    "generator": "led_two_band",
+    "lamp_id": "led_cie_b1",
+    "level": 1,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      380.0,
+      780.0
+    ],
+    "reference": "cie-led-b1",
+    "reference_bandpass_nm": 5.0,
+    "reference_sampling_nm": 5.0,
+    "spectral_nrms": 0.08019122256798612
+  },
+  "led_cie_b1@L2": {
+    "band_nrms": {
+      "380-480": 0.07272939779067339,
+      "480-580": 0.011197890560908797,
+      "580-680": 0.007691038328623264,
+      "680-780": 0.02683781013416304
+    },
+    "comparable": true,
+    "delta_cct_k": 14.266903644059767,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": 0.3329136051240482,
+    "delta_rf": 0.18156496258538368,
+    "delta_uv_prime": 0.0006690039813001055,
+    "empirical_params": 14,
+    "empirical_shared": 8,
+    "generator": "led_phosphor_layer",
+    "lamp_id": "led_cie_b1",
+    "level": 2,
+    "normalisation": "equal luminous flux",
+    "note": "in-sample: the shared phosphor shapes were fitted to this reference (leave-one-out scores: design doc \u00a74.2)",
+    "path": "quick",
+    "range_nm": [
+      380.0,
+      780.0
+    ],
+    "reference": "cie-led-b1",
+    "reference_bandpass_nm": 5.0,
+    "reference_sampling_nm": 5.0,
+    "spectral_nrms": 0.016855284078674704
+  },
+  "led_cie_b2@L1": {
+    "band_nrms": {
+      "380-480": 0.1276103196939241,
+      "480-580": 0.08152934781416278,
+      "580-680": 0.030925193646119817,
+      "680-780": 0.06640155668738619
+    },
+    "comparable": true,
+    "delta_cct_k": 28.067793969268678,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": -3.140188614926842,
+    "delta_rf": -2.980222233662971,
+    "delta_uv_prime": 0.001573680780499957,
+    "empirical_params": 6,
+    "empirical_shared": 0,
+    "generator": "led_two_band",
+    "lamp_id": "led_cie_b2",
+    "level": 1,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      380.0,
+      780.0
+    ],
+    "reference": "cie-led-b2",
+    "reference_bandpass_nm": 5.0,
+    "reference_sampling_nm": 5.0,
+    "spectral_nrms": 0.06693626434126607
+  },
+  "led_cie_b2@L2": {
+    "band_nrms": {
+      "380-480": 0.08764000875764028,
+      "480-580": 0.011378954084595765,
+      "580-680": 0.007788502645686938,
+      "680-780": 0.027247685993973984
+    },
+    "comparable": true,
+    "delta_cct_k": -12.341464451479169,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": 0.07272247201893833,
+    "delta_rf": 0.06017398371093918,
+    "delta_uv_prime": 0.0005982347806768341,
+    "empirical_params": 14,
+    "empirical_shared": 8,
+    "generator": "led_phosphor_layer",
+    "lamp_id": "led_cie_b2",
+    "level": 2,
+    "normalisation": "equal luminous flux",
+    "note": "in-sample: the shared phosphor shapes were fitted to this reference (leave-one-out scores: design doc \u00a74.2)",
+    "path": "quick",
+    "range_nm": [
+      380.0,
+      780.0
+    ],
+    "reference": "cie-led-b2",
+    "reference_bandpass_nm": 5.0,
+    "reference_sampling_nm": 5.0,
+    "spectral_nrms": 0.021435438236057376
+  },
   "led_cie_b3@L1": {
     "band_nrms": {
       "380-480": 0.10220030632847238,
@@ -185,6 +309,99 @@
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.08085197030486689
   },
+  "led_cie_b3@L2": {
+    "band_nrms": {
+      "380-480": 0.062342465447768884,
+      "480-580": 0.014263457997691997,
+      "580-680": 0.015697008393878307,
+      "680-780": 0.053167584916602235
+    },
+    "comparable": true,
+    "delta_cct_k": -11.587338912862833,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": -0.5674666708396359,
+    "delta_rf": -0.34077171894887215,
+    "delta_uv_prime": 0.0002677572842742503,
+    "empirical_params": 14,
+    "empirical_shared": 8,
+    "generator": "led_phosphor_layer",
+    "lamp_id": "led_cie_b3",
+    "level": 2,
+    "normalisation": "equal luminous flux",
+    "note": "in-sample: the shared phosphor shapes were fitted to this reference (leave-one-out scores: design doc \u00a74.2)",
+    "path": "quick",
+    "range_nm": [
+      380.0,
+      780.0
+    ],
+    "reference": "cie-led-b3",
+    "reference_bandpass_nm": 5.0,
+    "reference_sampling_nm": 5.0,
+    "spectral_nrms": 0.02793309235690177
+  },
+  "led_cie_b4@L1": {
+    "band_nrms": {
+      "380-480": 0.09967056578701228,
+      "480-580": 0.05187433249151756,
+      "580-680": 0.023193269934614312,
+      "680-780": 0.10119109286504224
+    },
+    "comparable": true,
+    "delta_cct_k": -12.690370497090044,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": -1.2377606842261315,
+    "delta_rf": -0.7071632777817882,
+    "delta_uv_prime": 0.0004705540188116046,
+    "empirical_params": 6,
+    "empirical_shared": 0,
+    "generator": "led_two_band",
+    "lamp_id": "led_cie_b4",
+    "level": 1,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      380.0,
+      780.0
+    ],
+    "reference": "cie-led-b4",
+    "reference_bandpass_nm": 5.0,
+    "reference_sampling_nm": 5.0,
+    "spectral_nrms": 0.06457855284915325
+  },
+  "led_cie_b4@L2": {
+    "band_nrms": {
+      "380-480": 0.0656339804943772,
+      "480-580": 0.0490252048514117,
+      "580-680": 0.005525360879842188,
+      "680-780": 0.1299663785459924
+    },
+    "comparable": true,
+    "delta_cct_k": -14.336821416089151,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": -0.010971211411813897,
+    "delta_rf": 0.18939355374506306,
+    "delta_uv_prime": 0.00024051550336282336,
+    "empirical_params": 14,
+    "empirical_shared": 8,
+    "generator": "led_phosphor_layer",
+    "lamp_id": "led_cie_b4",
+    "level": 2,
+    "normalisation": "equal luminous flux",
+    "note": "in-sample: the shared phosphor shapes were fitted to this reference (leave-one-out scores: design doc \u00a74.2)",
+    "path": "quick",
+    "range_nm": [
+      380.0,
+      780.0
+    ],
+    "reference": "cie-led-b4",
+    "reference_bandpass_nm": 5.0,
+    "reference_sampling_nm": 5.0,
+    "spectral_nrms": 0.050568695979254556
+  },
   "led_cie_b5@L1": {
     "band_nrms": {
       "380-480": 0.0921479135711781,
@@ -215,5 +432,36 @@
     "reference_bandpass_nm": 5.0,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.061429917608381956
+  },
+  "led_cie_b5@L2": {
+    "band_nrms": {
+      "380-480": 0.06874250341687527,
+      "480-580": 0.023408185005528253,
+      "580-680": 0.0250709072385439,
+      "680-780": 0.08105821542147354
+    },
+    "comparable": true,
+    "delta_cct_k": 9.706529746272281,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": 0.20191071351020184,
+    "delta_rf": 0.23594273888201656,
+    "delta_uv_prime": 0.0005876819332083714,
+    "empirical_params": 14,
+    "empirical_shared": 8,
+    "generator": "led_phosphor_layer",
+    "lamp_id": "led_cie_b5",
+    "level": 2,
+    "normalisation": "equal luminous flux",
+    "note": "in-sample: the shared phosphor shapes were fitted to this reference (leave-one-out scores: design doc \u00a74.2)",
+    "path": "quick",
+    "range_nm": [
+      380.0,
+      780.0
+    ],
+    "reference": "cie-led-b5",
+    "reference_bandpass_nm": 5.0,
+    "reference_sampling_nm": 5.0,
+    "spectral_nrms": 0.04702259449588001
   }
 }

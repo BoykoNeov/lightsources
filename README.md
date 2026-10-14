@@ -19,7 +19,10 @@ lss accuracy                     # score models against references
 lss fit incandescent_cie_a --level 2   # fit a level's bounded parameters to its reference
 lss fit fluorescent_cie_fl10 fluorescent_cie_fl11 fluorescent_cie_fl12 --level 1
                                  # joint fit of the shared phosphor shapes
-lss fit fluorescent_cie_fl10 fluorescent_cie_fl11 fluorescent_cie_fl12 --level 1 \n    --hold-out fluorescent_cie_fl12  # out-of-sample score for one lamp
+lss fit fluorescent_cie_fl10 fluorescent_cie_fl11 fluorescent_cie_fl12 --level 1 \
+    --hold-out fluorescent_cie_fl12  # out-of-sample score for one lamp
+lss fit led_cie_b1 led_cie_b2 led_cie_b3 led_cie_b4 led_cie_b5 --level 2
+                                 # LED phosphor layer: shared garnet and nitride constants
 ```
 
 ## Tests
