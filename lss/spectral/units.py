@@ -23,7 +23,7 @@ C2 = H * C / K_B  # second radiation constant, m·K
 WIEN_B = 2.897771955e-3  # Wien displacement constant, m·K
 
 #: Legacy second radiation constant used by the definition of CIE Illuminant A
-#: (CIE 15:2018, §3.1.1). Only for reproducing that definition, never for physics.
+#: (CIE 15:2018; ISO 11664-2). Only for reproducing that definition, never for physics.
 C2_CIE_ILLUMINANT_A = 1.435e-2
 
 K_M = 683.0  # maximum luminous efficacy for photopic vision, lm/W (CIE)

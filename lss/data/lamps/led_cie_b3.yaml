@@ -1,0 +1,7 @@
+id: led_cie_b3
+name: Phosphor-converted blue LED (CIE LED-B3)
+family: led
+reference: cie-led-b3
+
+models:
+  0: {generator: reference}

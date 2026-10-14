@@ -1,0 +1,7 @@
+id: hps_cie_hp1
+name: Standard high-pressure sodium lamp (CIE HP1)
+family: hid
+reference: cie-hp1
+
+models:
+  0: {generator: reference}

@@ -1,0 +1,69 @@
+# Reference spectra library (design §11). Level 0 of every lamp family draws from here,
+# and the accuracy report scores every other level against these entries.
+#
+# Fields
+#   id           stable identifier used by lamp presets and the CLI (ref:<id>)
+#   family       incandescent | fluorescent | hid | led
+#   description  what the spectrum represents
+#   source       where the numbers come from; type colour-science reads the named
+#                dataset shipped with the colour-science package (no copied data)
+#   kind         representative-table | definition | measurement
+#   sampling_nm  spacing of the table. Features narrower than about twice this
+#                (HPS self-reversal, line shapes) are NOT checked by this reference.
+#   uncertainty  stated measurement uncertainty, or "not stated"
+#   includes     components already folded into the spectrum
+#                (phosphor, envelope, reflector, luminaire)
+#   citation     publication
+#
+# The CIE 15:2018 tables are starters: typical examples, relative, 5 nm, mostly
+# 380-780 nm, not measurements of a specific lamp. Fine for chromaticity, CCT and
+# colour rendering; too coarse for line-shape physics (roadmap step 3 needs real,
+# finely resolved measurements, see the design's open questions).
+
+defaults:
+  kind: representative-table
+  sampling_nm: 5
+  uncertainty: not stated
+  citation: "CIE 15:2018 Colorimetry, 4th ed. (via colour-science SDS_ILLUMINANTS)"
+
+references:
+  - id: cie-a
+    family: incandescent
+    description: CIE Illuminant A, representing a gas-filled tungsten lamp (Planck at 2856 K)
+    source: {type: colour-science, key: A}
+    kind: definition
+    uncertainty: exact by definition
+    citation: "CIE 15:2018; ISO 11664-2 (via colour-science SDS_ILLUMINANTS)"
+    includes: []
+
+  # Fluorescent: halophosphate (FL1-FL6), broadband (FL7-FL9), three-band (FL10-FL12)
+  - {id: cie-fl1, family: fluorescent, description: "CIE FL1, standard halophosphate (daylight)", source: {type: colour-science, key: FL1}, includes: [phosphor, envelope]}
+  - {id: cie-fl2, family: fluorescent, description: "CIE FL2, standard halophosphate (cool white)", source: {type: colour-science, key: FL2}, includes: [phosphor, envelope]}
+  - {id: cie-fl3, family: fluorescent, description: "CIE FL3, standard halophosphate (white)", source: {type: colour-science, key: FL3}, includes: [phosphor, envelope]}
+  - {id: cie-fl4, family: fluorescent, description: "CIE FL4, standard halophosphate (warm white)", source: {type: colour-science, key: FL4}, includes: [phosphor, envelope]}
+  - {id: cie-fl5, family: fluorescent, description: "CIE FL5, standard halophosphate (daylight)", source: {type: colour-science, key: FL5}, includes: [phosphor, envelope]}
+  - {id: cie-fl6, family: fluorescent, description: "CIE FL6, standard halophosphate (lite white)", source: {type: colour-science, key: FL6}, includes: [phosphor, envelope]}
+  - {id: cie-fl7, family: fluorescent, description: "CIE FL7, broadband (D65 simulator)", source: {type: colour-science, key: FL7}, includes: [phosphor, envelope]}
+  - {id: cie-fl8, family: fluorescent, description: "CIE FL8, broadband (D50 simulator)", source: {type: colour-science, key: FL8}, includes: [phosphor, envelope]}
+  - {id: cie-fl9, family: fluorescent, description: "CIE FL9, broadband (cool white deluxe)", source: {type: colour-science, key: FL9}, includes: [phosphor, envelope]}
+  - {id: cie-fl10, family: fluorescent, description: "CIE FL10, three-band (rare-earth tri-phosphor)", source: {type: colour-science, key: FL10}, includes: [phosphor, envelope]}
+  - {id: cie-fl11, family: fluorescent, description: "CIE FL11, three-band (rare-earth tri-phosphor)", source: {type: colour-science, key: FL11}, includes: [phosphor, envelope]}
+  - {id: cie-fl12, family: fluorescent, description: "CIE FL12, three-band (rare-earth tri-phosphor)", source: {type: colour-science, key: FL12}, includes: [phosphor, envelope]}
+
+  # High-pressure discharge
+  - {id: cie-hp1, family: hid, description: "CIE HP1, standard high-pressure sodium", source: {type: colour-science, key: HP1}, includes: [envelope]}
+  - {id: cie-hp2, family: hid, description: "CIE HP2, colour-enhanced high-pressure sodium", source: {type: colour-science, key: HP2}, includes: [envelope]}
+  - {id: cie-hp3, family: hid, description: "CIE HP3, high-pressure metal halide", source: {type: colour-science, key: HP3}, includes: [envelope]}
+  - {id: cie-hp4, family: hid, description: "CIE HP4, high-pressure metal halide", source: {type: colour-science, key: HP4}, includes: [envelope]}
+  - {id: cie-hp5, family: hid, description: "CIE HP5, high-pressure metal halide", source: {type: colour-science, key: HP5}, includes: [envelope]}
+
+  # LED
+  - {id: cie-led-b1, family: led, description: "CIE LED-B1, phosphor-converted blue", source: {type: colour-science, key: LED-B1}, includes: [phosphor]}
+  - {id: cie-led-b2, family: led, description: "CIE LED-B2, phosphor-converted blue", source: {type: colour-science, key: LED-B2}, includes: [phosphor]}
+  - {id: cie-led-b3, family: led, description: "CIE LED-B3, phosphor-converted blue", source: {type: colour-science, key: LED-B3}, includes: [phosphor]}
+  - {id: cie-led-b4, family: led, description: "CIE LED-B4, phosphor-converted blue", source: {type: colour-science, key: LED-B4}, includes: [phosphor]}
+  - {id: cie-led-b5, family: led, description: "CIE LED-B5, phosphor-converted blue", source: {type: colour-science, key: LED-B5}, includes: [phosphor]}
+  - {id: cie-led-bh1, family: led, description: "CIE LED-BH1, hybrid: phosphor-converted blue plus red LED", source: {type: colour-science, key: LED-BH1}, includes: [phosphor]}
+  - {id: cie-led-rgb1, family: led, description: "CIE LED-RGB1, red-green-blue mixing", source: {type: colour-science, key: LED-RGB1}, includes: []}
+  - {id: cie-led-v1, family: led, description: "CIE LED-V1, phosphor-converted violet", source: {type: colour-science, key: LED-V1}, includes: [phosphor]}
+  - {id: cie-led-v2, family: led, description: "CIE LED-V2, phosphor-converted violet", source: {type: colour-science, key: LED-V2}, includes: [phosphor]}

@@ -1,0 +1,7 @@
+id: fluorescent_cie_fl11
+name: Three-band fluorescent lamp (CIE FL11)
+family: fluorescent
+reference: cie-fl11
+
+models:
+  0: {generator: reference}

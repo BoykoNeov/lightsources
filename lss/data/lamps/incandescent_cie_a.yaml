@@ -1,0 +1,14 @@
+id: incandescent_cie_a
+name: Gas-filled tungsten lamp at 2856 K (CIE Illuminant A)
+family: incandescent
+reference: cie-a
+
+physical:
+  filament_temperature:
+    value: 2856
+    unit: K
+    source: "CIE 15:2018 / ISO 11664-2: distribution temperature defining Illuminant A"
+
+models:
+  0: {generator: reference}
+  1: {generator: planck}   # blackbody at filament_temperature
