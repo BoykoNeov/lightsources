@@ -25,6 +25,7 @@
       780.0
     ],
     "reference": "cie-a",
+    "reference_bandpass_nm": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.0003093947968980765
   },
@@ -54,23 +55,24 @@
       780.0
     ],
     "reference": "cie-a",
+    "reference_bandpass_nm": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.02033867385913995
   },
   "led_cie_b3@L1": {
     "band_nrms": {
-      "380-480": 0.10326566268014772,
-      "480-580": 0.0794244015686587,
-      "580-680": 0.04935784836401041,
-      "680-780": 0.1340534039788347
+      "380-480": 0.10220030632847238,
+      "480-580": 0.07907114611605864,
+      "580-680": 0.049405155163154184,
+      "680-780": 0.1339269584961048
     },
     "comparable": true,
-    "delta_cct_k": 29.620183174462,
+    "delta_cct_k": 29.98190827893268,
     "delta_efficacy": null,
     "delta_flux": null,
-    "delta_ra": -5.216730816417368,
-    "delta_rf": -4.265454088289573,
-    "delta_uv_prime": 0.002294616817087116,
+    "delta_ra": -5.21575925334605,
+    "delta_rf": -4.261332804327495,
+    "delta_uv_prime": 0.0023025998692078726,
     "empirical_params": 6,
     "generator": "led_two_band",
     "lamp_id": "led_cie_b3",
@@ -83,23 +85,24 @@
       780.0
     ],
     "reference": "cie-led-b3",
+    "reference_bandpass_nm": 5.0,
     "reference_sampling_nm": 5.0,
-    "spectral_nrms": 0.08118386026981135
+    "spectral_nrms": 0.08085197030486689
   },
   "led_cie_b5@L1": {
     "band_nrms": {
-      "380-480": 0.09404193532230277,
-      "480-580": 0.034418367555968304,
-      "580-680": 0.01719057430471441,
-      "680-780": 0.07244389148028471
+      "380-480": 0.0921479135711781,
+      "480-580": 0.034728980849878265,
+      "580-680": 0.01688905288902287,
+      "680-780": 0.07049927815553719
     },
     "comparable": true,
-    "delta_cct_k": -39.86271898746418,
+    "delta_cct_k": -38.93771551151076,
     "delta_efficacy": null,
     "delta_flux": null,
-    "delta_ra": -0.8016625712226215,
-    "delta_rf": -0.5855222797721211,
-    "delta_uv_prime": 0.0007035541129294723,
+    "delta_ra": -0.7742646502447172,
+    "delta_rf": -0.5581404550966766,
+    "delta_uv_prime": 0.000670825311334043,
     "empirical_params": 6,
     "generator": "led_two_band",
     "lamp_id": "led_cie_b5",
@@ -112,7 +115,8 @@
       780.0
     ],
     "reference": "cie-led-b5",
+    "reference_bandpass_nm": 5.0,
     "reference_sampling_nm": 5.0,
-    "spectral_nrms": 0.062302696700268584
+    "spectral_nrms": 0.061429917608381956
   }
 }

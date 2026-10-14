@@ -10,6 +10,10 @@
 #   kind         representative-table | definition | measurement
 #   sampling_nm  spacing of the table. Features narrower than about twice this
 #                (HPS self-reversal, line shapes) are NOT checked by this reference.
+#   bandpass_nm  FWHM of the triangular bandpass the table was recorded with, or null
+#                when no instrument blurred it (a definition). Before scoring, a model
+#                is sampled the same way, so its lines spread over neighbouring
+#                nodes exactly as the lamp's did in the table.
 #   uncertainty  stated measurement uncertainty, or "not stated"
 #   includes     components already folded into the spectrum
 #                (phosphor, envelope, reflector, luminaire)
@@ -23,6 +27,12 @@
 defaults:
   kind: representative-table
   sampling_nm: 5
+  # Assumed: CIE 15 does not state it, but a triangle of FWHM equal to the step is the
+  # usual spectroradiometer setting, and the FL11 table bears it out. Above a straight
+  # background, the Hg 435.83 nm line puts 0.21 of its 435 nm value on the 440 nm node
+  # and nothing on 430 nm (a 5 nm triangle predicts 0.20 and 0; a 7.5 nm one 0.50 and
+  # 0.25). The 404.66 nm line: 0.05 on 400 nm, 0.01 on 410 nm (5 nm: 0.07, 0).
+  bandpass_nm: 5
   uncertainty: not stated
   citation: "CIE 15:2018 Colorimetry, 4th ed. (via colour-science SDS_ILLUMINANTS)"
 
@@ -32,6 +42,7 @@ references:
     description: CIE Illuminant A, representing a gas-filled tungsten lamp (Planck at 2856 K)
     source: {type: colour-science, key: A}
     kind: definition
+    bandpass_nm: null  # Planck's law at 2856 K: no instrument blurred it
     uncertainty: exact by definition
     citation: "CIE 15:2018; ISO 11664-2 (via colour-science SDS_ILLUMINANTS)"
     includes: []

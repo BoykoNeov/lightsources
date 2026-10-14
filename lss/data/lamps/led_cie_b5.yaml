@@ -8,23 +8,23 @@ reference: cie-led-b5
 # convention in lss/physics/led/bands.py: measured on the per-energy shape, in nm.
 physical:
   pump_peak:
-    value: 451.991
+    value: 451.943
     unit: nm
     empirical: true
     reason: >-
-      fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.23e-02,
-      du'v' 7.0e-04, dCCT -39.87 K
+      fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.14e-02,
+      du'v' 6.7e-04, dCCT -38.91 K
     # InGaN pump dies for white LEDs ("royal blue") are made at about 440-460 nm.
     bounds: [435, 470]
   pump_fwhm:
-    value: 27.0136
+    value: 26.098
     unit: nm
     empirical: true
     reason: >-
-      fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.23e-02,
-      du'v' 7.0e-04, dCCT -39.87 K. Wider than the 18-25 nm usual for InGaN.
-      Reading the 5 nm table accounts for only ~0.5 nm of that (measured by refitting
-      this model sampled at 5 nm); the rest is a pump shape a Gaussian does not match.
+      fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.14e-02,
+      du'v' 6.7e-04, dCCT -38.91 K. Wider than the 18-25 nm usual for InGaN.
+      Not table blur: the model is scored through the table's 5 nm bandpass, which took
+      ~0.9 nm off this width. The rest is a pump shape a Gaussian does not match.
     # Blue InGaN emitters are typically 18-25 nm wide; the margin allows broader dies.
     bounds: [12, 35]
 
@@ -34,39 +34,39 @@ models:
     generator: led_two_band
     params:
       phosphor_peak:
-        value: 572.282
+        value: 572.325
         unit: nm
         empirical: true
         reason: >-
-          fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.23e-02,
-          du'v' 7.0e-04, dCCT -39.87 K
+          fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.14e-02,
+          du'v' 6.7e-04, dCCT -38.91 K
         # From green LuAG:Ce (~520 nm) to a red-shifted garnet or blend centre (~650 nm).
         bounds: [520, 650]
       phosphor_half_width_short:
-        value: 65.6893
+        value: 65.7935
         unit: nm
         empirical: true
         reason: >-
-          fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.23e-02,
-          du'v' 7.0e-04, dCCT -39.87 K
+          fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.14e-02,
+          du'v' 6.7e-04, dCCT -38.91 K
         # One Ce3+ garnet band has its longer tail to the red, so this is the narrower
         # of its two half widths; 80 nm is generous.
         bounds: [20, 80]
       phosphor_half_width_long:
-        value: 77.4882
+        value: 77.3509
         unit: nm
         empirical: true
         reason: >-
-          fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.23e-02,
-          du'v' 7.0e-04, dCCT -39.87 K
+          fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.14e-02,
+          du'v' 6.7e-04, dCCT -38.91 K
         # Ce3+ garnets have the longer tail on the red side, ~60-80 nm.
         bounds: [30, 120]
       phosphor_to_pump:
-        value: 2.89298
+        value: 2.90056
         unit: "1"
         empirical: true
         reason: >-
-          fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.23e-02,
-          du'v' 7.0e-04, dCCT -39.87 K
+          fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.14e-02,
+          du'v' 6.7e-04, dCCT -38.91 K
         # Converted to leaked radiant power: from a bluish cool white to deep warm white.
         bounds: [0.5, 30]

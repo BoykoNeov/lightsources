@@ -8,6 +8,10 @@ Rules
   listed as not comparable rather than scored wrongly.
 * **Only where the reference has data.** Both spectra are cut to the
   reference's valid range by an exact window, never extrapolated.
+* **At the reference's resolution.** A table recorded with a bandpass (the CIE
+  5 nm tables) spread each lamp line over its neighbouring nodes; the model is
+  sampled through the same triangular bandpass before scoring, so a sharp line
+  is not scored against a smeared one. Lamp sheets never see this step.
 * **Equal luminous flux** normalisation (recorded in every row).
 * **Golden file.** Scores are stored in ``lss/data/accuracy_golden.json``. Any
   error that grows beyond tolerance, a lost row, or a new empirical parameter
@@ -24,6 +28,7 @@ import numpy as np
 from lss.accuracy import references
 from lss.lamp import lamp as lamps
 from lss.spectral import colorimetry as cm
+from lss.spectral.bandpass import as_recorded
 from lss.spectral.filters import Transmission
 from lss.spectral.grids import analysis_grid
 from lss.spectral.spectrum import BinnedSpectrum
@@ -54,6 +59,7 @@ class Row:
     normalisation: str = NORMALISATION
     range_nm: tuple[float, float] | None = None
     reference_sampling_nm: float | None = None
+    reference_bandpass_nm: float | None = None  # the model was sampled through it
     spectral_nrms: float | None = None
     band_nrms: dict[str, float] | None = None
     delta_uv_prime: float | None = None
@@ -105,7 +111,10 @@ def compare(profile, ref) -> Comparison:
     # Score only where the reference has data and the colour tables exist.
     lo, hi = max(ref.valid_range[0], grid.lo), min(ref.valid_range[1], grid.hi)
     window = _window(lo, hi)
-    m = profile.spectrum.filtered(window).bin(grid)
+    model = profile.spectrum
+    if ref.bandpass_nm is not None:
+        model = as_recorded(model, ref.nodes)
+    m = model.filtered(window).bin(grid)
     r = ref.spectrum.filtered(window).bin(grid)
     k = cm.luminous(r) / cm.luminous(m)
     m = type(m)(m.grid, m.values * k, m.below * k, m.above * k, r.quantity)
@@ -144,6 +153,7 @@ def score(lamp, level: int, ref=None) -> Row:
         path="quick",
         range_nm=(lo, hi),
         reference_sampling_nm=ref.sampling_nm,
+        reference_bandpass_nm=ref.bandpass_nm,
         spectral_nrms=_nrms(md, rd),
         band_nrms=bands,
         delta_uv_prime=float(np.hypot(*(cm.uv_prime(m) - cm.uv_prime(r)))),
@@ -177,7 +187,10 @@ def format_text(rows: list[Row]) -> str:
         out.append(f"{r.key:<28}{r.reference:<12}{r.spectral_nrms:>9.2e}{r.delta_uv_prime:>10.1e}"
                    f"{r.delta_cct_k:>+9.2f}{r.delta_ra:>+7.2f}{r.delta_rf:>+7.2f}{r.empirical_params:>5}")
         out.append(f"{'':<28}range {r.range_nm[0]:g}-{r.range_nm[1]:g} nm, reference sampled every "
-                   f"{r.reference_sampling_nm:g} nm; band NRMS "
+                   f"{r.reference_sampling_nm:g} nm"
+                   + (f" (model seen through its {r.reference_bandpass_nm:g} nm bandpass)"
+                      if r.reference_bandpass_nm else "")
+                   + "; band NRMS "
                    + ", ".join(f"{b}: {v:.1e}" for b, v in r.band_nrms.items()))
     if not rows:
         out.append("(no model levels above Level 0 yet)")

@@ -32,6 +32,16 @@ class Reference:
     includes: frozenset[str]
     citation: str
     data_version: str
+    #: FWHM of the triangular bandpass the table was recorded with (nm), or None for a
+    #: spectrum no instrument blurred (a definition). Models are compared with the
+    #: table only after the same sampling (lss.spectral.bandpass).
+    bandpass_nm: float | None = None
+
+    @property
+    def nodes(self) -> np.ndarray:
+        """The table's wavelengths."""
+        lo, hi = self.valid_range
+        return lo + self.sampling_nm * np.arange(int(round((hi - lo) / self.sampling_nm)) + 1)
 
 
 def _colour_dataset(key: str):
@@ -41,6 +51,17 @@ def _colour_dataset(key: str):
 
     sd = colour.SDS_ILLUMINANTS[key]
     return np.asarray(sd.wavelengths, float), np.asarray(sd.values, float), f"colour-science {colour.__version__}"
+
+
+def _bandpass(e: dict, lam: np.ndarray) -> float | None:
+    bp = e.get("bandpass_nm")
+    if bp is None:
+        return None
+    bp = float(bp)
+    steps = np.diff(lam)
+    if not np.allclose(steps, e["sampling_nm"]) or bp != float(e["sampling_nm"]):
+        raise ValueError(f"{e['id']}: a bandpass is supported only with FWHM equal to an even table step")
+    return bp
 
 
 def _load_entry(entry: dict, defaults: dict) -> Reference:
@@ -65,6 +86,7 @@ def _load_entry(entry: dict, defaults: dict) -> Reference:
         includes=includes,
         citation=e["citation"],
         data_version=f"{version}, dataset {src['key']}",
+        bandpass_nm=_bandpass(e, lam),
     )
 
 
