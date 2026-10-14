@@ -22,9 +22,10 @@ physical:
     empirical: true
     reason: >-
       fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.23e-02,
-      du'v' 7.0e-04, dCCT -39.87 K. The reference is a 5 nm table read piecewise
-      linearly, which flattens a ~20 nm peak, so this width is probably biased wide.
-    # Blue InGaN emitters are 18-25 nm wide; the margin allows for the coarse table.
+      du'v' 7.0e-04, dCCT -39.87 K. Wider than the 18-25 nm usual for InGaN.
+      Reading the 5 nm table accounts for only ~0.5 nm of that (measured by refitting
+      this model sampled at 5 nm); the rest is a pump shape a Gaussian does not match.
+    # Blue InGaN emitters are typically 18-25 nm wide; the margin allows broader dies.
     bounds: [12, 35]
 
 models:
@@ -48,7 +49,8 @@ models:
         reason: >-
           fitted by `lss fit` (spectral objective) to cie-led-b5 on 2026-10-14: NRMS 6.23e-02,
           du'v' 7.0e-04, dCCT -39.87 K
-        # A single Ce3+ garnet band is ~45-55 nm on its short side; 80 nm is generous.
+        # One Ce3+ garnet band has its longer tail to the red, so this is the narrower
+        # of its two half widths; 80 nm is generous.
         bounds: [20, 80]
       phosphor_half_width_long:
         value: 77.4882
