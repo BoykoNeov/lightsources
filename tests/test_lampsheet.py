@@ -40,6 +40,16 @@ def test_reference_sheet_states_its_limits():
     assert sheet.includes == ["envelope"]
     text = lampsheet.format_text(sheet)
     assert "not available" in text and "380-780 nm" in text
+    assert "NOT comparable" in text
+
+
+def test_tungsten_sheet_flags_its_partial_range_efficacy():
+    # Level 2 knows ε only over 300-2500 nm, so its efficacy must not pass as an all-wavelength value.
+    sheet = lampsheet.make(lamps.load("incandescent_cie_a"), 2)
+    assert sheet.ler_basis.startswith("300-2500 nm only")
+    assert sheet.visible_fraction is None
+    assert "NOT comparable" in lampsheet.format_text(sheet)
+    assert "NOT comparable" not in lampsheet.format_text(lampsheet.make(lamps.load("incandescent_cie_a"), 1))
 
 
 def test_cli_lampsheet_json(capsys):

@@ -133,6 +133,8 @@ def format_text(sheet: LampSheet) -> str:
         "Power",
         row("efficacy of radiation", f"{sheet.ler_lm_per_w:.1f} lm/W  (radiant W: {sheet.ler_basis})"),
     ]
+    if sheet.visible_fraction is None:
+        lines.append(row("", "partial-range value: NOT comparable with all-wavelength efficacies"))
     if sheet.visible_fraction is not None:
         lines.append(row("radiant share 380-780 nm", f"{100 * sheet.visible_fraction:.1f} %"))
     if sheet.radiant_flux_w is None:

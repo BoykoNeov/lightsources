@@ -11,9 +11,12 @@ from lss.spectral.grids import analysis_grid
 from lss.spectral.spectrum import Spectrum
 
 # Independent readings of De Vos's curves, used only to check the adopted table.
-# TPRC vol. 7 (1970) table 234 curve 18 (De Vos 1600 K), as served by EKHI.
-TPRC_1600K = {300: 0.482, 400: 0.481, 500: 0.469, 600: 0.456, 700: 0.444, 800: 0.432, 900: 0.412,
-              1000: 0.390, 1600: 0.263, 1800: 0.234, 2000: 0.210, 2200: 0.190}
+# TPRC vol. 7 (1970) table 234 curve 18 (De Vos 1600 K), as served by EKHI. Its points
+# fall between the adopted table's rows too, so this also checks the interpolation.
+TPRC_1600K = {300: 0.482, 320: 0.478, 350: 0.479, 370: 0.482, 400: 0.481, 420: 0.478, 450: 0.474,
+              500: 0.469, 550: 0.464, 600: 0.456, 650: 0.450, 700: 0.444, 750: 0.438, 800: 0.432,
+              900: 0.412, 1000: 0.390, 1200: 0.344, 1270: 0.328, 1350: 0.310, 1500: 0.280, 1600: 0.263,
+              1800: 0.234, 2000: 0.210, 2200: 0.190, 2400: 0.176}
 # Kravchenko & Mamuta (2023) table 2, De Vos re-digitised and extrapolated to 3000 K.
 KRAVCHENKO_3000K = {300: 0.452, 500: 0.445, 600: 0.430, 700: 0.415, 800: 0.396, 900: 0.380, 1000: 0.366,
                     1100: 0.350, 1400: 0.315, 1600: 0.296, 1800: 0.281, 2000: 0.265, 2200: 0.253, 2500: 0.237}
@@ -34,9 +37,12 @@ def test_table_obeys_tungsten_physics():
     assert np.all(np.diff(tab.values[vis_ir], axis=0) < 0)
 
 
-def test_agrees_with_independent_tprc_reading():
+def test_agrees_with_independent_tprc_reading_including_between_rows():
+    # 0.002 from 400 nm up; below, the table's 100 nm steps miss a small dip (~0.004 at 320 nm).
     lam = np.array(list(TPRC_1600K))
-    np.testing.assert_allclose(tungsten.emissivity(lam, 1600.0), list(TPRC_1600K.values()), atol=0.002)
+    err = np.abs(tungsten.emissivity(lam, 1600.0) - np.array(list(TPRC_1600K.values())))
+    assert np.all(err[lam >= 400] <= 0.002 + 1e-12)
+    assert np.all(err[lam < 400] <= 0.004)
 
 
 def test_linear_extrapolation_agrees_with_kravchenko_3000k():
