@@ -80,6 +80,10 @@ def main(argv=None) -> int:
     p.set_defaults(func=_cmd_accuracy)
 
     args = parser.parse_args(argv)
+    for stream in (sys.stdout, sys.stderr):
+        # Windows consoles default to a legacy code page; never crash on a symbol.
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="replace")
     try:
         return args.func(args)
     except KeyError as e:

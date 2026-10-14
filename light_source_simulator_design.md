@@ -511,11 +511,11 @@ The GUI wraps the same library.
 
 ## 14. Roadmap
 
-1. **Spectral and colour core.**
+1. **Spectral and colour core.** *Done (2026-10-14).*
    - Line lists, the three grids, units, `colour-science` wrappers.
    - Reference library with provenance; Level-0 lamps.
    - CLI lamp sheet; accuracy-report scaffolding.
-   - Core tests in §12 pass.
+   - Core tests in §12 pass, except the tungsten test, which needs the De Vos data and moves to step 2.
 2. **Thermal, LED and fluorescent models.** Incandescent L1–L4, LED L1–L3, fluorescent L1–L2, each with `fit` against references and scores in the accuracy report. No-render studies: colour chart, metameric pairs, CRI/TM-30.
 3. **HID Stage A + B on line-local fine grids.**
    - Voigt profiles, (b, θ) chords, zone spectra.
@@ -550,6 +550,7 @@ The GUI wraps the same library.
 
 - **Renderer limits:** wavelength range and RTX 5090 support. Answered by the spike (§8.3).
 - **Reference measurements:** which lamps, and from where (LSPDD, manufacturers)? Is a spectrometer available for our own measurements? Measured SPD plus electrical data for the same lamp is the most valuable input to the accuracy loop.
+  - **Needed before step 3.** The starter references (CIE 15:2018 tables) are 5 nm, 380–780 nm, relative and representative rather than measured. They check chromaticity, CCT and colour rendering, but not line shapes: the HPS self-reversal dip is a few nm wide and a 5 nm table smears it out. HID line-shape work needs finely resolved (≤ 1 nm) real spectra of HPS and HP-Hg lamps, ideally with electrical data. Every reference records its `sampling_nm` so the accuracy report shows what it can and cannot check.
 - **Transport coefficients for Hg/Na/Xe:** literature tables first. Computing them from collision cross-sections is the accurate rung, but it is a project in itself.
 - **Interatomic potentials** for the HPS wing profiles (Na–Na, Na–Hg, Na–Xe): which published sets to adopt.
 - **Default comparison normalisation** in the UI (equal luminous flux is the likely default).
