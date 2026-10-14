@@ -31,9 +31,9 @@ def test_partner_is_a_realisable_smooth_reflectance(pair):
     assert pair.second.min() >= lo - 1e-12 and pair.second.max() <= hi + 1e-12
     # The size rule takes all the room: one limit is reached.
     assert min(pair.second.min() - lo, hi - pair.second.max()) < 1e-9
-    # Smooth: about as steep as the steepest ColorChecker patch, no steeper.
+    # Smooth: about as steep as the steepest ColorChecker patch (0.024 against 0.0237 per nm).
     steepest_patch = np.max(np.abs(np.diff(samples.get("colorchecker").values, axis=0)))
-    assert np.max(np.abs(np.diff(pair.second))) < 1.1 * steepest_patch
+    assert np.max(np.abs(np.diff(pair.second))) < 1.02 * steepest_patch
     assert pair.amplitude > 0.05
 
 

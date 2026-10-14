@@ -8,23 +8,27 @@ demonstration of the effect, not a finding about real paints. A measured pair,
 or the CIE's standard virtual pairs (ISO/CIE 23603, distributed only with the
 standard), would make it a test.
 
-The construction follows one rule, fixed before any lamp is evaluated:
+The construction rule:
 
 - *Match:* XYZ under D65 unchanged for both the 2° and the 10° observer
   (six linear conditions). They are imposed in the same arithmetic the studies
   evaluate with (``appearance.tristimulus``), so the match is exact there.
 - *Smooth:* the change is a cosine series over 380–780 nm up to order 8
   (no feature narrower than a 50 nm half-period), held at its end values
-  beyond, like the sample tables. The partner is then about as steep as the
-  steepest ColorChecker patch (0.024 per nm). This choice matters most: order 6
-  gives splits below 0.4, order 10 splits 1.2–1.5× those of order 8.
-- *Direction:* among such changes, the one that moves the colour most under
-  CIE Illuminant A per unit RMS change. Daylight-to-tungsten is the CIE's
-  standard change of illuminant for pairs matched in daylight; the direction is
-  not tuned to any of the lamps the pair is then shown under.
+  beyond, like the sample tables. This choice matters most, and it was made
+  after a scan of orders 6–20 whose splits were seen: order 6 gives splits
+  below 0.4, order 10 splits 1.2–1.5× those of order 8. Order 8 was picked by a
+  test that does not involve the lamps: the partner is then about as steep as
+  the steepest ColorChecker patch (0.024 against 0.0237 per nm).
+- *Direction:* among such changes, the one with the largest XYZ change under
+  CIE Illuminant A per unit RMS reflectance change. Daylight-to-tungsten is the
+  CIE's standard change of illuminant for pairs matched in daylight; the
+  direction is not tuned to any of the lamps the pair is then shown under. A
+  still splits the pair least of the lamps shown: it is smooth like D65, so
+  even this change barely separates under it, while spiky lamps pick out the
+  change's wiggles.
 - *Size:* the largest that keeps the second sample between 0.02 and 0.98 at
-  every wavelength (a realisable reflectance). The split is thus near the most a
-  smooth pair from this base can show, an upper-end demonstration.
+  every wavelength (a realisable reflectance).
 """
 
 import warnings
