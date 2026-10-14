@@ -2,8 +2,9 @@
 
 import numpy as np
 import pytest
+from scipy.optimize import least_squares
 
-from lss.accuracy import interpolation, references, report
+from lss.accuracy import fit, interpolation, references, report
 from lss.lamp import lamp as lamps
 from lss.physics.thermal import tungsten
 from lss.spectral import colorimetry as cm
@@ -101,18 +102,20 @@ def scores():
 
 def test_better_tungsten_physics_scores_better_on_a_measured_lamp(scores):
     # Against real tungsten (unlike Illuminant A, a blackbody by definition) the ladder
-    # climbs: Planck, flat tungsten, coiled tungsten.
-    nrms = [scores["halogen_nist_fel_f455", level].spectral_nrms for level in (1, 2, 3)]
-    assert nrms[0] > nrms[1] > nrms[2]
-    l3 = scores["halogen_nist_fel_f455", 3]
-    assert l3.spectral_nrms < 0.01 and l3.delta_uv_prime < 1e-3
+    # climbs: Planck, flat tungsten, coiled tungsten. Only the coil matches within the
+    # stated uncertainty (chi2 per node about 1).
+    rows = [scores["halogen_nist_fel_f455", level] for level in (1, 2, 3)]
+    assert rows[0].spectral_nrms > rows[1].spectral_nrms > rows[2].spectral_nrms
+    assert rows[0].chi2_per_node > rows[1].chi2_per_node > 10.0 > 1.5 > rows[2].chi2_per_node
+    l3 = rows[2]
+    assert l3.delta_uv_prime < 3e-4 and abs(l3.delta_cct_k) < 10.0
     assert l3.empirical_params == 2
 
 
 def test_fits_carry_over_to_the_second_lamp(scores):
     # F-456 is scored with F-455's values, not refitted.
     l3 = scores["halogen_nist_fel_f456", 3]
-    assert l3.spectral_nrms < 0.01 and l3.delta_uv_prime < 1e-3
+    assert l3.chi2_per_node < 1.5 and l3.delta_uv_prime < 5e-4
 
 
 def test_scored_at_nodes_within_the_models_own_range(scores):
@@ -130,3 +133,58 @@ def test_node_residuals_are_the_reported_nrms():
     c = report.compare(report.model_profile(lamp, 3, ref), ref)
     assert c.residuals.size == 30
     assert np.sqrt(np.mean(c.residuals**2)) == pytest.approx(report.score(lamp, 3).spectral_nrms, rel=1e-12)
+
+
+def test_node_on_the_models_range_edge_is_not_averaged_with_zero():
+    # De Vos's data start at 300 nm, a table node: its window must stay inside.
+    lamp = lamps.load("halogen_nist_fel_f455")
+    ref = references.get(F455)
+    c = report.compare(report.model_profile(lamp, 3, ref), ref)
+    assert c.node_wavelengths[0] == 300.0
+    rel = c.node_model / c.node_reference
+    assert abs(rel[0] - rel[1]) < 0.02  # not half (the bug this guards against)
+
+
+def test_uncertainty_objective_minimises_the_reported_chi2():
+    lamp = lamps.load("halogen_nist_fel_f455")
+    ref = references.get(F455)
+    c = report.compare(report.model_profile(lamp, 3, ref), ref)
+    assert np.mean(c.pulls**2) == pytest.approx(report.score(lamp, 3).chi2_per_node, rel=1e-12)
+    # The preset holds the uncertainty fit: refitting does not move it.
+    result = fit.fit(lamp, 3, objective="uncertainty")
+    assert result.after.chi2_per_node == pytest.approx(result.before.chi2_per_node, rel=1e-3)
+    with pytest.raises(ValueError, match="uncertainty"):
+        fit.fit(lamps.load("incandescent_cie_a"), 2, objective="uncertainty")
+
+
+def _window_fit(lo, hi):
+    """Temperature and open fraction fitted to the nodes in [lo, hi] only, each node
+    weighted by its stated uncertainty (scale free within the window); values, standard
+    errors and chi2 per degree of freedom."""
+    lamp = lamps.load("halogen_nist_fel_f455")
+    ref = references.get(F455)
+
+    def pulls(x):
+        trial = fit.with_values(lamp, 3, {"filament_temperature": x[0], "coil_open_fraction": x[1]})
+        c = report.compare(report.model_profile(trial, 3, ref), ref)
+        sel = (c.node_wavelengths >= lo) & (c.node_wavelengths <= hi)
+        m, r, w = c.node_model[sel], c.node_reference[sel], 1.0 / (c.node_sigma[sel] * c.node_reference[sel])
+        k = np.sum(m * r * w**2) / np.sum((m * w) ** 2)
+        return (k * m - r) * w
+
+    sol = least_squares(pulls, [3075.0, 0.35], bounds=([2600.0, 0.05], [3200.0, 1.0]), x_scale=[100.0, 0.1])
+    sd = np.sqrt(np.diag(np.linalg.inv(sol.jac.T @ sol.jac)))  # weights are 1/sigma
+    return sol.x, sd, np.sum(sol.fun**2) / (sol.fun.size - 3)
+
+
+def test_one_open_fraction_fits_the_whole_range_within_the_measurement():
+    # Design §4.1 L3. Weighted by the stated uncertainty, one (T, f_open) fits 300-2400 nm
+    # with chi2 per degree of freedom below 1.2, and the short- and long-wavelength halves
+    # give open fractions that agree within 2 standard errors (0.28 +- 0.05 against
+    # 0.42 +- 0.07 when written up). An unweighted fit had suggested they differ.
+    _, _, chi2 = _window_fit(300.0, 2400.0)
+    assert chi2 < 1.2
+    (t_s, f_s), (_, sd_s), _ = _window_fit(300.0, 800.0)
+    (t_l, f_l), (_, sd_l), _ = _window_fit(800.0, 2400.0)
+    assert abs(f_s - f_l) < 2.0 * np.hypot(sd_s, sd_l)
+    assert 0.2 < f_s < 0.4 and 0.3 < f_l < 0.55

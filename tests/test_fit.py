@@ -34,9 +34,23 @@ def _tungsten_reference(t_k: float) -> Reference:
                      uncertainty="exact", includes=frozenset(), citation="test", data_version="test")
 
 
+def _measured_tungsten_reference(t_k: float) -> Reference:
+    # An uneven table with a stated uncertainty per node, like a calibration report.
+    nodes = np.array([380.0, 400.0, 450.0, 500.0, 555.0, 600.0, 654.6, 700.0, 780.0])
+    values = 3.7 * TungstenContinuum(t_k).density(nodes)
+    ref = _tungsten_reference(t_k)
+    return Reference(id="synthetic-measured", family="incandescent", description="tungsten at a known T, sparse",
+                     spectrum=ref.spectrum, valid_range=(380.0, 780.0), sampling_nm=None, kind="measurement",
+                     uncertainty="1 %", includes=frozenset(), citation="test", data_version="test",
+                     node_values=values, node_wavelengths=nodes, interpolation="exact",
+                     node_sigma=np.full(nodes.size, 0.01))
+
+
 @pytest.mark.parametrize("objective", fit.OBJECTIVES)
 def test_recovers_a_known_temperature(objective):
-    result = fit.fit(_lamp(2900), 2, _tungsten_reference(2650.0), objective)
+    # The uncertainty objective needs a reference that states its uncertainty per node.
+    ref = _measured_tungsten_reference(2650.0) if objective == "uncertainty" else _tungsten_reference(2650.0)
+    result = fit.fit(_lamp(2900), 2, ref, objective)
     assert result.success
     (p,) = result.parameters
     assert p.start == 2900

@@ -51,6 +51,8 @@ class Reference:
     node_values: np.ndarray | None = None
     node_wavelengths: np.ndarray | None = None
     interpolation: str | None = None  # how the spectrum fills the gaps between nodes
+    #: Relative standard uncertainty (k = 1) at each node, where the source states one.
+    node_sigma: np.ndarray | None = None
 
     @property
     def scored_at_nodes(self) -> bool:
@@ -91,7 +93,8 @@ def data_file(name: str) -> dict:
 
 
 def _table(src: dict):
-    """(wavelengths, values in W m-2 nm-1, version) of one lamp's column in a data file."""
+    """(wavelengths, values in W m-2 nm-1, version, relative k = 1 uncertainty or None) of one
+    lamp's column in a data file."""
     doc = data_file(src["file"])
     if doc["unit"] != "W cm-3":
         raise ValueError(f"{src['file']}: unsupported unit {doc['unit']!r}")
@@ -99,7 +102,11 @@ def _table(src: dict):
     rows = sorted((float(k), v[col]) for k, v in doc["irradiance"].items())
     lam = np.array([k for k, _ in rows])
     val = np.array([v for _, v in rows], dtype=float) * 1e-3  # W cm-2 per cm = 1e-3 W m-2 nm-1
-    return lam, val, f"{src['file']}, column {src['column']}"
+    sigma = None
+    if "uncertainty_k2_percent" in doc:  # stated at a few wavelengths: linear between them
+        u = sorted((float(k), float(v)) for k, v in doc["uncertainty_k2_percent"].items())
+        sigma = np.interp(lam, [k for k, _ in u], [v for _, v in u]) / 200.0
+    return lam, val, f"{src['file']}, column {src['column']}", sigma
 
 
 def _load_entry(entry: dict, defaults: dict) -> Reference:
@@ -133,7 +140,7 @@ def _load_entry(entry: dict, defaults: dict) -> Reference:
 def _load_table_entry(e: dict, src: dict, includes: frozenset) -> Reference:
     from lss.accuracy import interpolation
 
-    lam, val, version = _table(src)
+    lam, val, version, sigma = _table(src)
     if e.get("sampling_nm") is not None or e.get("bandpass_nm") is not None:
         raise ValueError(f"{e['id']}: an uneven table has no single sampling or bandpass")
     method = e.get("interpolation", "pchip")
@@ -155,6 +162,7 @@ def _load_table_entry(e: dict, src: dict, includes: frozenset) -> Reference:
         node_values=val,
         node_wavelengths=lam,
         interpolation=method,
+        node_sigma=sigma,
     )
 
 

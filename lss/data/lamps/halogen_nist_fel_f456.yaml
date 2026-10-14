@@ -7,6 +7,11 @@ reference: nist-fel-f456
 # tube with a halogen fill, run on DC at 8.200 A and 109.8 V. Unlike Illuminant A it is
 # real tungsten, so a better tungsten model should score better against it.
 #
+# Every level is fitted with the uncertainty objective: each of the table's wavelengths
+# weighted by NIST's stated uncertainty there. The default (spectral) objective weights
+# them by the mean level instead, so the bright IR outvotes the dim violet and UV, and
+# a model that is good to the measurement everywhere loses there (design §4.1 L3).
+#
 # The second lamp of the same model and batch, scored with F-455's fitted values,
 # deliberately NOT refitted: it tests whether the fits carry over to another lamp of
 # the same design (and shows the lamp-to-lamp spread), not a different design.
@@ -25,22 +30,22 @@ physical:
   filament_temperature:
     # The true temperature of a coiled filament (Level 3, with the coil's cavity effect).
     # In De Vos's extrapolated range (measured to 2800 K), which every level-3 sheet flags.
-    value: 3075.04
+    value: 3091.21
     unit: K
     empirical: true
     reason: >-
-      fitted by `lss fit` (spectral objective, with coil_open_fraction) to nist-fel-f455
-      on 2026-10-14: NRMS 7.08e-03, du'v' 6.4e-04, dCCT -16.85 K
+      fitted by `lss fit` (uncertainty objective, with coil_open_fraction) to nist-fel-f455
+      on 2026-10-14: NRMS 1.04e-02, du'v' 1.7e-04, dCCT -4.75 K, chi2/node 0.71
     # Halogen lamps run up to ~3300 K; 3200 K is also where the De Vos emissivity,
     # extrapolated, stops being defined.
     bounds: [2600, 3200]
   coil_open_fraction:
-    value: 0.352544
+    value: 0.296894
     unit: "1"
     empirical: true
     reason: >-
-      fitted by `lss fit` (spectral objective, with filament_temperature) to nist-fel-f455
-      on 2026-10-14: NRMS 7.08e-03, du'v' 6.4e-04, dCCT -16.85 K
+      fitted by `lss fit` (uncertainty objective, with filament_temperature) to nist-fel-f455
+      on 2026-10-14: NRMS 1.04e-02, du'v' 1.7e-04, dCCT -4.75 K, chi2/node 0.71
     # 1 is a flat surface (no cavity effect); below ~0.05 the coil would be a near-closed
     # cavity, which a coil whose turns are spaced by about a wire diameter is not.
     bounds: [0.05, 1.0]
@@ -52,24 +57,24 @@ models:
     params:
       filament_temperature:
         # A blackbody's temperature: no physical meaning beyond "the best Planck curve".
-        value: 3189.14
+        value: 3130.59
         unit: K
         empirical: true
         reason: >-
-          fitted by `lss fit` (spectral objective) to nist-fel-f455 on 2026-10-14: NRMS
-          4.59e-02, du'v' 2.3e-03, dCCT +58.16 K
+          fitted by `lss fit` (uncertainty objective) to nist-fel-f455 on 2026-10-14: NRMS
+          1.06e-01, du'v' 2.5e-04, dCCT -0.39 K, chi2/node 73.42
         bounds: [2600, 3600]
   2:
     generator: tungsten
     params:
       filament_temperature:
         # A flat-ribbon emissivity on a coiled filament: too blue a shape, so the fitted
-        # temperature drops ~75 K below Level 3's to compensate.
-        value: 3000.91
+        # temperature drops ~45 K below Level 3's to compensate.
+        value: 3046.04
         unit: K
         empirical: true
         reason: >-
-          fitted by `lss fit` (spectral objective) to nist-fel-f455 on 2026-10-14: NRMS
-          2.67e-02, du'v' 2.5e-03, dCCT -62.98 K
+          fitted by `lss fit` (uncertainty objective) to nist-fel-f455 on 2026-10-14: NRMS
+          7.14e-02, du'v' 6.5e-04, dCCT -15.62 K, chi2/node 33.92
         bounds: [2600, 3200]
   3: {generator: tungsten_coil}

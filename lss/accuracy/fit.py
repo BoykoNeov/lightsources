@@ -18,7 +18,12 @@ Rules
 * **Same yardstick as the report.** The ``spectral`` objective's residuals are
   exactly the report's: per-bin density error after the equal-luminous-flux
   normalisation, over the reference's range, so the fit minimises the reported
-  NRMS. The ``colour`` objective matches chromaticity (Δu′v′) instead.
+  NRMS. The ``colour`` objective matches chromaticity (Δu′v′) instead. The
+  ``uncertainty`` objective, for a measured reference that states its uncertainty
+  per wavelength, weights each node by it (least squares in units of the stated
+  uncertainty, scale free): the statistically right fit to a measurement. The
+  ``spectral`` one weights every node by the mean level, so bright regions outvote
+  dim ones whatever their uncertainty.
 * **Like with like.** A model that lacks a component the reference includes is
   not fitted at all.
 * **A value at a bound is a finding.** It means the model only matches with an
@@ -40,7 +45,7 @@ from lss.lamp import phosphors
 from lss.lamp.lamp import Lamp
 from lss.spectral import colorimetry as cm
 
-OBJECTIVES = ("spectral", "colour")
+OBJECTIVES = ("spectral", "colour", "uncertainty")
 
 #: A fitted value this close to a bound (as a fraction of the bound range) is flagged.
 AT_BOUND = 0.01
@@ -131,21 +136,29 @@ def _residuals(lamp: Lamp, level: int, ref, objective: str) -> np.ndarray:
     c = report.compare(report.model_profile(lamp, level, ref), ref)
     if objective == "spectral":
         return c.residuals
+    if objective == "uncertainty":
+        return c.pulls
     return cm.uv_prime(c.model) - cm.uv_prime(c.reference)
+
+
+def _check_objective(objective: str, ref) -> None:
+    if objective not in OBJECTIVES:
+        raise ValueError(f"unknown objective {objective!r}; choose from {', '.join(OBJECTIVES)}")
+    if objective == "uncertainty" and getattr(ref, "node_sigma", None) is None:
+        raise ValueError(f"{ref.id} states no uncertainty per wavelength; the uncertainty objective needs one")
 
 
 def fit(lamp: Lamp, level: int, ref=None, objective: str = "spectral", names: list[str] | None = None,
         shared: bool = False) -> FitResult:
     """Fit ``names`` (default: every free parameter, library ones only if ``shared``) of one
     model level to ``ref`` (a :class:`~lss.accuracy.references.Reference`; default: the lamp's own)."""
-    if objective not in OBJECTIVES:
-        raise ValueError(f"unknown objective {objective!r}; choose from {', '.join(OBJECTIVES)}")
     if level not in lamp.models:
         raise KeyError(f"{lamp.id} has no level {level}; available: {sorted(lamp.models)}")
     if ref is None:
         if lamp.reference is None:
             raise ValueError(f"{lamp.id}: no reference to fit against")
         ref = references.get(lamp.reference)
+    _check_objective(objective, ref)
 
     missing = report.missing_components(report.model_profile(lamp, level, ref), ref)
     if missing:
@@ -209,7 +222,8 @@ def fit(lamp: Lamp, level: int, ref=None, objective: str = "spectral", names: li
 def _scores(row: report.Row) -> str:
     duv = "du'v'"
     return (f"NRMS {row.spectral_nrms:.3e}   {duv} {row.delta_uv_prime:.2e}   dCCT {row.delta_cct_k:+.2f} K   "
-            f"dRa {row.delta_ra:+.2f}   dRf {row.delta_rf:+.2f}")
+            f"dRa {row.delta_ra:+.2f}   dRf {row.delta_rf:+.2f}"
+            + (f"   chi2/node {row.chi2_per_node:.2f}" if row.chi2_per_node is not None else ""))
 
 
 def _parameter_line(p: FittedParameter) -> str:
@@ -266,6 +280,7 @@ def _lamp_block(lamp_id: str, level: int, params: list[FittedParameter], reason:
 
 def _reason(objective: str, refs: str, rows, today: date) -> str:
     scores = "; ".join(f"NRMS {r.spectral_nrms:.2e}, du'v' {r.delta_uv_prime:.1e}, dCCT {r.delta_cct_k:+.2f} K"
+                       + (f", chi2/node {r.chi2_per_node:.2f}" if r.chi2_per_node is not None else "")
                        + (f" ({r.reference})" if len(rows) > 1 else "") for r in rows)
     return f"fitted by `lss fit` ({objective} objective) to {refs} on {today.isoformat()}: {scores}"
 
@@ -338,6 +353,8 @@ def fit_joint(items, objective: str = "spectral") -> JointFitResult:
     if objective not in OBJECTIVES:
         raise ValueError(f"unknown objective {objective!r}; choose from {', '.join(OBJECTIVES)}")
     items = _items(items)
+    for _, _, ref in items:
+        _check_objective(objective, ref)
     if len(items) < 2:
         raise ValueError("a joint fit needs at least two lamps")
     shared: list[str] = []

@@ -177,8 +177,9 @@ def main(argv=None) -> int:
     p.add_argument("lamp", nargs="+", help="one lamp, or several for a joint fit of their shared shapes")
     p.add_argument("--level", type=int, required=True, help="model level to fit")
     p.add_argument("--ref", help="reference id (default: the lamp's own; see `lss refs`)")
-    p.add_argument("--objective", choices=["spectral", "colour"], default="spectral",
-                   help="spectral: the report's NRMS (default); colour: chromaticity du'v'")
+    p.add_argument("--objective", choices=["spectral", "colour", "uncertainty"], default="spectral",
+                   help="spectral: the report's NRMS (default); colour: chromaticity du'v'; "
+                        "uncertainty: each node weighted by the reference's stated uncertainty")
     p.add_argument("--param", action="append", metavar="NAME",
                    help="fit only this parameter (repeatable; default: every bounded one)")
     p.add_argument("--shared", action="store_true",

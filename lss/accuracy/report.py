@@ -69,6 +69,10 @@ class Row:
     range_nm: tuple[float, float] | None = None
     reference_sampling_nm: float | None = None  # None: uneven, scored at its nodes
     reference_nodes: int | None = None  # nodes scored, for a table scored at its nodes
+    #: Mean squared error per node in units of the reference's stated uncertainty, scale
+    #: free; about 1 means the model matches within the measurement. Only for references
+    #: that state one.
+    chi2_per_node: float | None = None
     reference_bandpass_nm: float | None = None  # the model was sampled through it
     spectral_nrms: float | None = None
     band_nrms: dict[str, float] | None = None
@@ -109,6 +113,18 @@ class Comparison:
     node_wavelengths: np.ndarray | None = None
     node_model: np.ndarray | None = None
     node_reference: np.ndarray | None = None
+    node_sigma: np.ndarray | None = None  # the reference's relative k = 1 uncertainty there
+
+    @property
+    def pulls(self) -> np.ndarray | None:
+        """Each node's error in units of the reference's stated uncertainty, after the
+        scale that minimises them (a shape comparison: the luminous normalisation would
+        let the visible fix the scale). None where no uncertainty is stated."""
+        if self.node_sigma is None:
+            return None
+        m, w = self.node_model, 1.0 / (self.node_sigma * self.node_reference)
+        k = np.sum(m * self.node_reference * w**2) / np.sum((m * w) ** 2)
+        return (k * m - self.node_reference) * w
 
     @property
     def residuals(self) -> np.ndarray:
@@ -131,12 +147,20 @@ def missing_components(profile, ref) -> frozenset[str]:
     return ref.includes - profile.includes
 
 
-def density_at(spectrum, wavelengths_nm, width_nm: float = 1.0) -> np.ndarray:
+def density_at(spectrum, wavelengths_nm, width_nm: float = 0.01, within=None) -> np.ndarray:
     """Mean density of ``spectrum`` over ``width_nm`` around each wavelength (nodes at
-    least ``width_nm`` apart): a point value for a continuum, exact for lines too."""
+    least ``width_nm`` apart): a point value for a continuum.
+
+    ``within`` = (lo, hi) clips each window to the model's valid range, so a node on
+    its edge is not averaged with the zero density beyond it. A clipped window is
+    one-sided, so it must be narrow: on a steep thermal spectrum (3 %/nm at 300 nm),
+    a 1 nm window would read 0.9 % off the node.
+    """
     lam = np.asarray(wavelengths_nm, float)
-    edges = np.ravel(np.column_stack([lam - 0.5 * width_nm, lam + 0.5 * width_nm]))
-    return spectrum.bin(BinGrid(edges)).density[::2]
+    left, right = lam - 0.5 * width_nm, lam + 0.5 * width_nm
+    if within is not None:
+        left, right = np.maximum(left, within[0]), np.minimum(right, within[1])
+    return spectrum.bin(BinGrid(np.ravel(np.column_stack([left, right])))).density[::2]
 
 
 def _compare_at_nodes(profile, ref) -> Comparison:
@@ -155,7 +179,8 @@ def _compare_at_nodes(profile, ref) -> Comparison:
     k = cm.luminous(r) / cm.luminous(m)
     m = type(m)(m.grid, m.values * k, m.below * k, m.above * k, r.quantity)
     return Comparison(m, r, (float(lam[0]), float(lam[-1])), (grid.centres > lo) & (grid.centres < hi),
-                      node_wavelengths=lam, node_model=density_at(profile.spectrum, lam) * k, node_reference=rv)
+                      node_wavelengths=lam, node_model=density_at(profile.spectrum, lam, within=(lo, hi)) * k,
+                      node_reference=rv, node_sigma=None if ref.node_sigma is None else ref.node_sigma[keep])
 
 
 def compare(profile, ref) -> Comparison:
@@ -224,6 +249,7 @@ def score(lamp, level: int, ref=None) -> Row:
         range_nm=(lo, hi),
         reference_sampling_nm=ref.sampling_nm,
         reference_nodes=int(c.node_wavelengths.size) if c.node_wavelengths is not None else None,
+        chi2_per_node=float(np.mean(c.pulls**2)) if c.pulls is not None else None,
         reference_bandpass_nm=ref.bandpass_nm,
         spectral_nrms=_nrms(md, rd),
         band_nrms=bands,
@@ -263,6 +289,8 @@ def format_text(rows: list[Row]) -> str:
             out.append(f"{'':<28}{r.note}")
         sampling = (f"scored at the reference's {r.reference_nodes} measured wavelengths"
                     if r.reference_nodes else f"reference sampled every {r.reference_sampling_nm:g} nm")
+        if r.chi2_per_node is not None:
+            sampling += f" (chi2 per node against its stated uncertainty: {r.chi2_per_node:.2f})"
         out.append(f"{'':<28}range {r.range_nm[0]:g}-{r.range_nm[1]:g} nm, {sampling}"
                    + (f" (model seen through its {r.reference_bandpass_nm:g} nm bandpass)"
                       if r.reference_bandpass_nm else "")
