@@ -88,8 +88,7 @@ def _cmd_fit(args) -> int:
         print(json.dumps(result.as_dict(), indent=2))
     elif args.hold_out:
         print(f"Out-of-sample check: shared shapes fitted without {args.hold_out}, "
-              "then only its own mix fitted with them.
-")
+              "then only its own mix fitted with them.\n")
         print(fit.format_text(result))
     elif len(loaded) > 1:
         print(fit.format_joint(result))
