@@ -78,3 +78,30 @@ references:
   - {id: cie-led-rgb1, family: led, description: "CIE LED-RGB1, red-green-blue mixing", source: {type: colour-science, key: LED-RGB1}, includes: []}
   - {id: cie-led-v1, family: led, description: "CIE LED-V1, phosphor-converted violet", source: {type: colour-science, key: LED-V1}, includes: [phosphor]}
   - {id: cie-led-v2, family: led, description: "CIE LED-V2, phosphor-converted violet", source: {type: colour-science, key: LED-V2}, includes: [phosphor]}
+
+  # Incandescent, measured: NIST-calibrated 1000 W quartz-halogen lamps (FEL type),
+  # coiled-coil tungsten filament, absolute spectral irradiance at 50 cm, 8.200 A DC.
+  # Uneven table (lss/data/nist_fel.yaml): spectral errors are scored at its own
+  # wavelengths; colour uses the table interpolated through its ratio to a blackbody.
+  # The two lamps are one model from one batch: F-455 is the reference the models are
+  # fitted to, F-456 checks them on a second lamp.
+  - id: nist-fel-f455
+    family: incandescent
+    description: "1000 W quartz-halogen lamp (FEL type) F-455 at 8.200 A, 109.4 V DC; NIST spectral irradiance"
+    source: {type: table, file: nist_fel.yaml, column: F-455}
+    kind: measurement
+    sampling_nm: null  # uneven: 10 nm in the UV to 300 nm in the IR
+    bandpass_nm: null  # a smooth continuum: a few-nm bandpass does not change it
+    uncertainty: "0.9-4.4 % (k = 2) with respect to SI units, per wavelength in nist_fel.yaml"
+    includes: [envelope]
+    citation: "NIST Report of Calibration 39045C, lamp F-455, 1997-02-27 (test 844/257096-96-1)"
+  - id: nist-fel-f456
+    family: incandescent
+    description: "1000 W quartz-halogen lamp (FEL type) F-456 at 8.200 A, 109.8 V DC; NIST spectral irradiance"
+    source: {type: table, file: nist_fel.yaml, column: F-456}
+    kind: measurement
+    sampling_nm: null
+    bandpass_nm: null
+    uncertainty: "0.9-4.4 % (k = 2) with respect to SI units, per wavelength in nist_fel.yaml"
+    includes: [envelope]
+    citation: "NIST Report of Calibration 39045C, lamp F-456, 1997-02-27 (test 844/257096-96-2)"

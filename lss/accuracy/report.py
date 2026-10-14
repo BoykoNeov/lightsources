@@ -13,6 +13,11 @@ Rules
   5 nm tables) spread each lamp line over its neighbouring nodes; the model is
   sampled through the same triangular bandpass before scoring, so a sharp line
   is not scored against a smeared one. Lamp sheets never see this step.
+* **At the reference's own wavelengths** when it is an uneven measured table (a
+  calibration report): spectral errors are scored there only, over the overlap
+  with the model's own valid range, never at interpolated points. Colour, and the
+  luminous normalisation, use the table interpolated through its ratio to a
+  blackbody (``lss.accuracy.interpolation``), whose method sets a floor under them.
 * **Equal luminous flux** normalisation (recorded in every row).
 * **Golden file.** Scores are stored in ``lss/data/accuracy_golden.json``. Any
   error that grows beyond tolerance, a lost row, or a new empirical parameter
@@ -32,11 +37,13 @@ from lss.lamp import quickpath
 from lss.spectral import colorimetry as cm
 from lss.spectral.bandpass import as_recorded
 from lss.spectral.filters import Transmission
-from lss.spectral.grids import analysis_grid
+from lss.spectral.grids import BinGrid, analysis_grid
 from lss.spectral.spectrum import BinnedSpectrum
 
 GOLDEN_PATH = Path(str(resources.files("lss.data").joinpath("accuracy_golden.json")))
 BANDS_NM = [(380.0, 480.0), (480.0, 580.0), (580.0, 680.0), (680.0, 780.0)]
+#: Bands for a table scored at its nodes; each node falls in exactly one (lo <= λ < hi).
+NODE_BANDS_NM = [(250.0, 380.0), *BANDS_NM, (780.0, 1100.0), (1100.0, 1700.0), (1700.0, 2500.0)]
 NORMALISATION = "equal luminous flux"
 
 #: Allowed growth of each error before the check fails: (absolute, relative).
@@ -60,7 +67,8 @@ class Row:
     path: str = ""  # quick or instrument (design §5)
     normalisation: str = NORMALISATION
     range_nm: tuple[float, float] | None = None
-    reference_sampling_nm: float | None = None
+    reference_sampling_nm: float | None = None  # None: uneven, scored at its nodes
+    reference_nodes: int | None = None  # nodes scored, for a table scored at its nodes
     reference_bandpass_nm: float | None = None  # the model was sampled through it
     spectral_nrms: float | None = None
     band_nrms: dict[str, float] | None = None
@@ -96,10 +104,18 @@ class Comparison:
     reference: BinnedSpectrum
     range_nm: tuple[float, float]
     inside: np.ndarray  # bins strictly inside the range
+    #: For a table scored at its nodes: the nodes in range, and both spectra there (the
+    #: model normalised like ``model``).
+    node_wavelengths: np.ndarray | None = None
+    node_model: np.ndarray | None = None
+    node_reference: np.ndarray | None = None
 
     @property
     def residuals(self) -> np.ndarray:
-        """Per-bin density error relative to the mean reference density; its RMS is the NRMS."""
+        """Density error relative to the mean reference density, per bin (or per node
+        for a table scored at its nodes); its RMS is the NRMS."""
+        if self.node_reference is not None:
+            return (self.node_model - self.node_reference) / np.mean(self.node_reference)
         rd = self.reference.density[self.inside]
         return (self.model.density[self.inside] - rd) / np.mean(rd)
 
@@ -115,7 +131,36 @@ def missing_components(profile, ref) -> frozenset[str]:
     return ref.includes - profile.includes
 
 
+def density_at(spectrum, wavelengths_nm, width_nm: float = 1.0) -> np.ndarray:
+    """Mean density of ``spectrum`` over ``width_nm`` around each wavelength (nodes at
+    least ``width_nm`` apart): a point value for a continuum, exact for lines too."""
+    lam = np.asarray(wavelengths_nm, float)
+    edges = np.ravel(np.column_stack([lam - 0.5 * width_nm, lam + 0.5 * width_nm]))
+    return spectrum.bin(BinGrid(edges)).density[::2]
+
+
+def _compare_at_nodes(profile, ref) -> Comparison:
+    grid = analysis_grid()
+    lo, hi = ref.valid_range
+    valid = profile.metadata.get("valid_range_nm")
+    if valid is not None:
+        lo, hi = max(lo, valid[0]), min(hi, valid[1])
+    nodes = ref.nodes
+    keep = (nodes >= lo) & (nodes <= hi)
+    lam, rv = nodes[keep], ref.node_values[keep]
+    # Colour and the luminous normalisation: the interpolated table, inside the visible.
+    window = _window(max(lo, grid.lo), min(hi, grid.hi))
+    m = profile.spectrum.filtered(window).bin(grid)
+    r = ref.spectrum.filtered(window).bin(grid)
+    k = cm.luminous(r) / cm.luminous(m)
+    m = type(m)(m.grid, m.values * k, m.below * k, m.above * k, r.quantity)
+    return Comparison(m, r, (float(lam[0]), float(lam[-1])), (grid.centres > lo) & (grid.centres < hi),
+                      node_wavelengths=lam, node_model=density_at(profile.spectrum, lam) * k, node_reference=rv)
+
+
 def compare(profile, ref) -> Comparison:
+    if ref.scored_at_nodes:
+        return _compare_at_nodes(profile, ref)
     grid = analysis_grid()
     # Score only where the reference has data and the colour tables exist.
     lo, hi = max(ref.valid_range[0], grid.lo), min(ref.valid_range[1], grid.hi)
@@ -153,13 +198,20 @@ def score(lamp, level: int, ref=None) -> Row:
     note = ("in-sample: the shared phosphor shapes were fitted to this reference (leave-one-out scores: "
             f"design doc {section})") if shared and ref.id in phosphors.fitted_to() else ""
     lo, hi = c.range_nm
-    md, rd = m.density[c.inside], r.density[c.inside]
-    centres = m.grid.centres[c.inside]
     bands = {}
-    for b_lo, b_hi in BANDS_NM:
-        sel = (centres > max(b_lo, lo)) & (centres < min(b_hi, hi))
-        if sel.any():
-            bands[f"{b_lo:g}-{b_hi:g}"] = _nrms(md[sel], rd[sel])
+    if c.node_reference is not None:
+        md, rd, lam = c.node_model, c.node_reference, c.node_wavelengths
+        for b_lo, b_hi in NODE_BANDS_NM:
+            sel = (lam >= b_lo) & (lam < b_hi)
+            if sel.any():
+                bands[f"{b_lo:g}-{b_hi:g}"] = _nrms(md[sel], rd[sel])
+    else:
+        md, rd = m.density[c.inside], r.density[c.inside]
+        centres = m.grid.centres[c.inside]
+        for b_lo, b_hi in BANDS_NM:
+            sel = (centres > max(b_lo, lo)) & (centres < min(b_hi, hi))
+            if sel.any():
+                bands[f"{b_lo:g}-{b_hi:g}"] = _nrms(md[sel], rd[sel])
 
     cct_m, _ = cm.cct_duv(m)
     cct_r, _ = cm.cct_duv(r)
@@ -171,6 +223,7 @@ def score(lamp, level: int, ref=None) -> Row:
         path="quick",
         range_nm=(lo, hi),
         reference_sampling_nm=ref.sampling_nm,
+        reference_nodes=int(c.node_wavelengths.size) if c.node_wavelengths is not None else None,
         reference_bandpass_nm=ref.bandpass_nm,
         spectral_nrms=_nrms(md, rd),
         band_nrms=bands,
@@ -208,8 +261,9 @@ def format_text(rows: list[Row]) -> str:
                    f"{f'{r.empirical_params} ({r.empirical_shared})' if r.empirical_shared else r.empirical_params:>14}")
         if r.note:
             out.append(f"{'':<28}{r.note}")
-        out.append(f"{'':<28}range {r.range_nm[0]:g}-{r.range_nm[1]:g} nm, reference sampled every "
-                   f"{r.reference_sampling_nm:g} nm"
+        sampling = (f"scored at the reference's {r.reference_nodes} measured wavelengths"
+                    if r.reference_nodes else f"reference sampled every {r.reference_sampling_nm:g} nm")
+        out.append(f"{'':<28}range {r.range_nm[0]:g}-{r.range_nm[1]:g} nm, {sampling}"
                    + (f" (model seen through its {r.reference_bandpass_nm:g} nm bandpass)"
                       if r.reference_bandpass_nm else "")
                    + "; band NRMS "

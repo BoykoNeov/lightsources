@@ -27,7 +27,7 @@ from lss.params import Parameter
 from lss.spectral.filters import Transmission
 
 #: Glass data files in ``lss/data``, by material id.
-MATERIALS = {"soda-lime-rubin-clear": "glass_soda_lime.yaml"}
+MATERIALS = {"soda-lime-rubin-clear": "glass_soda_lime.yaml", "fused-silica-franta": "glass_fused_silica.yaml"}
 
 
 @dataclass(frozen=True)
@@ -81,8 +81,10 @@ class Envelope:
     def transmission(self) -> Transmission:
         """Internal transmittance of the wall, linear between the table's wavelengths.
 
-        Outside the table the glass is taken as opaque: below 310 nm its absorption
-        edge (k already grows ~4× per 10 nm there), beyond 4.6 µm the silicate bands.
+        Outside the table the glass is taken as opaque. For soda-lime that is right
+        (below 310 nm its absorption edge, k already growing ~4× per 10 nm; beyond
+        4.6 µm the silicate bands); fused silica's table stops at 240 nm and 2.6 µm,
+        so a model is not scored outside them.
         """
         g = self.glass
         lam = g.k_wavelength_nm

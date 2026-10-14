@@ -1,5 +1,6 @@
 """Parameters, reference library and lamp presets."""
 
+import numpy as np
 import pytest
 
 from lss.accuracy import references
@@ -27,9 +28,14 @@ def test_every_reference_loads_with_provenance():
         assert ref.citation and ref.data_version and ref.uncertainty and ref.description
         assert ref.family in {"incandescent", "fluorescent", "hid", "led"}
         assert ref.includes <= COMPONENTS
-        assert ref.sampling_nm > 0
         lo, hi = ref.valid_range
-        assert lo < hi and lo >= 300 and hi <= 830
+        if ref.scored_at_nodes:  # an uneven measured table: its nodes are its sampling
+            assert ref.sampling_nm is None and ref.nodes.size == ref.node_values.size
+            assert ref.nodes[0] == lo and ref.nodes[-1] == hi and np.all(np.diff(ref.nodes) > 0)
+        else:
+            assert ref.sampling_nm > 0
+            assert lo >= 300 and hi <= 830
+        assert lo < hi
         assert ref.spectrum.total() > 0
 
 

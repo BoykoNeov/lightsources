@@ -115,3 +115,43 @@ class TungstenContinuum(Continuum):
         n = max(int(np.ceil(np.log(hi / lo) / np.log(1.01))), 1)
         lam = table().wavelengths_nm
         return np.unique(np.concatenate([np.geomspace(lo, hi, n + 1), lam[(lam > lo) & (lam < hi)]]))
+
+
+def cavity_emissivity(emissivity, open_fraction: float):
+    """Effective emissivity of a cavity with walls of ``emissivity`` (design §4.1 L3).
+
+    One-zone estimate for an isothermal cavity with diffuse walls, irradiated
+    uniformly by itself: ε_eff = ε / (ε + (1 − ε)·f), where f is the ratio of the
+    opening's area to the radiating wall area. f = 1 is a flat surface (ε_eff = ε);
+    f → 0 a closed cavity, a blackbody. Since the gain is largest where ε is smallest,
+    a cavity is greyer than its walls: a coiled filament is redder than a flat ribbon
+    at the same temperature.
+    """
+    if not (0.0 < open_fraction <= 1.0):
+        raise ValueError(f"open fraction must be in (0, 1], got {open_fraction:g}")
+    eps = np.asarray(emissivity, dtype=float)
+    return eps / (eps + (1.0 - eps) * open_fraction)
+
+
+@dataclass(frozen=True)
+class TungstenCoilContinuum(TungstenContinuum):
+    """ε_eff(λ, T) · B_λ(T): a coiled tungsten filament as a cavity (design §4.1 L3).
+
+    ``open_fraction`` stands for the coil's geometry, which the renderer's ray-traced
+    coil will replace (the accurate step of L3).
+    """
+
+    open_fraction: float = 1.0
+
+    def __post_init__(self):
+        super().__post_init__()
+        cavity_emissivity(0.5, self.open_fraction)  # range check up front
+
+    def density(self, wavelength_nm):
+        tab = table()
+        lo, hi = tab.wavelength_range_nm
+        lam = np.asarray(wavelength_nm, dtype=float)
+        inside = (lam >= lo) & (lam <= hi)
+        eps = np.interp(np.where(inside, lam, lo), tab.wavelengths_nm, tab.at_temperature(self.temperature_k))
+        eff = cavity_emissivity(eps, self.open_fraction)
+        return np.where(inside, eff * planck.spectral_radiance(np.where(inside, lam, lo), self.temperature_k), 0.0)

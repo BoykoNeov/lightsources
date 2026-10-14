@@ -1,0 +1,71 @@
+id: halogen_nist_fel_f455
+name: 1000 W quartz-halogen lamp, FEL type, NIST-calibrated (F-455)
+family: incandescent
+reference: nist-fel-f455
+
+# A measured lamp (lss/data/nist_fel.yaml): a coiled-coil tungsten filament in a quartz
+# tube with a halogen fill, run on DC at 8.200 A and 109.4 V. Unlike Illuminant A it is
+# real tungsten, so a better tungsten model should score better against it.
+
+envelope:
+  material: fused-silica-franta
+  wall_thickness:
+    # Hardly matters: fused silica only absorbs in its water bands here (1.3 % at most
+    # at the table's wavelengths for 1 mm, and that is an upper estimate).
+    value: 1.0
+    unit: mm
+    empirical: true
+    reason: typical wall of a T6 quartz-halogen tube; the calibration report does not state it
+
+physical:
+  filament_temperature:
+    # The true temperature of a coiled filament (Level 3, with the coil's cavity effect).
+    # In De Vos's extrapolated range (measured to 2800 K), which every level-3 sheet flags.
+    value: 3075.04
+    unit: K
+    empirical: true
+    reason: >-
+      fitted by `lss fit` (spectral objective, with coil_open_fraction) to nist-fel-f455
+      on 2026-10-14: NRMS 7.08e-03, du'v' 6.4e-04, dCCT -16.85 K
+    # Halogen lamps run up to ~3300 K; 3200 K is also where the De Vos emissivity,
+    # extrapolated, stops being defined.
+    bounds: [2600, 3200]
+  coil_open_fraction:
+    value: 0.352544
+    unit: "1"
+    empirical: true
+    reason: >-
+      fitted by `lss fit` (spectral objective, with filament_temperature) to nist-fel-f455
+      on 2026-10-14: NRMS 7.08e-03, du'v' 6.4e-04, dCCT -16.85 K
+    # 1 is a flat surface (no cavity effect); below ~0.05 the coil would be a near-closed
+    # cavity, which a coil whose turns are spaced by about a wire diameter is not.
+    bounds: [0.05, 1.0]
+
+models:
+  0: {generator: reference}
+  1:
+    generator: planck
+    params:
+      filament_temperature:
+        # A blackbody's temperature: no physical meaning beyond "the best Planck curve".
+        value: 3189.14
+        unit: K
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to nist-fel-f455 on 2026-10-14: NRMS
+          4.59e-02, du'v' 2.3e-03, dCCT +58.16 K
+        bounds: [2600, 3600]
+  2:
+    generator: tungsten
+    params:
+      filament_temperature:
+        # A flat-ribbon emissivity on a coiled filament: too blue a shape, so the fitted
+        # temperature drops ~75 K below Level 3's to compensate.
+        value: 3000.91
+        unit: K
+        empirical: true
+        reason: >-
+          fitted by `lss fit` (spectral objective) to nist-fel-f455 on 2026-10-14: NRMS
+          2.67e-02, du'v' 2.5e-03, dCCT -62.98 K
+        bounds: [2600, 3200]
+  3: {generator: tungsten_coil}

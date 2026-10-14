@@ -13,7 +13,8 @@ def _cmd_refs(args) -> int:
         if args.family and ref.family != args.family:
             continue
         lo, hi = ref.valid_range
-        print(f"{ref.id:<14} {ref.family:<13} {lo:g}-{hi:g} nm @ {ref.sampling_nm:g} nm  {ref.description}")
+        step = f"@ {ref.sampling_nm:g} nm" if ref.sampling_nm else f"at {ref.nodes.size} uneven nodes"
+        print(f"{ref.id:<14} {ref.family:<13} {lo:g}-{hi:g} nm {step}  {ref.description}")
     return 0
 
 

@@ -27,6 +27,7 @@
     ],
     "reference": "cie-fl10",
     "reference_bandpass_nm": 5.0,
+    "reference_nodes": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.06649012006480928
   },
@@ -58,6 +59,7 @@
     ],
     "reference": "cie-fl11",
     "reference_bandpass_nm": 5.0,
+    "reference_nodes": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.05975320326055913
   },
@@ -89,8 +91,225 @@
     ],
     "reference": "cie-fl12",
     "reference_bandpass_nm": 5.0,
+    "reference_nodes": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.07384467794286233
+  },
+  "halogen_nist_fel_f455@L1": {
+    "band_nrms": {
+      "1100-1700": 0.02204605792669627,
+      "1700-2500": 0.09939824826836627,
+      "250-380": 0.1850226224801995,
+      "380-480": 0.07102135203117588,
+      "480-580": 0.012090825659184647,
+      "580-680": 0.01396265106116433,
+      "680-780": 0.02251111068011682,
+      "780-1100": 0.02773594401874553
+    },
+    "comparable": true,
+    "delta_cct_k": 58.16399708716972,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": 0.1462856827564991,
+    "delta_rf": 0.14512404927531009,
+    "delta_uv_prime": 0.002266203294527262,
+    "empirical_params": 1,
+    "empirical_shared": 0,
+    "generator": "planck",
+    "lamp_id": "halogen_nist_fel_f455",
+    "level": 1,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      250.0,
+      2400.0
+    ],
+    "reference": "nist-fel-f455",
+    "reference_bandpass_nm": null,
+    "reference_nodes": 35,
+    "reference_sampling_nm": null,
+    "spectral_nrms": 0.04591771698807568
+  },
+  "halogen_nist_fel_f455@L2": {
+    "band_nrms": {
+      "1100-1700": 0.012410451938856037,
+      "1700-2500": 0.05229220266237678,
+      "250-380": 0.15231854085620522,
+      "380-480": 0.06756886795030946,
+      "480-580": 0.013516637112012295,
+      "580-680": 0.016858806984527,
+      "680-780": 0.024729930550317095,
+      "780-1100": 0.014886243943089354
+    },
+    "comparable": true,
+    "delta_cct_k": -62.97916400401573,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": -0.10317124699352576,
+    "delta_rf": -0.08249471924064267,
+    "delta_uv_prime": 0.0024781965635605244,
+    "empirical_params": 1,
+    "empirical_shared": 0,
+    "generator": "tungsten",
+    "lamp_id": "halogen_nist_fel_f455",
+    "level": 2,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      300.0,
+      2400.0
+    ],
+    "reference": "nist-fel-f455",
+    "reference_bandpass_nm": null,
+    "reference_nodes": 30,
+    "reference_sampling_nm": null,
+    "spectral_nrms": 0.026712806604673952
+  },
+  "halogen_nist_fel_f455@L3": {
+    "band_nrms": {
+      "1100-1700": 0.005740182497082041,
+      "1700-2500": 0.008816669715170712,
+      "250-380": 0.06296371832125376,
+      "380-480": 0.014998630061497806,
+      "480-580": 0.0035902873306406023,
+      "580-680": 0.004757679739283504,
+      "680-780": 0.0060451993017636985,
+      "780-1100": 0.002855725340116215
+    },
+    "comparable": true,
+    "delta_cct_k": -16.846249425893348,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": -0.002714955603110525,
+    "delta_rf": 0.011826900086248315,
+    "delta_uv_prime": 0.0006374312170212133,
+    "empirical_params": 2,
+    "empirical_shared": 0,
+    "generator": "tungsten_coil",
+    "lamp_id": "halogen_nist_fel_f455",
+    "level": 3,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      300.0,
+      2400.0
+    ],
+    "reference": "nist-fel-f455",
+    "reference_bandpass_nm": null,
+    "reference_nodes": 30,
+    "reference_sampling_nm": null,
+    "spectral_nrms": 0.007084086966279166
+  },
+  "halogen_nist_fel_f456@L1": {
+    "band_nrms": {
+      "1100-1700": 0.022714514029157615,
+      "1700-2500": 0.1061710394906705,
+      "250-380": 0.1781855585924751,
+      "380-480": 0.06724002825791384,
+      "480-580": 0.011294465024298858,
+      "580-680": 0.01296782374052951,
+      "680-780": 0.020430736928314177,
+      "780-1100": 0.02446992804636758
+    },
+    "comparable": true,
+    "delta_cct_k": 55.073901024569295,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": 0.13867356064498892,
+    "delta_rf": 0.14013446087132309,
+    "delta_uv_prime": 0.002137834739551586,
+    "empirical_params": 1,
+    "empirical_shared": 0,
+    "generator": "planck",
+    "lamp_id": "halogen_nist_fel_f456",
+    "level": 1,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      250.0,
+      2400.0
+    ],
+    "reference": "nist-fel-f456",
+    "reference_bandpass_nm": null,
+    "reference_nodes": 35,
+    "reference_sampling_nm": null,
+    "spectral_nrms": 0.045708597386689045
+  },
+  "halogen_nist_fel_f456@L2": {
+    "band_nrms": {
+      "1100-1700": 0.010487043316383927,
+      "1700-2500": 0.04697396388139381,
+      "250-380": 0.15640466897223781,
+      "380-480": 0.07088811277160391,
+      "480-580": 0.014299410523068322,
+      "580-680": 0.017893744733181546,
+      "680-780": 0.02691084664409151,
+      "780-1100": 0.017910418834618726
+    },
+    "comparable": true,
+    "delta_cct_k": -66.06926006663252,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": -0.11078336910473752,
+    "delta_rf": -0.08748430764411808,
+    "delta_uv_prime": 0.0026053063776812994,
+    "empirical_params": 1,
+    "empirical_shared": 0,
+    "generator": "tungsten",
+    "lamp_id": "halogen_nist_fel_f456",
+    "level": 2,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      300.0,
+      2400.0
+    ],
+    "reference": "nist-fel-f456",
+    "reference_bandpass_nm": null,
+    "reference_nodes": 30,
+    "reference_sampling_nm": null,
+    "spectral_nrms": 0.027317143262522568
+  },
+  "halogen_nist_fel_f456@L3": {
+    "band_nrms": {
+      "1100-1700": 0.006412383675224713,
+      "1700-2500": 0.014621217664486902,
+      "250-380": 0.06589567725592785,
+      "380-480": 0.018504819672143614,
+      "480-580": 0.0043799131506719055,
+      "580-680": 0.005792490663844635,
+      "680-780": 0.008186348985020478,
+      "780-1100": 0.0022957699178710114
+    },
+    "comparable": true,
+    "delta_cct_k": -19.936345488502866,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": -0.01032707771454966,
+    "delta_rf": 0.00683731168267343,
+    "delta_uv_prime": 0.0007628858007151357,
+    "empirical_params": 2,
+    "empirical_shared": 0,
+    "generator": "tungsten_coil",
+    "lamp_id": "halogen_nist_fel_f456",
+    "level": 3,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      300.0,
+      2400.0
+    ],
+    "reference": "nist-fel-f456",
+    "reference_bandpass_nm": null,
+    "reference_nodes": 30,
+    "reference_sampling_nm": null,
+    "spectral_nrms": 0.00857627695524527
   },
   "incandescent_cie_a@L1": {
     "band_nrms": {
@@ -120,6 +339,7 @@
     ],
     "reference": "cie-a",
     "reference_bandpass_nm": null,
+    "reference_nodes": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.0003093947968980765
   },
@@ -151,6 +371,7 @@
     ],
     "reference": "cie-a",
     "reference_bandpass_nm": null,
+    "reference_nodes": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.02033867385913995
   },
@@ -182,6 +403,7 @@
     ],
     "reference": "cie-led-b1",
     "reference_bandpass_nm": 5.0,
+    "reference_nodes": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.08019122256798612
   },
@@ -213,6 +435,7 @@
     ],
     "reference": "cie-led-b1",
     "reference_bandpass_nm": 5.0,
+    "reference_nodes": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.016855284078674704
   },
@@ -244,6 +467,7 @@
     ],
     "reference": "cie-led-b2",
     "reference_bandpass_nm": 5.0,
+    "reference_nodes": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.06693626434126607
   },
@@ -275,6 +499,7 @@
     ],
     "reference": "cie-led-b2",
     "reference_bandpass_nm": 5.0,
+    "reference_nodes": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.021435438236057376
   },
@@ -306,6 +531,7 @@
     ],
     "reference": "cie-led-b3",
     "reference_bandpass_nm": 5.0,
+    "reference_nodes": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.08085197030486689
   },
@@ -337,6 +563,7 @@
     ],
     "reference": "cie-led-b3",
     "reference_bandpass_nm": 5.0,
+    "reference_nodes": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.02793309235690177
   },
@@ -368,6 +595,7 @@
     ],
     "reference": "cie-led-b4",
     "reference_bandpass_nm": 5.0,
+    "reference_nodes": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.06457855284915325
   },
@@ -399,6 +627,7 @@
     ],
     "reference": "cie-led-b4",
     "reference_bandpass_nm": 5.0,
+    "reference_nodes": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.050568695979254556
   },
@@ -430,6 +659,7 @@
     ],
     "reference": "cie-led-b5",
     "reference_bandpass_nm": 5.0,
+    "reference_nodes": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.061429917608381956
   },
@@ -461,6 +691,7 @@
     ],
     "reference": "cie-led-b5",
     "reference_bandpass_nm": 5.0,
+    "reference_nodes": null,
     "reference_sampling_nm": 5.0,
     "spectral_nrms": 0.04702259449588001
   }

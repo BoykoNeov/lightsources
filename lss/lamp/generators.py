@@ -6,6 +6,8 @@ Each generator produces bare emission plus whatever it already folds in
 * ``reference`` — Level 0: the measured or tabulated spectrum itself.
 * ``planck`` — thermal Level 1: a blackbody at the filament temperature.
 * ``tungsten`` — thermal Level 2: tungsten's measured selective emissivity × Planck.
+* ``tungsten_coil`` — thermal Level 3: the same, with the coil's cavity effect on the
+  emissivity (one open-area fraction standing for the coil's geometry).
 * ``led_two_band`` — LED Level 1: a blue pump band plus one asymmetric phosphor band,
   both shaped in photon energy, with fitted shapes.
 * ``led_phosphor_layer`` — LED Level 2: the die's blue light through a layer of a Ce³⁺
@@ -61,7 +63,7 @@ def _planck(lamp, spec) -> EmissionProfile:
     )
 
 
-def _tungsten(lamp, spec) -> EmissionProfile:
+def _tungsten(lamp, spec, coil: bool = False) -> EmissionProfile:
     from lss.physics.thermal import tungsten
 
     t = lamp.parameter("filament_temperature", spec)
@@ -72,20 +74,32 @@ def _tungsten(lamp, spec) -> EmissionProfile:
     if tab.extrapolated(t.value):
         lo, hi = tab.measured_range_k
         data += f"; extrapolated linearly in T to {t.value:g} K (measured {lo:g}-{hi:g} K)"
-    spectrum = Spectrum.of(tungsten.TungstenContinuum(t.value), quantity="W m-2 sr-1 nm-1",
-                           name=f"tungsten {t.value:g} K")
+    params = {"filament_temperature": t.as_dict()}
+    if coil:
+        f = lamp.parameter("coil_open_fraction", spec)
+        if f.unit != "1":
+            raise ValueError("coil_open_fraction is an area ratio, unit 1")
+        params["coil_open_fraction"] = f.as_dict()
+        cont = tungsten.TungstenCoilContinuum(t.value, open_fraction=f.value)
+        name = f"tungsten coil {t.value:g} K, open fraction {f.value:g}"
+    else:
+        cont, name = tungsten.TungstenContinuum(t.value), f"tungsten {t.value:g} K"
     return EmissionProfile(
-        zones=(Zone(spectrum, name="filament"),),
+        zones=(Zone(Spectrum.of(cont, quantity="W m-2 sr-1 nm-1", name=name), name="filament"),),
         power=None,  # radiance only, and ε is unknown outside 300-2500 nm
         includes=frozenset(),
         metadata={
-            "generator": "tungsten",
+            "generator": "tungsten_coil" if coil else "tungsten",
             "level": spec.level,
-            "params": {"filament_temperature": t.as_dict()},
+            "params": params,
             "valid_range_nm": tab.wavelength_range_nm,
             "data_versions": ["CODATA 2018 constants", data],
         },
     )
+
+
+def _tungsten_coil(lamp, spec) -> EmissionProfile:
+    return _tungsten(lamp, spec, coil=True)
 
 
 def _nm(lamp, spec, name):
@@ -215,8 +229,9 @@ def _fluorescent_triband(lamp, spec) -> EmissionProfile:
     )
 
 
-GENERATORS = {"reference": _reference, "planck": _planck, "tungsten": _tungsten, "led_two_band": _led_two_band,
-              "led_phosphor_layer": _led_phosphor_layer, "fluorescent_triband": _fluorescent_triband}
+GENERATORS = {"reference": _reference, "planck": _planck, "tungsten": _tungsten, "tungsten_coil": _tungsten_coil,
+              "led_two_band": _led_two_band, "led_phosphor_layer": _led_phosphor_layer,
+              "fluorescent_triband": _fluorescent_triband}
 
 
 def run(lamp, spec) -> EmissionProfile:
