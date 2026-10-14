@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.idea/
+.vscode/
+# rendered output and caches
+*.exr
+cache/
