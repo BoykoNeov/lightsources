@@ -6,9 +6,10 @@
 #   Intensities are relative irradiances (energy units) from J. Reader, C. J. Sansonetti
 #   and J. M. Bridges, Appl. Opt. 35, 78-83 (1996), with 435.8 nm set to 10000.
 # Lamp: Oriel 6035 pencil lamp, natural Hg in Ar at low pressure, quartz, 15 mA dc.
-# A fluorescent tube runs the same kind of discharge (Hg in Ar, a few Pa of Hg) at
-# ~0.4 A in a wider tube, so its line ratios differ somewhat; that is a level-1
-# assumption, and level 2's UV budget replaces it.
+# A fluorescent tube runs the same kind of discharge (Hg in Ar) at a higher current in
+# a wider tube (typical operating values, not checked against a source), so its line
+# ratios differ somewhat; that is a level-1 assumption, and level 2's UV budget
+# replaces it.
 
 source: "Sansonetti, Salit & Reader, Appl. Opt. 35, 74 (1996), Table 2"
 medium: air

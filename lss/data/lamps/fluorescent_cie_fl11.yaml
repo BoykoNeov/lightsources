@@ -21,10 +21,10 @@ physical:
     value: 320
     unit: K
     source: >-
-      typical: the tube runs with its coldest spot near 40 C, where the Hg vapour
-      pressure gives the most light (Waymouth, Electric Discharge Lamps, 1971); the
-      gas is somewhat hotter. It sets only the Doppler width of the Hg lines
-      (~0.0004 nm), far below the 5 nm reference tables.
+      typical value, not checked against a source: a tube runs with its coldest spot
+      near 40 C, where the Hg vapour pressure gives the most light, and the gas is
+      somewhat hotter. It sets only the Doppler width of the Hg lines (~0.0004 nm),
+      far below the 5 nm reference tables, so even a large error does not matter.
 
 models:
   0: {generator: reference}
