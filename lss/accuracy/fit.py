@@ -233,7 +233,8 @@ def _entry(p: FittedParameter, reason: str) -> list[str]:
     lo, hi = p.bounds
     name = p.name.rsplit(".", 1)[-1] if p.read_from == LIBRARY else p.name
     return [f"{name}:", f"  value: {p.value:.6g}", f"  unit: {p.unit}", "  empirical: true", "  reason: >-",
-            *textwrap.wrap(reason, 88, initial_indent="    ", subsequent_indent="    "),
+            *textwrap.wrap(reason, 88, initial_indent="    ", subsequent_indent="    ",
+                          break_on_hyphens=False),
             f"  bounds: [{lo:g}, {hi:g}]"]
 
 

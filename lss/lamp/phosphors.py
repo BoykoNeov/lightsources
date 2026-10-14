@@ -40,8 +40,18 @@ class Phosphor:
 
 
 @lru_cache(maxsize=1)
+def _doc() -> dict:
+    return yaml.safe_load(resources.files("lss.data").joinpath("phosphors.yaml").read_text(encoding="utf-8"))
+
+
+def fitted_to() -> frozenset[str]:
+    """Reference ids the shared shapes were fitted to: scores against them are in-sample."""
+    return frozenset(_doc().get("fitted_to", ()))
+
+
+@lru_cache(maxsize=1)
 def _load() -> tuple[dict[str, Phosphor], dict[str, Parameter]]:
-    doc = yaml.safe_load(resources.files("lss.data").joinpath("phosphors.yaml").read_text(encoding="utf-8"))
+    doc = _doc()
     phosphors, params = {}, {}
     for pid, ph in doc["phosphors"].items():
         if "." in pid:

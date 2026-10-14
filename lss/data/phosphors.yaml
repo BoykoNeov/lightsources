@@ -11,6 +11,9 @@
 # (`lss fit` with several lamps), not measured phosphor spectra. Level 2 replaces them
 # with measured excitation and emission spectra.
 
+# References the shared shapes were fitted to. Scores against these are in-sample; the
+# accuracy report says so, and the design doc gives the leave-one-out scores.
+fitted_to: [cie-fl10, cie-fl11, cie-fl12]
 phosphors:
   BAM:
     name: BaMgAl10O17:Eu2+
@@ -21,26 +24,32 @@ phosphors:
       band:
         shape: split
         peak:
-          value: 450.0
+          value: 447.393
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 435
           - 465
         half_width_short:
-          value: 22.0
+          value: 20.8986
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 10
           - 45
         half_width_long:
-          value: 28.0
+          value: 50.2207
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 10
           - 60
@@ -51,82 +60,120 @@ phosphors:
     main: 7F5
     bands:
       7F6:
-        shape: symmetric
+        shape: split
         peak:
-          value: 489.0
+          value: 485.84
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 482
           - 496
-        fwhm:
-          value: 8.0
+        half_width_short:
+          value: 2.23875
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
+          bounds:
+          - 0.5
+          - 12
+        half_width_long:
+          value: 8.19523
+          unit: nm
+          empirical: true
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 1
           - 20
         share:
-          value: 0.25
+          value: 0.245961
           unit: '1'
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 0
           - 1
       7F5:
-        shape: symmetric
+        shape: split
         peak:
-          value: 544.0
+          value: 541.392
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 538
           - 550
-        fwhm:
-          value: 6.0
+        half_width_short:
+          value: 2.64319
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
+          bounds:
+          - 0.5
+          - 12
+        half_width_long:
+          value: 8.1342
+          unit: nm
+          empirical: true
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 1
-          - 15
+          - 25
       7F4:
         shape: symmetric
         peak:
-          value: 586.0
+          value: 584.672
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 578
           - 594
         fwhm:
-          value: 8.0
+          value: 8.90353
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 1
           - 20
         share:
-          value: 0.12
+          value: 0.13434
           unit: '1'
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 0
           - 1
       7F3:
         shape: symmetric
         peak:
-          value: 621.0
+          value: 621.66
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 615
           - 627
@@ -137,13 +184,99 @@ phosphors:
           reason: 'assumed: a weak band the 5 nm reference tables barely resolve (1 or 3 nm instead moves
             a score by < 0.5 %; tests/test_fluorescent.py)'
         share:
-          value: 0.05
+          value: 0.0932111
           unit: '1'
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 0
           - 0.5
+      7F2:
+        shape: symmetric
+        peak:
+          value: 643.289
+          unit: nm
+          empirical: true
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
+          bounds:
+          - 641
+          - 653
+        fwhm:
+          value: 2.0
+          unit: nm
+          empirical: true
+          reason: 'assumed: a weak band the 5 nm reference tables barely resolve (1 or 3 nm instead moves
+            a score by < 0.5 %; tests/test_fluorescent.py)'
+        share:
+          value: 0.0308087
+          unit: '1'
+          empirical: true
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
+          bounds:
+          - 0
+          - 0.3
+      7F1:
+        shape: symmetric
+        peak:
+          value: 666.506
+          unit: nm
+          empirical: true
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
+          bounds:
+          - 661
+          - 673
+        fwhm:
+          value: 2.0
+          unit: nm
+          empirical: true
+          reason: 'assumed: a weak band the 5 nm reference tables barely resolve (1 or 3 nm instead moves
+            a score by < 0.5 %; tests/test_fluorescent.py)'
+        share:
+          value: 0.0346381
+          unit: '1'
+          empirical: true
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
+          bounds:
+          - 0
+          - 0.3
+      7F0:
+        shape: symmetric
+        peak:
+          value: 676.687
+          unit: nm
+          empirical: true
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
+          bounds:
+          - 674
+          - 686
+        fwhm:
+          value: 2.0
+          unit: nm
+          empirical: true
+          reason: 'assumed: a weak band the 5 nm reference tables barely resolve (1 or 3 nm instead moves
+            a score by < 0.5 %; tests/test_fluorescent.py)'
+        share:
+          value: 0.015388
+          unit: '1'
+          empirical: true
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
+          bounds:
+          - 0
+          - 0.3
   YOX:
     name: Y2O3:Eu3+
     colour: red
@@ -153,80 +286,105 @@ phosphors:
       7F1:
         shape: symmetric
         peak:
-          value: 593.0
+          value: 592.802
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 585
           - 600
         fwhm:
-          value: 10.0
+          value: 20.0
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12);
+            at its bound (see note)'
           bounds:
           - 1
           - 20
         share:
-          value: 0.1
+          value: 0.420345
           unit: '1'
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 0
           - 1
+        note: 'FINDING: its width runs to the 20 nm bound and its share (~0.42 of the 611 nm line) is
+          several times what a single Eu3+ 5D0-7F1 group carries. It is filling the raised floor of the
+          555-600 nm valley, which no band here explains (see the design doc, §4.3).'
       7F2-611:
         shape: symmetric
         peak:
-          value: 611.0
+          value: 611.976
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 607
           - 615
         fwhm:
-          value: 2.0
+          value: 5.96443
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12);
+            at its bound (see note)'
           bounds:
           - 0.5
           - 6
+        note: 'FINDING: its width runs to the 6 nm bound. The 615 nm node holds more than one narrow line
+          at 612 nm would give it: unresolved further 5D0-7F2 components.'
       7F2-630:
         shape: symmetric
         peak:
-          value: 629.0
+          value: 628.737
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 623
           - 635
         fwhm:
-          value: 6.0
+          value: 10.3199
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 1
           - 15
         share:
-          value: 0.12
+          value: 0.289352
           unit: '1'
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 0
           - 1
       7F3:
         shape: symmetric
         peak:
-          value: 650.0
+          value: 652.593
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 644
           - 656
@@ -237,62 +395,76 @@ phosphors:
           reason: 'assumed: a weak band the 5 nm reference tables barely resolve (1 or 3 nm instead moves
             a score by < 0.5 %; tests/test_fluorescent.py)'
         share:
-          value: 0.03
+          value: 0.0671698
           unit: '1'
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 0
           - 0.5
       7F4-690:
         shape: symmetric
         peak:
-          value: 690.0
+          value: 688.119
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 684
           - 696
         fwhm:
-          value: 6.0
+          value: 13.0845
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 1
           - 15
         share:
-          value: 0.03
+          value: 0.0599467
           unit: '1'
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 0
           - 0.5
       7F4-709:
         shape: symmetric
         peak:
-          value: 709.0
+          value: 708.997
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 703
           - 715
         fwhm:
-          value: 6.0
+          value: 10.5415
           unit: nm
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 1
           - 15
         share:
-          value: 0.08
+          value: 0.133405
           unit: '1'
           empirical: true
-          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          reason: 'fitted by `lss fit` (spectral objective) to cie-fl10, cie-fl11, cie-fl12 jointly on
+            2026-10-14: NRMS 6.65e-02, du''v'' 1.6e-03, dCCT +73.61 K (cie-fl10); NRMS 5.98e-02, du''v''
+            5.9e-04, dCCT +1.04 K (cie-fl11); NRMS 7.38e-02, du''v'' 1.4e-03, dCCT -15.50 K (cie-fl12)'
           bounds:
           - 0
           - 0.5

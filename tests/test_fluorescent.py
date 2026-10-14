@@ -82,7 +82,7 @@ def test_presets_are_scored_through_their_tube(preset):
     assert quickpath.apply(lamps.load(preset), lamps.load(preset).generate(1)).includes == {"phosphor", "envelope"}
 
 
-@pytest.mark.parametrize("band", ["YOX.7F3", "LAP.7F3"])
+@pytest.mark.parametrize("band", ["YOX.7F3", "LAP.7F3", "LAP.7F2", "LAP.7F1", "LAP.7F0"])
 def test_weak_band_widths_barely_matter_at_5_nm(band):
     # A narrow band's apparent width grows with its width squared, so a strong line
     # (YOX 611 nm) shows its width in a 5 nm table and is fitted; for these weak bands
@@ -102,3 +102,23 @@ def test_weak_band_widths_barely_matter_at_5_nm(band):
     for fwhm in (1.0, 3.0):
         c = report.compare(EmissionProfile(zones=(Zone(model(fwhm)),)), ref)
         assert np.sqrt(np.mean(c.residuals**2)) < 5e-3
+
+
+@pytest.mark.parametrize("preset", FL)
+def test_calibrated_tubes_match_their_tables_in_sample(preset):
+    # In-sample: the shared shapes were fitted to these three tables (leave-one-out
+    # scores are in the design doc, §4.3).
+    row = report.score(lamps.load(preset), 1)
+    assert row.spectral_nrms < 0.08
+    assert row.delta_uv_prime < 2e-3
+    assert abs(row.delta_ra) < 1.0
+    assert row.note.startswith("in-sample")
+    assert row.empirical_shared > 30 and row.empirical_params == row.empirical_shared + 3
+
+
+def test_shared_shape_findings_stay_at_their_bounds():
+    # Values at a bound are findings, recorded in the library's notes: if a change frees
+    # them, the notes and the design doc need revisiting.
+    p = phosphors.parameters()
+    assert p["YOX.7F1.fwhm"].value == p["YOX.7F1.fwhm"].bounds[1]
+    assert p["YOX.7F2-611.fwhm"].value == pytest.approx(p["YOX.7F2-611.fwhm"].bounds[1], rel=0.01)

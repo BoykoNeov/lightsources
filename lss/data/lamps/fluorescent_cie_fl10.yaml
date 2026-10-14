@@ -36,20 +36,29 @@ models:
     generator: fluorescent_triband
     params:
       hg_to_green:
-        value: 0.3
+        value: 0.395352
         unit: "1"
         empirical: true
-        reason: starting value read off the CIE table; not yet fitted
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-fl10, jointly with cie-fl10,
+          cie-fl11, cie-fl12 on 2026-10-14: NRMS 6.65e-02, du'v' 1.6e-03, dCCT +73.61
+          K
         bounds: [0.001, 1]
       blue_to_green:
-        value: 0.8
+        value: 0.738919
         unit: "1"
         empirical: true
-        reason: starting value read off the CIE table; not yet fitted
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-fl10, jointly with cie-fl10,
+          cie-fl11, cie-fl12 on 2026-10-14: NRMS 6.65e-02, du'v' 1.6e-03, dCCT +73.61
+          K
         bounds: [0.01, 5]
       red_to_green:
-        value: 0.5
+        value: 0.821405
         unit: "1"
         empirical: true
-        reason: starting value read off the CIE table; not yet fitted
+        reason: >-
+          fitted by `lss fit` (spectral objective) to cie-fl10, jointly with cie-fl10,
+          cie-fl11, cie-fl12 on 2026-10-14: NRMS 6.65e-02, du'v' 1.6e-03, dCCT +73.61
+          K
         bounds: [0.05, 5]

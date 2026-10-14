@@ -71,6 +71,7 @@ class Row:
     delta_flux: float | None = None  # needs electrical/absolute data; none in step 1
     delta_efficacy: float | None = None
     empirical_params: int = 0
+    empirical_shared: int = 0  # of those, shared with other lamps (the phosphor library)
 
     @property
     def key(self) -> str:
@@ -133,8 +134,11 @@ def score(lamp, level: int, ref=None) -> Row:
     """Score one model level; ``ref`` defaults to the lamp's own reference."""
     ref = ref if ref is not None else references.get(lamp.reference)
     profile = model_profile(lamp, level, ref)
+    shared = set(profile.metadata.get("shared", ()))
     base = dict(lamp_id=lamp.id, level=level, generator=profile.metadata.get("generator", ""), reference=ref.id,
-                empirical_params=profile.empirical_count)
+                empirical_params=profile.empirical_count,
+                empirical_shared=sum(bool(p.get("empirical")) for n, p in profile.metadata.get("params", {}).items()
+                                     if n in shared))
 
     missing = missing_components(profile, ref)
     if missing:
@@ -143,6 +147,10 @@ def score(lamp, level: int, ref=None) -> Row:
 
     c = compare(profile, ref)
     m, r = c.model, c.reference
+    from lss.lamp import phosphors
+
+    note = ("in-sample: the shared phosphor shapes were fitted to this reference (leave-one-out scores: "
+            "design doc §4.3)") if shared and ref.id in phosphors.fitted_to() else ""
     lo, hi = c.range_nm
     md, rd = m.density[c.inside], r.density[c.inside]
     centres = m.grid.centres[c.inside]
@@ -158,6 +166,7 @@ def score(lamp, level: int, ref=None) -> Row:
     return Row(
         **base,
         comparable=True,
+        note=note,
         path="quick",
         range_nm=(lo, hi),
         reference_sampling_nm=ref.sampling_nm,
@@ -186,14 +195,18 @@ def run() -> list[Row]:
 
 def format_text(rows: list[Row]) -> str:
     duv = "du'v'"
-    head = f"{'lamp @ level':<28}{'reference':<12}{'NRMS':>9}{duv:>10}{'dCCT K':>9}{'dRa':>7}{'dRf':>7}{'emp':>5}"
+    head = (f"{'lamp @ level':<28}{'reference':<12}{'NRMS':>9}{duv:>10}{'dCCT K':>9}{'dRa':>7}{'dRf':>7}"
+            f"{'emp (shared)':>14}")
     out = [f"Accuracy report (normalisation: {NORMALISATION}; path: quick)", head, "-" * len(head)]
     for r in rows:
         if not r.comparable:
             out.append(f"{r.key:<28}{r.reference:<12}  not comparable: {r.note}")
             continue
         out.append(f"{r.key:<28}{r.reference:<12}{r.spectral_nrms:>9.2e}{r.delta_uv_prime:>10.1e}"
-                   f"{r.delta_cct_k:>+9.2f}{r.delta_ra:>+7.2f}{r.delta_rf:>+7.2f}{r.empirical_params:>5}")
+                   f"{r.delta_cct_k:>+9.2f}{r.delta_ra:>+7.2f}{r.delta_rf:>+7.2f}"
+                   f"{f'{r.empirical_params} ({r.empirical_shared})' if r.empirical_shared else r.empirical_params:>14}")
+        if r.note:
+            out.append(f"{'':<28}{r.note}")
         out.append(f"{'':<28}range {r.range_nm[0]:g}-{r.range_nm[1]:g} nm, reference sampled every "
                    f"{r.reference_sampling_nm:g} nm"
                    + (f" (model seen through its {r.reference_bandpass_nm:g} nm bandpass)"
