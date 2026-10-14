@@ -240,6 +240,7 @@ The responsibilities are split one way only:
 - *Quick path (no renderer, milliseconds):* envelope transmission applied as an angle-averaged spectral factor to the line list and continuum. Reflectors are treated as an efficiency factor.
 - *Instrument path (renderer):* the full lamp is placed in a virtual integrating sphere or goniophotometer (§9.5). This gives total flux and angular distribution including every geometric effect, and it is the accurate number.
 - A test keeps the two paths consistent where the quick path's assumptions hold.
+- *Built (step 2): envelope on the quick path* (`lss/lamp/envelope.py`, `lss/lamp/quickpath.py`). A preset may name an envelope: a glass with tabulated n and k (clear soda-lime from Rubin 1985 so far) and a wall thickness. Its internal transmittance exp(−4πk·d/λ) is applied at normal incidence; surface reflection is left out (flat to 0.2 %, and on a coated tube it returns to the phosphor). Lamp sheets, the accuracy report and `lss fit` all use it, so a model is scored against a reference measured through its envelope like with like. It is not neutral: iron in the glass takes ~3 % at 780 nm and ~1 % in the green, which moves a 4000 K source by Δu′v′ ≈ 4×10⁻⁴.
 
 Swapping a component recomputes only what depends on it. A generator change touches only the zone spectra. An envelope, reflector or filter change invalidates the lighting maps that include it.
 

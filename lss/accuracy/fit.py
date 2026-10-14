@@ -107,7 +107,7 @@ def with_values(lamp: Lamp, level: int, values: dict[str, float]) -> Lamp:
 
 
 def _residuals(lamp: Lamp, level: int, ref, objective: str) -> np.ndarray:
-    c = report.compare(lamp.generate(level), ref)
+    c = report.compare(report.model_profile(lamp, level, ref), ref)
     if objective == "spectral":
         return c.residuals
     return cm.uv_prime(c.model) - cm.uv_prime(c.reference)
@@ -125,7 +125,7 @@ def fit(lamp: Lamp, level: int, ref=None, objective: str = "spectral", names: li
             raise ValueError(f"{lamp.id}: no reference to fit against")
         ref = references.get(lamp.reference)
 
-    missing = report.missing_components(lamp.generate(level), ref)
+    missing = report.missing_components(report.model_profile(lamp, level, ref), ref)
     if missing:
         raise ValueError(f"{lamp.id} level {level} cannot be fitted to {ref.id}: the reference includes "
                          f"{', '.join(sorted(missing))} and the model does not")

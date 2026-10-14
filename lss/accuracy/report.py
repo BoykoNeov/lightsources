@@ -2,10 +2,11 @@
 
 Rules
 -----
-* **Like with like.** A model is compared with a reference only if it already
-  contains every component the reference includes (envelope, phosphor, …).
-  Step 1 has no component models for the quick path yet, so other pairs are
-  listed as not comparable rather than scored wrongly.
+* **Like with like.** A model is compared with a reference only after the
+  lamp's own components that the reference includes (its envelope) are applied
+  on the quick path, and only if it then contains every one of them. A
+  component with no quick-path model leaves the pair listed as not
+  comparable rather than scored wrongly.
 * **Only where the reference has data.** Both spectra are cut to the
   reference's valid range by an exact window, never extrapolated.
 * **At the reference's resolution.** A table recorded with a bandpass (the CIE
@@ -27,6 +28,7 @@ import numpy as np
 
 from lss.accuracy import references
 from lss.lamp import lamp as lamps
+from lss.lamp import quickpath
 from lss.spectral import colorimetry as cm
 from lss.spectral.bandpass import as_recorded
 from lss.spectral.filters import Transmission
@@ -101,6 +103,12 @@ class Comparison:
         return (self.model.density[self.inside] - rd) / np.mean(rd)
 
 
+def model_profile(lamp, level: int, ref):
+    """The level's emission with the lamp's own components that ``ref`` includes applied
+    on the quick path, so it can be compared with the reference like with like."""
+    return quickpath.apply(lamp, lamp.generate(level), ref.includes)
+
+
 def missing_components(profile, ref) -> frozenset[str]:
     """Components the reference includes that the model does not (like with like)."""
     return ref.includes - profile.includes
@@ -124,7 +132,7 @@ def compare(profile, ref) -> Comparison:
 def score(lamp, level: int, ref=None) -> Row:
     """Score one model level; ``ref`` defaults to the lamp's own reference."""
     ref = ref if ref is not None else references.get(lamp.reference)
-    profile = lamp.generate(level)
+    profile = model_profile(lamp, level, ref)
     base = dict(lamp_id=lamp.id, level=level, generator=profile.metadata.get("generator", ""), reference=ref.id,
                 empirical_params=profile.empirical_count)
 

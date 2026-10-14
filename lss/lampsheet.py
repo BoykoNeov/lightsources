@@ -1,6 +1,7 @@
 """Lamp sheet (design §7): the numbers that describe one lamp at one model level.
 
-Quick path only (no renderer). Relative spectra give chromaticity, colour
+Quick path only (no renderer): the generator's emission passed through the
+lamp's own envelope as a spectral factor (``lss.lamp.quickpath``). Relative spectra give chromaticity, colour
 rendering and the luminous efficacy *of the radiation*; absolute flux and lamp
 efficacy need a model with an energy budget and are reported as unavailable
 until one exists.
@@ -10,6 +11,7 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
+from lss.lamp import quickpath
 from lss.lamp.lamp import Lamp
 from lss.provenance import code_version
 from lss.spectral import colorimetry as cm
@@ -43,6 +45,7 @@ class LampSheet:
     luminous_flux_lm: float | None
     valid_range_nm: tuple[float, float] | None
     params: dict
+    quick_path: dict  # components applied after the generator, with their parameters
     data_versions: list[str]
     code_version: str
 
@@ -61,7 +64,7 @@ def _all_wavelength_total(spectrum: Spectrum) -> float | None:
 
 
 def make(lamp: Lamp, level: int) -> LampSheet:
-    profile = lamp.generate(level)
+    profile = quickpath.apply(lamp, lamp.generate(level))
     spectrum = profile.spectrum
     binned = spectrum.bin(analysis_grid())
     meta = profile.metadata
@@ -110,6 +113,7 @@ def make(lamp: Lamp, level: int) -> LampSheet:
         luminous_flux_lm=flux_lm,
         valid_range_nm=tuple(valid) if valid else None,
         params=meta.get("params", {}),
+        quick_path=meta.get("quick_path", {}),
         data_versions=list(meta.get("data_versions", [])),
         code_version=code_version(),
     )
@@ -154,6 +158,11 @@ def format_text(sheet: LampSheet) -> str:
     for name, p in sheet.params.items():
         src = p.get("source") or f"EMPIRICAL: {p.get('reason')}"
         lines.append(row(name, f"{p['value']:g} {p['unit']}  ({src})"))
+    env = sheet.quick_path.get("envelope")
+    if env:
+        w = env["wall_thickness"]
+        src = w.get("source") or f"EMPIRICAL: {w.get('reason')}"
+        lines.append(row("envelope (quick path)", f"{env['material']}, wall {w['value']:g} {w['unit']}  ({src})"))
     for v in sheet.data_versions:
         lines.append(row("data", v))
     lines.append(row("code", sheet.code_version))
@@ -162,6 +171,6 @@ def format_text(sheet: LampSheet) -> str:
 
 def spd_rows(lamp: Lamp, level: int) -> tuple[np.ndarray, np.ndarray]:
     """1 nm analysis-grid SPD (mean density per bin) for export."""
-    binned = lamp.generate(level).spectrum.bin(analysis_grid())
+    binned = quickpath.apply(lamp, lamp.generate(level)).spectrum.bin(analysis_grid())
     return binned.grid.centres, binned.density
 

@@ -1,8 +1,9 @@
 """Lamp presets: one physical description shared by every model level (design §4, §5).
 
 A preset is a YAML file in ``lss/data/lamps/``. It names the lamp's family,
-its physical description (parameters with units and sources), the reference
-it is scored against, and the model levels available for it.
+its physical description (parameters with units and sources), its envelope if
+it has one, the reference it is scored against, and the model levels available
+for it.
 """
 
 from dataclasses import dataclass, field
@@ -11,6 +12,7 @@ from pathlib import Path
 
 import yaml
 
+from lss.lamp.envelope import Envelope
 from lss.lamp.profile import EmissionProfile
 from lss.params import Parameter
 
@@ -30,6 +32,7 @@ class Lamp:
     physical: dict[str, Parameter]
     reference: str | None
     models: dict[int, ModelSpec]
+    envelope: Envelope | None = None  # applied after the generator (design §5)
 
     def generate(self, level: int) -> EmissionProfile:
         from lss.lamp.generators import run
@@ -64,6 +67,7 @@ def lamp_from_dict(doc: dict) -> Lamp:
         physical=_params(doc.get("physical")),
         reference=doc.get("reference"),
         models=models,
+        envelope=Envelope.from_dict(doc["envelope"]) if doc.get("envelope") else None,
     )
 
 
