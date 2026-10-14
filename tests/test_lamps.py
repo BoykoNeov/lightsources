@@ -47,7 +47,8 @@ def test_presets_generate_every_level(preset):
         assert profile.metadata["level"] == level
         assert profile.metadata["data_versions"]
         assert profile.spectrum.total() > 0
-        assert profile.empirical_count == 0
+        for p in profile.metadata["params"].values():
+            assert p.get("source") or p.get("reason")
 
 
 def test_empirical_count_covers_only_parameters_a_level_uses():

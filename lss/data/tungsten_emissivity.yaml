@@ -1,0 +1,56 @@
+# Normal spectral emissivity of tungsten (design §4.1 L2, §4.6).
+#
+# Measurement: J. C. De Vos, "A new determination of the emissivity of tungsten
+# ribbon", Physica 20 (1954) 690-714, doi:10.1016/S0031-8914(54)80182-0.
+# Straight-rolled tungsten ribbon, annealed, in vacuum, 1600-2800 K, 0.23-2.7 um,
+# measured against a tubular blackbody formed from the ribbon itself.
+#
+# De Vos published smooth curves (graphs), not tables. The values below are the
+# reading of those curves by J. R. Branstetter, NASA TN D-1088 (1961), Table I,
+# columns "Normal spectral emissivity (ref. 4)": uncorrected, normal direction.
+# (Branstetter's other columns apply a scattering correction and convert to
+# hemispherical; they are not used here.)
+#
+# Independent cross-checks (tests/test_tungsten.py):
+#  * the TPRC reading of De Vos's 1600 K curve (Touloukian & DeWitt, TPRC Data
+#    Series vol. 7, 1970, table 234 curve 18, as served by the EKHI database)
+#    agrees within 0.002 at every shared wavelength;
+#  * Kravchenko & Mamuta, Herald of Khmelnytskyi Nat. Univ. 3 (2023) 234-239,
+#    doi:10.31891/2307-5732-2023-321-3-234-239, re-digitised De Vos and
+#    extrapolated to 3000 K; linear extrapolation of this table agrees within 0.002.
+# The EKHI copies of the 1800-2800 K curves are NOT used: their wavelength column
+# does not match their values (they violate the monotonic-in-T check).
+#
+# Limits, stated so nothing is silently over-trusted:
+#  * a flat ribbon, not a coiled filament (the coil's cavity effect is level 3);
+#  * the normal direction only, not averaged over all directions;
+#  * De Vos quotes 0.1 % measurement error; the error of reading his curves is
+#    larger, about +-0.002 absolute (spread between the two independent readings);
+#  * outside 1600-2800 K the module extrapolates linearly in T (up to 3200 K) and
+#    flags it.
+
+quantity: normal spectral emissivity
+citation: "De Vos, Physica 20 (1954) 690; values as read by Branstetter, NASA TN D-1088 (1961), Table I"
+uncertainty_abs: 0.002
+data_version: "De Vos 1954 via NASA TN D-1088 Table I (normal columns)"
+
+temperatures_k: [1600, 2200, 2800]
+
+# wavelength_um: [emissivity at 1600 K, 2200 K, 2800 K]
+table:
+  0.30: [0.482, 0.470, 0.456]
+  0.40: [0.481, 0.470, 0.461]
+  0.50: [0.469, 0.458, 0.448]
+  0.60: [0.455, 0.444, 0.434]
+  0.70: [0.444, 0.432, 0.419]
+  0.80: [0.431, 0.414, 0.400]
+  0.90: [0.413, 0.396, 0.383]
+  1.00: [0.390, 0.376, 0.367]
+  1.10: [0.367, 0.358, 0.352]
+  1.25: [0.331, 0.331, 0.331]
+  1.40: [0.300, 0.307, 0.313]
+  1.60: [0.263, 0.278, 0.292]
+  1.80: [0.234, 0.255, 0.274]
+  2.00: [0.210, 0.235, 0.259]
+  2.20: [0.190, 0.218, 0.245]
+  2.50: [0.170, 0.200, 0.229]

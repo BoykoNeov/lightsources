@@ -106,7 +106,7 @@ Every lamp preset has one **physical description** shared by all levels: geometr
 ### 4.1 Incandescent / halogen
 
 - **L1 — Planck** at filament temperature T.
-- **L2 — Tungsten selective emitter.** ε(λ, T) from De Vos (1954) / Larrabee tables. Tungsten's emissivity falls with wavelength across the visible, and *that* is why its CCT exceeds its true temperature. (A true greybody, with constant ε, has exactly the chromaticity of Planck at the same T.)
+- **L2 — Tungsten selective emitter.** ε(λ, T) from De Vos (1954), as read from his curves in NASA TN D-1088 (1961) and cross-checked against two independent readings (`lss/data/tungsten_emissivity.yaml`). Measured 1600–2800 K, 300–2500 nm; extrapolated linearly in T to 3200 K and flagged when it is. Its temperature is the *true* filament temperature, which is not the distribution temperature that L1 uses: Illuminant A's colour needs about 2798 K. Tungsten's emissivity falls with wavelength across the visible, and *that* is why its CCT exceeds its true temperature. (A true greybody, with constant ε, has exactly the chromaticity of Planck at the same T.)
 - **L3 — Coil geometry.** Coiled-coil cavity effect.
   - First step: ε_eff = ε / (ε + (1−ε)·f_open).
   - Accurate step: ray-trace the coil mesh in the renderer as an emitting tungsten surface with spectral BRDF 1−ε(λ, T) (virtual instrument, §9.5). This replaces f_open with geometry.
@@ -424,7 +424,7 @@ This form keeps the real exit code. The shorter `start /belownormal` form withou
   - D65 → (0.3127, 0.3290);
   - E → (1/3, 1/3);
   - our wrappers agree with `colour-science`.
-- **Tungsten (roadmap step 2, needs the De Vos data):** tungsten's selective ε(λ, T) at 2856 K gives a CCT above 2856 K, while a constant-ε greybody gives exactly the Planck chromaticity.
+- **Tungsten** *(passes, step 2)*: tungsten's selective ε(λ, T) at 2856 K gives a CCT above 2856 K (about 2916 K), while a constant-ε greybody gives exactly the Planck chromaticity. The emissivity table itself must pass a physics check: ε changes monotonically with T at each wavelength, falling at short wavelengths and rising at long ones, with one crossover near 1.25 µm.
 - **Lines:**
   - rasterising a line list into bins conserves power for any bin width;
   - applying a sharp-edged filter to a line list gives the exact result, independent of the grid.
@@ -516,7 +516,7 @@ The GUI wraps the same library.
    - Reference library with provenance; Level-0 lamps.
    - CLI lamp sheet; accuracy-report scaffolding.
    - Core tests in §12 pass, except the tungsten test, which needs the De Vos data and moves to step 2.
-2. **Thermal, LED and fluorescent models.** Incandescent L1–L4, LED L1–L3, fluorescent L1–L2, each with `fit` against references and scores in the accuracy report. No-render studies: colour chart, metameric pairs, CRI/TM-30.
+2. **Thermal, LED and fluorescent models.** *In progress: incandescent L2 done (2026-10-14).* Incandescent L1–L4, LED L1–L3, fluorescent L1–L2, each with `fit` against references and scores in the accuracy report. No-render studies: colour chart, metameric pairs, CRI/TM-30.
 3. **HID Stage A + B on line-local fine grids.**
    - Voigt profiles, (b, θ) chords, zone spectra.
    - HP-Hg and HPS presets; self-reversal tests.
@@ -550,6 +550,7 @@ The GUI wraps the same library.
 
 - **Renderer limits:** wavelength range and RTX 5090 support. Answered by the spike (§8.3).
 - **Reference measurements:** which lamps, and from where (LSPDD, manufacturers)? Is a spectrometer available for our own measurements? Measured SPD plus electrical data for the same lamp is the most valuable input to the accuracy loop.
+  - **Incandescent needs a measured reference.** The only one is CIE Illuminant A, which is a blackbody curve by definition. A real-tungsten model cannot match it exactly at any temperature (L2's residual against it is about 2 % NRMS at matched CCT). So against A, better physics can score worse, and a fitted temperature is a calibration, not a test. A measured incandescent or halogen SPD (ideally with lamp voltage and current) would make the L2–L4 scores meaningful.
   - **Needed before step 3.** The starter references (CIE 15:2018 tables) are 5 nm, 380–780 nm, relative and representative rather than measured. They check chromaticity, CCT and colour rendering, but not line shapes: the HPS self-reversal dip is a few nm wide and a 5 nm table smears it out. HID line-shape work needs finely resolved (≤ 1 nm) real spectra of HPS and HP-Hg lamps, ideally with electrical data. Every reference records its `sampling_nm` so the accuracy report shows what it can and cannot check.
 - **Transport coefficients for Hg/Na/Xe:** literature tables first. Computing them from collision cross-sections is the accurate rung, but it is a project in itself.
 - **Interatomic potentials** for the HPS wing profiles (Na–Na, Na–Hg, Na–Xe): which published sets to adopt.

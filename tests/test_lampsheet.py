@@ -45,7 +45,7 @@ def test_reference_sheet_states_its_limits():
 def test_cli_lampsheet_json(capsys):
     assert cli.main(["lampsheet", "incandescent_cie_a", "--json"]) == 0
     sheets = json.loads(capsys.readouterr().out)
-    assert [s["level"] for s in sheets] == [0, 1]
+    assert [s["level"] for s in sheets] == [0, 1, 2]
 
 
 def test_cli_spd_csv(tmp_path, capsys):
