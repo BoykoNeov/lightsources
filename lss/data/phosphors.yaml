@@ -1,0 +1,298 @@
+# Shared phosphor library (design §4.3 L1): emission shapes of the rare-earth
+# tri-phosphor blend, shared by every lamp that uses them.
+#
+# Each phosphor is a set of bands, each a Gaussian in photon energy (split: a separate
+# width on each side) with peaks and widths in nm on the energy shape, as in
+# lss/physics/led/bands.py. `share` is a band's power relative to the phosphor's main
+# band (whose share is 1); a lamp sets each phosphor's total power. Parameter names are
+# <phosphor>.<band>.<field>, e.g. LAP.7F6.share.
+#
+# These are level-1 shapes: tagged empirical, fitted jointly to several CIE lamp tables
+# (`lss fit` with several lamps), not measured phosphor spectra. Level 2 replaces them
+# with measured excitation and emission spectra.
+
+phosphors:
+  BAM:
+    name: BaMgAl10O17:Eu2+
+    colour: blue
+    activator: Eu2+ (4f6 5d -> 4f7)
+    main: band
+    bands:
+      band:
+        shape: split
+        peak:
+          value: 450.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 435
+          - 465
+        half_width_short:
+          value: 22.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 10
+          - 45
+        half_width_long:
+          value: 28.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 10
+          - 60
+  LAP:
+    name: LaPO4:Ce3+,Tb3+
+    colour: green
+    activator: Tb3+ (5D4 -> 7FJ)
+    main: 7F5
+    bands:
+      7F6:
+        shape: symmetric
+        peak:
+          value: 489.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 482
+          - 496
+        fwhm:
+          value: 8.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 1
+          - 20
+        share:
+          value: 0.25
+          unit: '1'
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 0
+          - 1
+      7F5:
+        shape: symmetric
+        peak:
+          value: 544.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 538
+          - 550
+        fwhm:
+          value: 6.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 1
+          - 15
+      7F4:
+        shape: symmetric
+        peak:
+          value: 586.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 578
+          - 594
+        fwhm:
+          value: 8.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 1
+          - 20
+        share:
+          value: 0.12
+          unit: '1'
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 0
+          - 1
+      7F3:
+        shape: symmetric
+        peak:
+          value: 621.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 615
+          - 627
+        fwhm:
+          value: 2.0
+          unit: nm
+          empirical: true
+          reason: 'assumed: a weak band the 5 nm reference tables barely resolve (1 or 3 nm instead moves
+            a score by < 0.5 %; tests/test_fluorescent.py)'
+        share:
+          value: 0.05
+          unit: '1'
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 0
+          - 0.5
+  YOX:
+    name: Y2O3:Eu3+
+    colour: red
+    activator: Eu3+ (5D0 -> 7FJ)
+    main: 7F2-611
+    bands:
+      7F1:
+        shape: symmetric
+        peak:
+          value: 593.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 585
+          - 600
+        fwhm:
+          value: 10.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 1
+          - 20
+        share:
+          value: 0.1
+          unit: '1'
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 0
+          - 1
+      7F2-611:
+        shape: symmetric
+        peak:
+          value: 611.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 607
+          - 615
+        fwhm:
+          value: 2.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 0.5
+          - 6
+      7F2-630:
+        shape: symmetric
+        peak:
+          value: 629.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 623
+          - 635
+        fwhm:
+          value: 6.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 1
+          - 15
+        share:
+          value: 0.12
+          unit: '1'
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 0
+          - 1
+      7F3:
+        shape: symmetric
+        peak:
+          value: 650.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 644
+          - 656
+        fwhm:
+          value: 2.0
+          unit: nm
+          empirical: true
+          reason: 'assumed: a weak band the 5 nm reference tables barely resolve (1 or 3 nm instead moves
+            a score by < 0.5 %; tests/test_fluorescent.py)'
+        share:
+          value: 0.03
+          unit: '1'
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 0
+          - 0.5
+      7F4-690:
+        shape: symmetric
+        peak:
+          value: 690.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 684
+          - 696
+        fwhm:
+          value: 6.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 1
+          - 15
+        share:
+          value: 0.03
+          unit: '1'
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 0
+          - 0.5
+      7F4-709:
+        shape: symmetric
+        peak:
+          value: 709.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 703
+          - 715
+        fwhm:
+          value: 6.0
+          unit: nm
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 1
+          - 15
+        share:
+          value: 0.08
+          unit: '1'
+          empirical: true
+          reason: starting value read off the CIE FL10-12 tables; not yet fitted
+          bounds:
+          - 0
+          - 0.5

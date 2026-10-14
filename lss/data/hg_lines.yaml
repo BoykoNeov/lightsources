@@ -1,0 +1,35 @@
+# Mercury lines of a low-pressure Hg-Ar discharge: air wavelengths and relative powers.
+#
+# Source: C. J. Sansonetti, M. L. Salit and J. Reader, "Wavelengths of spectral lines in
+#   mercury pencil lamps", Appl. Opt. 35, 74-77 (1996), Table 2. Wavelengths measured by
+#   Fourier-transform spectroscopy, uncertainty 0.0001 nm (0.0005 nm for 434.7506).
+#   Intensities are relative irradiances (energy units) from J. Reader, C. J. Sansonetti
+#   and J. M. Bridges, Appl. Opt. 35, 78-83 (1996), with 435.8 nm set to 10000.
+# Lamp: Oriel 6035 pencil lamp, natural Hg in Ar at low pressure, quartz, 15 mA dc.
+# A fluorescent tube runs the same kind of discharge (Hg in Ar, a few Pa of Hg) at
+# ~0.4 A in a wider tube, so its line ratios differ somewhat; that is a level-1
+# assumption, and level 2's UV budget replaces it.
+
+source: "Sansonetti, Salit & Reader, Appl. Opt. 35, 74 (1996), Table 2"
+medium: air
+# wavelength (nm), relative irradiance
+lines:
+  - [253.6521, 300000]
+  - [289.3601, 160]
+  - [296.7283, 2600]
+  - [302.1504, 280]
+  - [312.5674, 2800]
+  - [313.1555, 1900]
+  - [313.1844, 2800]
+  - [334.1484, 160]
+  - [365.0158, 5300]
+  - [365.4842, 970]
+  - [366.2887, 110]
+  - [366.3284, 650]
+  - [404.6565, 4400]
+  - [407.7837, 270]
+  - [434.7506, 34]
+  - [435.8335, 10000]
+  - [546.0750, 10000]
+  - [576.9610, 1100]
+  - [579.0670, 1200]

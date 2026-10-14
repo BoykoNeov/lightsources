@@ -42,13 +42,17 @@ class Lamp:
         return run(self, self.models[level])
 
     def parameter(self, name: str, spec: ModelSpec | None = None) -> Parameter:
-        """A model's own parameter if it sets one, else the shared physical description's."""
+        """A model's own parameter if it sets one, else the physical description's, else
+        the shared phosphor library's (``lss.lamp.phosphors``)."""
         if spec is not None and name in spec.params:
             return spec.params[name]
-        try:
+        if name in self.physical:
             return self.physical[name]
-        except KeyError:
-            raise KeyError(f"{self.id}: parameter {name!r} is not in the physical description") from None
+        from lss.lamp import phosphors
+
+        if phosphors.is_shared(name):
+            return phosphors.parameters()[name]
+        raise KeyError(f"{self.id}: parameter {name!r} is not in the physical description")
 
 
 def _params(d: dict | None) -> dict[str, Parameter]:

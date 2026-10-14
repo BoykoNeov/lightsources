@@ -1,4 +1,94 @@
 {
+  "fluorescent_cie_fl10@L1": {
+    "band_nrms": {
+      "380-480": 0.5032996768743792,
+      "480-580": 0.7414249329455512,
+      "580-680": 0.6017270388664402,
+      "680-780": 0.634169202584482
+    },
+    "comparable": true,
+    "delta_cct_k": 2377.1606529904248,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": -7.511817872616575,
+    "delta_rf": -5.629248396050841,
+    "delta_uv_prime": 0.03116672125854225,
+    "empirical_params": 34,
+    "generator": "fluorescent_triband",
+    "lamp_id": "fluorescent_cie_fl10",
+    "level": 1,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      380.0,
+      780.0
+    ],
+    "reference": "cie-fl10",
+    "reference_bandpass_nm": 5.0,
+    "reference_sampling_nm": 5.0,
+    "spectral_nrms": 0.7487009393053331
+  },
+  "fluorescent_cie_fl11@L1": {
+    "band_nrms": {
+      "380-480": 0.31587798345244017,
+      "480-580": 0.7410784330186586,
+      "580-680": 0.6223555482569813,
+      "680-780": 0.6011509439685875
+    },
+    "comparable": true,
+    "delta_cct_k": 1202.692603953465,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": -6.945901951522799,
+    "delta_rf": -4.3416209087435504,
+    "delta_uv_prime": 0.025204831468078035,
+    "empirical_params": 34,
+    "generator": "fluorescent_triband",
+    "lamp_id": "fluorescent_cie_fl11",
+    "level": 1,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      380.0,
+      780.0
+    ],
+    "reference": "cie-fl11",
+    "reference_bandpass_nm": 5.0,
+    "reference_sampling_nm": 5.0,
+    "spectral_nrms": 0.7442913226575004
+  },
+  "fluorescent_cie_fl12@L1": {
+    "band_nrms": {
+      "380-480": 0.32937742730632225,
+      "480-580": 0.8603209624396237,
+      "580-680": 0.6781188145999855,
+      "680-780": 0.5629807907043675
+    },
+    "comparable": true,
+    "delta_cct_k": 739.6561283979536,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": -3.5959218691809127,
+    "delta_rf": 1.5661095951838035,
+    "delta_uv_prime": 0.02694740834226034,
+    "empirical_params": 34,
+    "generator": "fluorescent_triband",
+    "lamp_id": "fluorescent_cie_fl12",
+    "level": 1,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      380.0,
+      780.0
+    ],
+    "reference": "cie-fl12",
+    "reference_bandpass_nm": 5.0,
+    "reference_sampling_nm": 5.0,
+    "spectral_nrms": 0.8794748356459952
+  },
   "incandescent_cie_a@L1": {
     "band_nrms": {
       "380-480": 0.00024951416249065683,

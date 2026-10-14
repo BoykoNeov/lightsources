@@ -1,0 +1,55 @@
+id: fluorescent_cie_fl12
+name: Three-band fluorescent lamp, 3000 K (CIE FL12)
+family: fluorescent
+reference: cie-fl12
+
+# The tube. The CIE table was measured through it, so models are scored after it
+# (quick path, lss/lamp/envelope.py). Its iron absorption takes ~3 % at 780 nm and
+# ~1 % in the green, enough to move the colour by du'v' ~4e-4.
+envelope:
+  material: soda-lime-rubin-clear
+  wall_thickness:
+    value: 0.8
+    unit: mm
+    source: >-
+      typical: T8/T12 fluorescent tube walls are 0.5-1.1 mm (US 10,920,972 B2, a glass
+      tube built to T8/T12 dimensions). That range moves a score by du'v' ~1.6e-4
+      (tests/test_envelope.py).
+
+physical:
+  gas_temperature:
+    value: 320
+    unit: K
+    source: >-
+      typical: the tube runs with its coldest spot near 40 C, where the Hg vapour
+      pressure gives the most light (Waymouth, Electric Discharge Lamps, 1971); the
+      gas is somewhat hotter. It sets only the Doppler width of the Hg lines
+      (~0.0004 nm), far below the 5 nm reference tables.
+
+models:
+  0: {generator: reference}
+  1:
+    # Visible Hg lines in measured ratios plus the tri-phosphor blend: blue BAM:Eu2+,
+    # green LaPO4:Ce,Tb (LAP), red Y2O3:Eu (YOX). Their shapes are shared by every
+    # lamp (lss/data/phosphors.yaml); this lamp sets only its mix, relative to the
+    # green phosphor's power.
+    generator: fluorescent_triband
+    params:
+      hg_to_green:
+        value: 0.3
+        unit: "1"
+        empirical: true
+        reason: starting value read off the CIE table; not yet fitted
+        bounds: [0.001, 1]
+      blue_to_green:
+        value: 0.2
+        unit: "1"
+        empirical: true
+        reason: starting value read off the CIE table; not yet fitted
+        bounds: [0.01, 5]
+      red_to_green:
+        value: 0.9
+        unit: "1"
+        empirical: true
+        reason: starting value read off the CIE table; not yet fitted
+        bounds: [0.05, 5]

@@ -8,6 +8,9 @@ Each generator produces bare emission plus whatever it already folds in
 * ``tungsten`` — thermal Level 2: tungsten's measured selective emissivity × Planck.
 * ``led_two_band`` — LED Level 1: a blue pump band plus one asymmetric phosphor band,
   both shaped in photon energy, with fitted shapes.
+* ``fluorescent_triband`` — fluorescent Level 1: the visible Hg lines in measured
+  ratios plus the rare-earth tri-phosphor blend, with shapes from the shared phosphor
+  library and this lamp's own mix.
 """
 
 from lss.lamp.profile import EmissionProfile, Zone
@@ -116,7 +119,49 @@ def _led_two_band(lamp, spec) -> EmissionProfile:
     )
 
 
-GENERATORS = {"reference": _reference, "planck": _planck, "tungsten": _tungsten, "led_two_band": _led_two_band}
+def _ratio(lamp, spec, name):
+    p = lamp.parameter(name, spec)
+    if p.unit != "1":
+        raise ValueError(f"{name} is a power ratio, unit 1")
+    return p
+
+
+def _fluorescent_triband(lamp, spec) -> EmissionProfile:
+    from lss.lamp import phosphors
+    from lss.physics.discharge import mercury
+
+    used = {}
+
+    def read(name):
+        used[name] = lamp.parameter(name, spec)
+        return used[name]
+
+    # Powers relative to the green phosphor's: the scores normalise each lamp to equal
+    # luminous flux, so its overall scale is not a parameter.
+    hg, blue, red = (_ratio(lamp, spec, n) for n in ("hg_to_green", "blue_to_green", "red_to_green"))
+    t_gas = lamp.parameter("gas_temperature", spec)
+    if t_gas.unit != "K":
+        raise ValueError("gas_temperature must be in K")
+    sources = mercury.visible_lines(hg.value, t_gas.value)
+    for pid, power in (("BAM", blue.value), ("LAP", 1.0), ("YOX", red.value)):
+        sources += phosphors.emission(pid, read, power)
+    used = {"hg_to_green": hg, "blue_to_green": blue, "red_to_green": red, "gas_temperature": t_gas, **used}
+    return EmissionProfile(
+        zones=(Zone(Spectrum.of(*sources, name="fluorescent tri-band"), name="tube"),),
+        power=None,  # relative: no discharge energy budget at this level
+        includes=frozenset({"phosphor"}),  # the phosphor bands are the converted light
+        metadata={
+            "generator": "fluorescent_triband",
+            "level": spec.level,
+            "params": {k: p.as_dict() for k, p in used.items()},
+            "shared": sorted(k for k in used if phosphors.is_shared(k)),
+            "data_versions": [mercury.table().source, phosphors.LIBRARY_PATH],
+        },
+    )
+
+
+GENERATORS = {"reference": _reference, "planck": _planck, "tungsten": _tungsten, "led_two_band": _led_two_band,
+              "fluorescent_triband": _fluorescent_triband}
 
 
 def run(lamp, spec) -> EmissionProfile:
