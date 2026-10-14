@@ -25,6 +25,7 @@ lss fit led_cie_b1 led_cie_b2 led_cie_b3 led_cie_b4 led_cie_b5 --level 2
                                  # LED phosphor layer: shared garnet and nitride constants
 lss chart ref:cie-hp1 --svg hp1.svg   # ColorChecker under a lamp vs TM-30's reference light
 lss chart led_cie_b3 --samples ces    # the 99 TM-30 samples (their mean shift gives Rf)
+lss metamers                          # a CONSTRUCTED pair matched in daylight, split under lamps
 ```
 
 ## Tests

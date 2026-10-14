@@ -1,4 +1,4 @@
-"""Command-line interface (design §13): ``lss refs | lampsheet | accuracy | fit | chart``."""
+"""Command-line interface (design §13): ``lss refs | lampsheet | accuracy | fit | chart | metamers``."""
 
 import argparse
 import json
@@ -119,6 +119,39 @@ def _cmd_chart(args) -> int:
     return 0
 
 
+METAMER_LAMPS = ["ref:cie-a", "ref:cie-fl2", "ref:cie-fl11", "led_cie_b3", "ref:cie-hp1"]
+
+
+def _cmd_metamers(args) -> int:
+    from lss.lamp import lamp as lamps
+    from lss.spectral.grids import analysis_grid
+    from lss.studies import appearance, metamers
+
+    lights = []
+    for name in args.lamp or METAMER_LAMPS:
+        lamp = lamps.load(name)
+        lights.append(appearance.lamp_light(lamp, max(lamp.models)))
+    try:
+        pair, study = metamers.study(lights, args.base or metamers.DEFAULT_BASE)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    if args.json:
+        print(json.dumps(study.as_dict(), indent=2))
+    else:
+        print(metamers.format_text(study))
+    if args.csv:
+        path = Path(args.csv)
+        with path.open("w", encoding="utf-8") as f:
+            f.write(f"# metameric pair, CONSTRUCTED: '{pair.base}' and a partner matched under {pair.match}\n")
+            f.write(f"# rule: {metamers.RULE}\n")
+            f.write("wavelength_nm,first,second\n")
+            for w, a, b in zip(analysis_grid().centres, pair.first, pair.second):
+                f.write(f"{w:g},{a:.6f},{b:.6f}\n")
+        print(f"\nreflectances written to {path.resolve()}", file=sys.stderr)
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="lss", description="Light source simulator")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -164,6 +197,14 @@ def main(argv=None) -> int:
     p.add_argument("--json", action="store_true", help="machine-readable output")
     p.add_argument("--svg", metavar="PATH", help="also write swatches (lamp over reference) as SVG")
     p.set_defaults(func=_cmd_chart)
+
+    p = sub.add_parser("metamers", help="a constructed pair of surfaces that match under D65: "
+                                        "how far they split under each lamp")
+    p.add_argument("lamp", nargs="*", help=f"lamps at their highest level (default: {' '.join(METAMER_LAMPS)})")
+    p.add_argument("--base", help="ColorChecker patch the pair starts from (default: neutral 6.5)")
+    p.add_argument("--json", action="store_true", help="machine-readable output")
+    p.add_argument("--csv", metavar="PATH", help="also write the two reflectances (1 nm) as CSV")
+    p.set_defaults(func=_cmd_metamers)
 
     args = parser.parse_args(argv)
     for stream in (sys.stdout, sys.stderr):
