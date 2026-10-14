@@ -8,12 +8,16 @@ reference: cie-a
 # (its emissivity falls with wavelength), so the filament itself is cooler.
 physical:
   filament_temperature:
-    value: 2798
+    # A calibration against a definition, not a test: Illuminant A is a blackbody
+    # curve, which tungsten cannot match in both shape and colour. Colour is what A
+    # defines, so colour is matched; a spectral fit would give 2774.5 K (NRMS 0.8 %)
+    # at the cost of a colour 25 K cooler.
+    value: 2799.83
     unit: K
     empirical: true
     reason: >-
-      true filament temperature chosen so the level-2 tungsten spectrum has the CCT of
-      Illuminant A (2855.7 K); a one-off calibration until `lss fit` replaces it
+      true filament temperature, fitted by `lss fit` (colour objective) to cie-a on
+      2026-10-14: NRMS 2.03e-02, du'v' 3.2e-04, dCCT +1.79 K
     # Plausible for a gas-filled general-service filament (vacuum lamps run near
     # 2400 K, halogen up to ~3300 K); the top is also where the De Vos emissivity,
     # extrapolated, stops being defined.

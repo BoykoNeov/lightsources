@@ -92,4 +92,6 @@ def test_level_2_preset_uses_true_temperature_and_matches_illuminant_a_colour():
     assert l2.metadata["valid_range_nm"] == (300.0, 2500.0)
     assert not any("extrapolated" in d for d in l2.metadata["data_versions"])
     cct, duv = cm.cct_duv(l2.spectrum.bin(analysis_grid()))
-    assert cct == pytest.approx(2855.7, abs=1.0)
+    # Fitted to the nearest chromaticity (du'v'), not to CCT alone: tungsten sits just
+    # off the Planckian locus, so the CCT lands within a couple of kelvin.
+    assert cct == pytest.approx(2855.7, abs=2.0)
