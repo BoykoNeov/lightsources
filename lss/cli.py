@@ -172,6 +172,23 @@ def _cmd_leddrive(args) -> int:
     return 0
 
 
+def _cmd_streethps(args) -> int:
+    from lss.accuracy import lica
+    from lss.studies import street_hps
+
+    if not lica.available():
+        print(f"downloading LICA-UCM lamp spectra ({lica.CITATION})\ninto {lica.path('lps').parent} "
+              "(set LSS_CACHE to change); they stay out of the repository at the site's request",
+              file=sys.stderr)
+    try:
+        lica.fetch_all()
+    except (OSError, ValueError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    print(street_hps.format_text())
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="lss", description="Light source simulator")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -230,6 +247,10 @@ def main(argv=None) -> int:
     p = sub.add_parser("leddrive", help="a measured warm-white LED at 150-500 mA (downloaded on first use): "
                                         "its colour shifts against LED Level 3's")
     p.set_defaults(func=_cmd_leddrive)
+
+    p = sub.add_parser("streethps", help="nine measured HPS street lamps (downloaded on first use) "
+                                         "against the rung-1 sodium arc, through the instrument's response")
+    p.set_defaults(func=_cmd_streethps)
 
     args = parser.parse_args(argv)
     for stream in (sys.stdout, sys.stderr):

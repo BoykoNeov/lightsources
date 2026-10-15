@@ -32,6 +32,8 @@ lss chart led_cie_b3 --samples ces    # the 99 TM-30 samples (their mean shift g
 lss metamers                          # a CONSTRUCTED pair matched in daylight, split under lamps
 lss leddrive                          # a measured LED at 150-500 mA (downloaded on first use; needs
                                       # pip install "lss[data]"), for LED Level 3
+lss streethps                         # nine measured HPS street lamps (LICA-UCM, downloaded on first
+                                      # use) against the sodium arc, through the spectrograph's response
 ```
 
 ## Tests

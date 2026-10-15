@@ -22,11 +22,8 @@ constants at their bounds, so the study compares *changes*, band by band
 the LED warming at a fixed current, where the edge effect is small.
 """
 
-import hashlib
 import io
-import os
 import re
-import urllib.request
 import zipfile
 from dataclasses import dataclass, replace
 from functools import lru_cache
@@ -34,6 +31,7 @@ from pathlib import Path
 
 import numpy as np
 
+from lss import download
 from lss.spectral import colorimetry as cm
 from lss.spectral.continuum import TabulatedContinuum
 from lss.spectral.grids import analysis_grid
@@ -50,17 +48,8 @@ SAMPLES = {1: range(875, 899), 2: range(899, 923)}
 WINDOW_NM = (430.0, 715.0)
 
 
-def cache_dir() -> Path:
-    """``$LSS_CACHE``, or ``~/.cache/lss``."""
-    return Path(os.environ.get("LSS_CACHE") or Path.home() / ".cache" / "lss")
-
-
 def data_path() -> Path:
-    return cache_dir() / "wu2026_sci_rep_supplement_1.zip"
-
-
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return download.cache_dir() / "wu2026_sci_rep_supplement_1.zip"
 
 
 def available() -> bool:
@@ -69,19 +58,7 @@ def available() -> bool:
 
 def fetch() -> Path:
     """The supplement in the cache, downloaded first if absent; its SHA-256 is checked either way."""
-    path = data_path()
-    if not path.exists():
-        path.parent.mkdir(parents=True, exist_ok=True)
-        req = urllib.request.Request(URL, headers={"User-Agent": "lss (light source simulator)"})
-        with urllib.request.urlopen(req, timeout=120) as r:
-            data = r.read()
-        tmp = path.with_suffix(".part")
-        tmp.write_bytes(data)
-        tmp.replace(path)
-    digest = _sha256(path)
-    if digest != SHA256:
-        raise ValueError(f"{path}: SHA-256 {digest} is not the published supplement's ({SHA256}); delete it to refetch")
-    return path
+    return download.fetch(URL, data_path(), SHA256)
 
 
 @dataclass(frozen=True)
