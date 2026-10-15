@@ -78,3 +78,28 @@ def test_finding_lines_and_peaks_fall_among_the_lamps_but_the_red_wing_is_too_fa
     # even the lamp whose peaks are closer than the model's (so not simply less sodium in the model).
     narrow = [f for f in lamps if f.separation_nm < model.separation_nm]
     assert narrow and all(f.red_wing > 3.0 * model.red_wing and f.blue_wing < model.blue_wing for f in narrow)
+
+
+@needs_data
+def test_finding_sodium_pairs_double_the_red_wing_but_do_not_close_it():
+    """Recorded in the design doc (§4.4). The assumed arc with sodium-pair far wings, over
+    both dipole forms and splices from 3 to 12 nm (the ends of each range are tested here)."""
+    k = street_hps.response().kernel
+    rung1 = street_hps.model_features(k)
+    lamps = list(street_hps.measured_features().values())
+    names = ("pairs, long-range dipole, splice 3 nm", "pairs, long-range dipole, splice 12 nm",
+             "pairs, constant dipole, splice 6 nm")
+    variants = [street_hps.model_features(k, street_hps.PAIR_VARIANTS[n]) for n in names]
+    for f in variants:
+        assert 1.9 < f.red_wing / rung1.red_wing < 2.5  # the red wing doubles ...
+        assert min(m.red_wing for m in lamps) > 1.35 * f.red_wing  # ... and every lamp is still brighter
+        assert 1.15 < f.blue_wing / rung1.blue_wing < 1.4
+        blue = sorted(m.blue_wing for m in lamps)
+        assert blue[1] <= f.blue_wing <= blue[-3]  # the blue wing stays among most lamps
+        for band in street_hps.BANDS_NM:
+            measured = [m.line_power[band] for m in lamps]
+            assert min(measured) <= f.line_power[band] <= max(measured), band
+    # The peak spacing depends on the splice: near the peaks it widens.
+    assert variants[0].separation_nm > variants[1].separation_nm + 1.0
+    sep = [m.separation_nm for m in lamps]
+    assert all(min(sep) <= f.separation_nm <= max(sep) for f in variants)

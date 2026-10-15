@@ -33,7 +33,8 @@ lss metamers                          # a CONSTRUCTED pair matched in daylight, 
 lss leddrive                          # a measured LED at 150-500 mA (downloaded on first use; needs
                                       # pip install "lss[data]"), for LED Level 3
 lss streethps                         # nine measured HPS street lamps (LICA-UCM, downloaded on first
-                                      # use) against the sodium arc, through the spectrograph's response
+                                      # use) against the sodium arc, through the spectrograph's response,
+                                      # with and without sodium-pair far wings
 ```
 
 ## Tests

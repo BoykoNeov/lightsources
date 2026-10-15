@@ -15,6 +15,10 @@ on the response; so does an extra offset of ±0.5 nm.
 What can be compared (design §15): the HPS peaks, about 10 nm apart, are resolved; the
 dip between them is not. So the study compares where the peaks are, how much power each
 subordinate line carries against the D lines, and how bright the far wings are.
+
+The same arc is also run with the D lines' far wings from sodium atom pairs
+(:mod:`lss.physics.hid.pairs`), for both forms of the pair transition dipole and three
+splice points, since neither is pinned down (design §4.4).
 """
 
 from dataclasses import dataclass, replace
@@ -24,7 +28,7 @@ import numpy as np
 from scipy.optimize import least_squares
 
 from lss.accuracy import lica
-from lss.physics.hid import arc, sodium
+from lss.physics.hid import arc, pairs, sodium
 from lss.physics.hid.composition import Fill
 from lss.physics.thermal.tungsten import TungstenCoilContinuum
 from lss.spectral.instrument import Kernel, KernelFit, fit_kernel, observe
@@ -44,6 +48,10 @@ LPS_DOUBLETS_NM = {"589 (D)": (588.9950, 589.5924), "568.8": (568.2633, 568.8205
 ASSUMED_ARC = arc.ArcColumn(radius_m=3.8e-3, axis_temperature_k=4000.0, wall_temperature_k=1500.0,
                             fill=Fill(sodium_pa=13e3, mercury_pa=70e3, xenon_pa=20e3), shells=60)
 NODES_NM = np.arange(300.0, 901.0)
+#: The assumed arc with sodium-pair wings: both dipole forms, splices from near the peaks
+#: (about 4 nm from the lines) to well outside them.
+PAIR_VARIANTS = {f"pairs, {dip} dipole, splice {sp:g} nm": replace(ASSUMED_ARC, pairs=pairs.PairWings(splice_nm=sp, dipole=dip))
+                 for dip in pairs.DIPOLE_FORMS for sp in (3.0, 6.0, 12.0)}
 
 #: Subordinate lines: power above a straight baseline through 2 nm beside each edge.
 BANDS_NM = {"498": (495.0, 501.0), "515": (512.0, 518.0), "568.8": (565.0, 572.0),
@@ -206,6 +214,8 @@ def format_text() -> str:
             + "".join(f"{k:>8s}" for k in BANDS_NM)]
     for name, k in response_variants().items():
         out.append(_row(f"model, {name}", model_features(k)))
+    for name, column in PAIR_VARIANTS.items():
+        out.append(_row(name.replace(" dipole, splice", ","), model_features(response().kernel, column)))
     meas = measured_features()
     for key, f in meas.items():
         out.append(_row(key, f))

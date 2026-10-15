@@ -18,14 +18,17 @@ self-reversed line: broad emission from the core, its centre absorbed by the man
 
 The temperature falls from the axis to the wall as T(r) = T_w + (T_ax − T_w)(1 − (r/R)^p),
 prescribed (parabolic for p = 2) until Stage C solves it.
+
+With ``pairs`` set, the D lines' far wings come from sodium atom pairs
+(:mod:`lss.physics.hid.pairs`) instead of the resonance share of their impact profile.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 from scipy.special import voigt_profile
 
-from lss.physics.hid import broadening, sodium
+from lss.physics.hid import broadening, pairs as na_pairs, sodium
 from lss.physics.hid.composition import Composition, Fill, composition
 from lss.physics.thermal import planck
 from lss.spectral.units import C, H, K_B, air_to_vacuum
@@ -39,6 +42,7 @@ class ArcColumn:
     fill: Fill
     profile_exponent: float = 2.0
     shells: int = 60
+    pairs: na_pairs.PairWings | None = None
 
     def __post_init__(self):
         if self.radius_m <= 0 or self.shells < 1 or self.profile_exponent <= 0:
@@ -73,17 +77,39 @@ def line_grid(lines, lo_nm: float = 350.0, hi_nm: float = 1000.0, first_offset_n
     return grid[(grid >= lo_nm) & (grid <= hi_nm)]
 
 
-def absorption_coefficient(comp: Composition, frequency_hz: np.ndarray, lines=None) -> np.ndarray:
-    """κ_ν in m⁻¹ at the given (vacuum) frequencies, summed over ``lines`` (default: all)."""
+def _profile(frequency_hz, ln, w: broadening.Widths) -> np.ndarray:
+    sigma, gamma, shift = broadening.voigt_parameters(w)
+    return voigt_profile(frequency_hz - (ln.frequency_hz + shift), sigma, gamma)
+
+
+def absorption_coefficient(comp: Composition, frequency_hz: np.ndarray, lines=None,
+                           pairs: na_pairs.PairWings | None = None) -> np.ndarray:
+    """κ_ν in m⁻¹ at the given (vacuum) frequencies, summed over ``lines`` (default: all).
+
+    With ``pairs``, each resonance line (lower level 3s) loses its resonance width beyond
+    ``pairs.splice_nm`` from its centre, and the pair absorption is added wherever every
+    resonance line in ``lines`` is that far away.
+    """
     lines = sodium.data().lines if lines is None else lines
     t = comp.temperature_k
     stimulated = -np.expm1(-H * frequency_hz / (K_B * t))
+    vacuum_nm = C / frequency_hz * 1e9
     kappa = np.zeros_like(frequency_hz)
+    far_from_resonance = np.ones(frequency_hz.shape, dtype=bool)
+    resonance_lines = 0
     for ln in lines:
         n_lower = comp.sodium * sodium.level_population_fraction(ln.lower_energy_cm1, ln.lower_g, t, comp.lowering_cm1)
-        sigma, gamma, shift = broadening.voigt_parameters(broadening.widths(ln, comp))
-        phi = voigt_profile(frequency_hz - (ln.frequency_hz + shift), sigma, gamma)
+        w = broadening.widths(ln, comp)
+        phi = _profile(frequency_hz, ln, w)
+        if pairs is not None and ln.lower_energy_cm1 == 0.0:
+            far = np.abs(vacuum_nm - ln.vacuum_wavelength_nm) > pairs.splice_nm
+            phi = np.where(far, _profile(frequency_hz, ln, replace(w, resonance=0.0)), phi)
+            far_from_resonance &= far
+            resonance_lines += 1
         kappa += (C * C / (8.0 * np.pi * ln.frequency_hz**2)) * ln.a_ki * (ln.upper_g / ln.lower_g) * n_lower * phi
+    if pairs is not None and resonance_lines:
+        ground = comp.sodium * sodium.level_population_fraction(0.0, 2, t, comp.lowering_cm1)
+        kappa += np.where(far_from_resonance, pairs.kappa(t, float(ground), frequency_hz), 0.0)
     return kappa * stimulated
 
 
@@ -119,7 +145,7 @@ def side_radiance(column: ArcColumn, wavelength_nm: np.ndarray, theta_rad: float
     lam = np.asarray(wavelength_nm, dtype=float)
     nu = C / (air_to_vacuum(lam) * 1e-9)
     comps = column.shell_compositions()
-    kappa = np.array([absorption_coefficient(c, nu, lines) for c in comps])  # (shell, λ)
+    kappa = np.array([absorption_coefficient(c, nu, lines, column.pairs) for c in comps])  # (shell, λ)
     source = np.array([planck.spectral_radiance(air_to_vacuum(lam), c.temperature_k) for c in comps])
 
     nb = impact_parameters or 2 * column.shells
