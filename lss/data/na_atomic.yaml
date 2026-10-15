@@ -1,0 +1,178 @@
+# Neutral sodium (Na I): energy levels and the resonance lines (design §4.4, §4.6).
+#
+# Source: NIST Atomic Spectra Database, version 5.12 (A. Kramida, Yu. Ralchenko, J. Reader
+#   and NIST ASD Team), https://physics.nist.gov/asd, retrieved 2026-10-15.
+#   Levels: all 2p6.nl levels of Na I (the valence series), with the first ionisation
+#   limit. Levels NIST marks as derived rather than observed ([...] in its tables) are
+#   flagged `derived`; they only matter for the partition function above 6000 K.
+#   Lines: air wavelengths (observed), transition probabilities A_ki with NIST's
+#   accuracy grade (AA: <= 1 %), level energies and statistical weights.
+#
+# Broadening constants (for lss/physics/hid/broadening.py):
+#   Self (resonance) broadening: J. Huennekens and A. Gallagher, "Self-broadening of the
+#   sodium resonance lines and excitation transfer between the 3P3/2 and 3P1/2 levels",
+#   Phys. Rev. A 27, 1851 (1983), abstract and §II: the impact-regime Lorentzian full
+#   width at half maximum, in angular frequency, is Gamma = k_br * N(Na ground), with
+#   k_br = 4.67e-7 cm3/s for D2 and 3.07e-7 cm3/s for D1, each +-15 %, measured at
+#   about 300 C. Impact theory makes it independent of temperature.
+
+source: "NIST ASD v5.12, retrieved 2026-10-15"
+ionisation_limit_cm1: 41449.451  # Na II 2p6 1S0, NIST ASD (uncertainty 0.002 cm-1)
+ion_ground_g: 1  # Na II 2p6 1S0; its first excited level is above 30 eV
+
+# configuration, term, J, g, energy (cm-1), derived
+levels:
+  - ["3s", "2S", "1/2", 2, 0.0, false]
+  - ["3p", "2P*", "1/2", 2, 16956.17025, false]
+  - ["3p", "2P*", "3/2", 4, 16973.36619, false]
+  - ["4s", "2S", "1/2", 2, 25739.999, false]
+  - ["3d", "2D", "5/2", 6, 29172.837, false]
+  - ["3d", "2D", "3/2", 4, 29172.887, false]
+  - ["4p", "2P*", "1/2", 2, 30266.99, false]
+  - ["4p", "2P*", "3/2", 4, 30272.58, false]
+  - ["5s", "2S", "1/2", 2, 33200.673, false]
+  - ["4d", "2D", "5/2", 6, 34548.729, false]
+  - ["4d", "2D", "3/2", 4, 34548.764, false]
+  - ["4f", "2F*", "7/2", 8, 34586.92, false]
+  - ["4f", "2F*", "5/2", 6, 34586.92, false]
+  - ["5p", "2P*", "1/2", 2, 35040.38, false]
+  - ["5p", "2P*", "3/2", 4, 35042.85, false]
+  - ["6s", "2S", "1/2", 2, 36372.618, false]
+  - ["5d", "2D", "5/2", 6, 37036.752, false]
+  - ["5d", "2D", "3/2", 4, 37036.772, false]
+  - ["5f", "2F*", "7/2", 8, 37057.65, false]
+  - ["5f", "2F*", "5/2", 6, 37057.65, false]
+  - ["5g", "2G", "7/2,9/2", 18, 37059.54, false]
+  - ["6p", "2P*", "1/2", 2, 37296.32, false]
+  - ["6p", "2P*", "3/2", 4, 37297.61, false]
+  - ["7s", "2S", "1/2", 2, 38012.042, false]
+  - ["6d", "2D", "5/2", 6, 38387.255, false]
+  - ["6d", "2D", "3/2", 4, 38387.268, false]
+  - ["6f", "2F*", "7/2", 8, 38399.79, false]
+  - ["6f", "2F*", "5/2", 6, 38399.79, false]
+  - ["6g", "2G", "7/2", 8, 38400.9, true]
+  - ["6g", "2G", "9/2", 10, 38400.904, true]
+  - ["6h", "2H*", "11/2", 12, 38401.147, true]
+  - ["6h", "2H*", "9/2", 10, 38401.153, true]
+  - ["7p", "2P*", "1/2", 2, 38540.18, false]
+  - ["7p", "2P*", "3/2", 4, 38540.93, false]
+  - ["8s", "2S", "1/2", 2, 38968.51, false]
+  - ["7d", "2D", "5/2", 6, 39200.93, false]
+  - ["7d", "2D", "3/2", 4, 39200.93, false]
+  - ["7f", "2F*", "7/2", 8, 39208.98, false]
+  - ["7f", "2F*", "5/2", 6, 39208.98, false]
+  - ["7g", "2G", "7/2,9/2", 18, 39209.725, true]
+  - ["7h", "2H*", "9/2,11/2", 22, 39209.887, true]
+  - ["8p", "2P*", "1/2", 2, 39298.35, false]
+  - ["8p", "2P*", "3/2", 4, 39298.84, false]
+  - ["9s", "2S", "1/2", 2, 39574.85, false]
+  - ["8d", "2D", "5/2", 6, 39728.7, false]
+  - ["8d", "2D", "3/2", 4, 39728.7, false]
+  - ["8f", "2F*", "7/2", 8, 39734.16, false]
+  - ["8f", "2F*", "5/2", 6, 39734.16, false]
+  - ["8g", "2G", "7/2,9/2", 18, 39734.678, true]
+  - ["8h", "2H*", "9/2,11/2", 22, 39734.79, true]
+  - ["9p", "2P*", "1/2", 2, 39794.479, true]
+  - ["9p", "2P*", "3/2", 4, 39794.81, true]
+  - ["10s", "2S", "1/2", 2, 39983.27, false]
+  - ["9d", "2D", "5/2", 6, 40090.31, false]
+  - ["9d", "2D", "3/2", 4, 40090.31, false]
+  - ["9f", "2F*", "7/2", 8, 40094.19, false]
+  - ["9f", "2F*", "5/2", 6, 40094.19, false]
+  - ["9g", "2G", "7/2,9/2", 18, 40094.581, true]
+  - ["9h", "2H*", "9/2,11/2", 22, 40094.66, true]
+  - ["10p", "2P*", "1/2", 2, 40136.81, false]
+  - ["10p", "2P*", "3/2", 4, 40137.043, false]
+  - ["11s", "2S", "1/2", 2, 40271.396, false]
+  - ["10d", "2D", "5/2", 6, 40348.915, false]
+  - ["10d", "2D", "3/2", 4, 40348.918, false]
+  - ["10f", "2F*", "7/2", 8, 40351.761, true]
+  - ["10f", "2F*", "5/2", 6, 40351.761, true]
+  - ["10g", "2G", "7/2,9/2", 18, 40352.015, true]
+  - ["10h", "2H*", "9/2,11/2", 22, 40352.073, true]
+  - ["11p", "2P*", "1/2", 2, 40382.925, false]
+  - ["11p", "2P*", "3/2", 4, 40383.097, false]
+  - ["12s", "2S", "1/2", 2, 40482.236, false]
+  - ["11d", "2D", "5/2", 6, 40540.093, true]
+  - ["11d", "2D", "3/2", 4, 40540.095, true]
+  - ["11f", "2F*", "5/2", 6, 40542.293, true]
+  - ["11f", "2F*", "7/2", 8, 40542.293, true]
+  - ["11g", "2G", "7/2,9/2", 18, 40542.484, true]
+  - ["12p", "2P*", "1/2", 2, 40565.783, true]
+  - ["12p", "2P*", "3/2", 4, 40565.913, true]
+  - ["13s", "2S", "1/2", 2, 40641.148, true]
+  - ["12d", "2D", "3/2", 4, 40685.509, true]
+  - ["12d", "2D", "5/2", 6, 40685.509, true]
+  - ["12f", "2F*", "5/2,7/2", 14, 40687.203, true]
+  - ["12g", "2G", "7/2,9/2", 18, 40687.352, true]
+  - ["13p", "2P*", "1/2", 2, 40705.344, true]
+  - ["13p", "2P*", "3/2", 4, 40705.444, true]
+  - ["14s", "2S", "1/2", 2, 40763.884, true]
+  - ["13d", "2D", "5/2", 6, 40798.642, true]
+  - ["13d", "2D", "3/2", 4, 40798.644, true]
+  - ["13f", "2F*", "5/2,7/2", 14, 40799.974, true]
+  - ["13g", "2G", "7/2,9/2", 18, 40800.091, true]
+  - ["14p", "2P*", "1/2", 2, 40814.273, true]
+  - ["14p", "2P*", "3/2", 4, 40814.352, true]
+  - ["15s", "2S", "1/2", 2, 40860.648, true]
+  - ["14d", "2D", "5/2", 6, 40888.386, true]
+  - ["14d", "2D", "3/2", 4, 40888.387, true]
+  - ["14f", "2F*", "5/2,7/2", 14, 40889.452, true]
+  - ["14g", "2G", "7/2,9/2", 18, 40889.546, true]
+  - ["15p", "2P*", "1/2", 2, 40900.922, true]
+  - ["15p", "2P*", "3/2", 4, 40900.985, true]
+  - ["16s", "2S", "1/2", 2, 40938.281, true]
+  - ["15d", "2D", "3/2", 4, 40960.771, true]
+  - ["15d", "2D", "5/2", 6, 40960.771, true]
+  - ["15f", "2F*", "5/2,7/2", 14, 40961.637, true]
+  - ["15g", "2G", "7/2,9/2", 18, 40961.714, true]
+  - ["16p", "2P*", "1/2", 2, 40970.976, true]
+  - ["16p", "2P*", "3/2", 4, 40971.028, true]
+  - ["17s", "2S", "1/2", 2, 41001.515, true]
+  - ["16d", "2D", "5/2", 6, 41020.0, true]
+  - ["16d", "2D", "3/2", 4, 41020.001, true]
+  - ["16f", "2F*", "5/2,7/2", 14, 41020.714, true]
+  - ["16g", "2G", "7/2,9/2", 18, 41020.777, true]
+  - ["17p", "2P*", "1/2", 2, 41028.419, true]
+  - ["17p", "2P*", "3/2", 4, 41028.462, true]
+  - ["18s", "2S", "1/2", 2, 41053.701, true]
+  - ["17d", "2D", "5/2", 6, 41069.079, true]
+  - ["17d", "2D", "3/2", 4, 41069.08, true]
+  - ["17f", "2F*", "5/2,7/2", 14, 41069.674, true]
+  - ["17g", "2G", "7/2,9/2", 18, 41069.727, true]
+  - ["18p", "2P*", "1/2", 2, 41076.106, true]
+  - ["18p", "2P*", "3/2", 4, 41076.141, true]
+  - ["19s", "2S", "1/2", 2, 41097.271, true]
+  - ["18d", "2D", "3/2", 4, 41110.202, true]
+  - ["18d", "2D", "5/2", 6, 41110.202, true]
+  - ["18f", "2F*", "5/2,7/2", 14, 41110.703, true]
+  - ["18g", "2G", "7/2", 8, 41110.747, true]
+  - ["18g", "2G", "9/2", 10, 41110.748, true]
+  - ["19p", "2P*", "1/2", 2, 41116.126, true]
+  - ["19p", "2P*", "3/2", 4, 41116.156, true]
+  - ["20s", "2S", "1/2", 2, 41134.023, true]
+  - ["19d", "2D", "5/2", 6, 41144.999, true]
+  - ["19d", "2D", "3/2", 4, 41145.0, true]
+  - ["19f", "2F*", "5/2,7/2", 14, 41145.425, true]
+  - ["19g", "2G", "7/2,9/2", 18, 41145.463, true]
+  - ["20p", "2P*", "1/2", 2, 41150.04, true]
+  - ["20p", "2P*", "3/2", 4, 41150.066, true]
+  - ["20d", "2D", "3/2", 4, 41174.705, true]
+  - ["20d", "2D", "5/2", 6, 41174.705, true]
+  - ["20f", "2F*", "5/2,7/2", 14, 41175.07, true]
+  - ["20g", "2G", "7/2,9/2", 18, 41175.102, true]
+
+# Resonance lines. Upper and lower levels by energy; medium air.
+lines:
+  - name: D2
+    wavelength_nm: 588.995095
+    a_ki: 6.160e+07  # s-1, NIST accuracy AA
+    lower: {energy_cm1: 0.0, g: 2}
+    upper: {energy_cm1: 16973.36619, g: 4}
+    self_broadening_cm3_s: 4.67e-07  # Huennekens & Gallagher 1983, +-15 %
+  - name: D1
+    wavelength_nm: 589.592424
+    a_ki: 6.140e+07  # s-1, NIST accuracy AA
+    lower: {energy_cm1: 0.0, g: 2}
+    upper: {energy_cm1: 16956.17025, g: 2}
+    self_broadening_cm3_s: 3.07e-07  # Huennekens & Gallagher 1983, +-15 %

@@ -292,6 +292,19 @@ emission coefficient     ε_λ = κ_λ · B_λ(T)                               
 - Outputs: T(r), arc voltage, radiated spectrum, efficacy. These are predictions, not fits.
 - **Electrode losses** are a plug-in term (cathode/anode fall voltage × current, with a documented default). This makes whole-lamp efficacy comparable with catalogue values.
 
+*Built (step 3, first slice, 2026-10-15): Stages A and B for the sodium resonance lines, rung 1* (`lss/physics/hid/`). Not yet a generator: no lamp uses it, and no measured spectrum has scored it.
+- **Data** (`lss/data/na_atomic.yaml`): Na I levels, ionisation limit and the D lines from the NIST ASD (v5.12, retrieved 2026-10-15; A_ki graded AA, ≤ 1 %).
+- **Composition** (`composition.py`): uniform total pressure, each element's share of the heavy particles the same at every radius (no demixing), sodium ionised by Saha's equation with a Debye–Hückel lowering (Griem 1964). At an HPS-like 4000 K, 13 kPa Na, 70 kPa Hg, 20 kPa Xe, 3 % of the sodium is ionised and nₑ = 7×10²¹ m⁻³, inside the 6×10²¹–10²² m⁻³ that Mioković, Balković and Veza measured in Na–Hg discharges from Stark shifts (arXiv physics/0410146, 2004).
+- **Widths** (`broadening.py`), Voigt in frequency:
+  - Doppler;
+  - natural;
+  - resonance broadening by ground-state sodium, measured (Huennekens & Gallagher, Phys. Rev. A 27, 1851 (1983): FWHM = k·N with k = 4.67×10⁻⁷ cm³/s for D2, 3.07×10⁻⁷ for D1, ±15 %);
+  - van der Waals broadening and shift by Hg and Xe from Lindholm–Foley with Unsöld's C₆ and the polarizabilities of Schwerdtfeger & Nagle (2019). This last is an estimate, known to run about 2× low; it adds 11–16 % to the resonance width between 1500 and 4500 K at HPS pressures. Jongerius (J. Phys. B 20, 3345 (1987)) measured the xenon broadening in HPS arcs and is the next source to adopt.
+  - Stark broadening is not included yet.
+- **Transfer** (`arc.py`): shells of constant temperature, each chord crossing solved exactly, at any angle θ to the axis; output is the radiance per impact parameter on a line-local grid (geometric offsets from each line centre), and its mean over the arc's width.
+- **What it shows.** With T falling parabolically from 4000 K on the axis to 1500 K at a 3.8 mm wall, the D lines self-reverse: two peaks at 585.0 and 593.4 nm, the centre absorbed to under 1 % of them. An isothermal arc instead saturates to the blackbody with no dip, and the peaks spread as sodium pressure rises (tests below).
+- **First look against a measured street lamp** (LICA-UCM, §15; not a test, nothing fitted): the measured lamp's peaks sit about 10 nm apart, the model's 8 nm, at typical rather than fitted conditions. Two differences stand out. With both scaled to their highest point at 580–600 nm (the model through a 2 nm triangle), the measured red wing is 5–11 times brighter at 620–700 nm than the symmetric rung-1 wing, while the blue wing at 540–575 nm agrees within a factor of 1.5: that one-sided excess is the asymmetric quasi-static wing rung 2 is for. And the brightest features after the instrument's blur are subordinate lines the model lacks: 819 nm (3d → 3p) is the spectrum's maximum, 568.8 nm (4d → 3p) is 1.5 times the D peaks, and 498 and 615 nm are clearly visible. So the subordinate lines, with their Stark widths, come next, before any fitting.
+
 **Metal halide** adds chemistry: dissociation equilibria of NaI, TlI, ScI₃, DyI₃ … by Gibbs-energy minimisation, giving radially varying free-metal densities. It is a plug-in providing n_species(T, p) to Stage A. HP-Hg and HPS come first.
 
 ### 4.5 Later physics rungs (each a defined plug-in point)
@@ -583,17 +596,18 @@ This form keeps the real exit code. The shorter `start /belownormal` form withou
   - FWHM matches Olivero–Longbothum;
   - ∫φ_λ dλ = 1.
 
-**HID**
-- **Stage A, absolute strength:** the optically thin Na D emission at given n, T matches a hand calculation from A_ki and g-values.
-- **Stage A, units:** κ has dimension m⁻¹. This is a unit test using a units library or explicit dimensional bookkeeping.
+**HID** *(passes for the sodium resonance lines, step 3: `tests/test_hid_arc.py`, except where marked)*
+- **Stage A, composition:** the particles sum to the fill pressure, the electrons satisfy Saha's equation, each element keeps its share, and sodium is a few per cent ionised at an HPS axis.
+- **Stage A, absolute strength:** the optically thin Na D emission at given n, T matches a hand calculation from A_ki and g-values (Σ hν₀/4π · A · n_k times the chord, within 0.2 %); ∫κ_ν dν gives the line strength from A_ki and the g-values.
+- **Stage A, units:** κ has dimension m⁻¹, by explicit bookkeeping (the two checks above are in SI).
 - **Stage B, transfer integrator:**
-  - an optically thin slab gives I = ε·L;
-  - an optically thick isothermal slab saturates to B_λ(T).
+  - an optically thin column gives I = ε·L;
+  - an optically thick isothermal column saturates to B_λ(T).
 - **Stage B, grid convergence:** analysis-bin radiances change < 0.1 % when the line-local grid is refined 2×.
 - **Stage B, HPS self-reversal:**
-  - Na D at HPS conditions shows a central minimum between two maxima;
-  - the peak separation increases with Na pressure and matches the published peak-separation vs Na-pressure relation used as an HPS diagnostic.
-- **Stage B, angle:** a thin line's radiance scales with 1/sin θ, and a thick line's core does not.
+  - Na D at HPS conditions shows a central minimum between two maxima, and an isothermal arc shows none;
+  - the peak separation increases with Na pressure. *Not yet:* matching the published peak-separation vs Na-pressure relation used as an HPS diagnostic.
+- **Stage B, angle:** a thin line's radiance scales with 1/sin θ. *Not yet:* a thick line's core does not.
 - **Stage C:**
   - HP-Hg at known current and pressure reproduces published axis temperature (~5500–6000 K) and field strength within ~15 %;
   - with the electrode-loss term, a 400 W HP-Hg lamp lands at 50–60 lm/W.
@@ -633,9 +647,9 @@ lss/
     thermal/     planck.py, tungsten.py, filament.py (T from power, non-uniform T)
     led/         bands.py, phosphor.py, thermal.py
     lowpressure/ lines.py, uv_budget.py
-    hid/         lines.py (NIST import), profiles/ (pressure-broadening widths, quasistatic.py),
-                 lte.py (Saha, partition fns), transfer.py (Stage B),
-                 arc.py (Stage C), electrodes.py, chemistry.py (optional)
+    hid/         sodium.py (NIST levels and lines, partition function), composition.py (Saha),
+                 broadening.py (pressure-broadening widths; later quasistatic wings),
+                 arc.py (Stages A and B), later: Stage C, electrodes.py, chemistry.py (optional)
   lamp/          physical description, components, EmissionProfile (zones), ProfileCache
   accuracy/      reference library, fit.py, report.py
   studies/       no-render studies: reflectance samples, appearance, colour chart, metameric pairs
@@ -668,7 +682,7 @@ The GUI wraps the same library.
    - CLI lamp sheet; accuracy-report scaffolding.
    - Core tests in §12 pass, except the tungsten test, which needs the De Vos data and moves to step 2.
 2. **Thermal, LED and fluorescent models.** *In progress: incandescent L2–L4 (L3 as the one-zone cavity estimate; L4 as the temperature from resistance, with a fitted cold resistance, then as the power balance from the current alone, with a solved filament surface and an empirical gas loss, 2026-10-15), the first measured references (NIST FEL halogen lamps), `lss fit`, LED L1–L3 (L3 as the heat-only first step from cited coefficients, checked against a measured LED's warming, 2026-10-15), fluorescent L1 (tri-band; for L2, the coat's violet absorption was checked against the tables and not built, 2026-10-15) and the no-render studies (colour chart, constructed metameric pair, CRI R1–R14 and TM-30 per hue) done (2026-10-14).* Incandescent L1–L4, LED L1–L3, fluorescent L1–L2, each with `fit` against references and scores in the accuracy report. No-render studies: colour chart, metameric pairs, CRI/TM-30.
-3. **HID Stage A + B on line-local fine grids.**
+3. **HID Stage A + B on line-local fine grids.** *In progress: Stages A and B for the sodium resonance lines at rung 1 (Saha composition, measured self-broadening, estimated Hg/Xe broadening, exact shell-by-shell transfer at any angle), checked against physical limits only (2026-10-15). Next: the subordinate Na lines with Stark widths, then the measured street lamps of §15 through their instrument's response.*
    - Voigt profiles, (b, θ) chords, zone spectra.
    - HP-Hg and HPS presets; self-reversal tests.
    - The headline result needs no renderer, so it arrives here.
@@ -703,6 +717,12 @@ The GUI wraps the same library.
 - **Reference measurements:** which lamps, and from where (LSPDD, manufacturers)? Is a spectrometer available for our own measurements? Measured SPD plus electrical data for the same lamp is the most valuable input to the accuracy loop.
   - **Incandescent needs a measured reference.** *Partly answered (2026-10-14):* two NIST-calibrated FEL halogen lamps (§11) now score L1–L3 against real tungsten, with current and voltage. Against Illuminant A, a blackbody by definition, better physics can still score worse (L2's residual there is about 2 % NRMS at matched CCT), so A stays a colour calibration. *L4 partly answered (2026-10-15):* tungsten's resistivity is Desai et al. (1984), and L4 now takes the temperature from resistance, but with the cold resistance fitted to F-455 (§4.1 L4). Still missing: each lamp's own measured cold resistance (or wire diameter and length), which neither report gives and which the F-456 check shows cannot be shared between lamps. The power balance (built 2026-10-15, with Forsythe & Watson's total emissivity) needs a lamp measured at several currents, with a four-wire voltage, to be tested beyond NIST's one-digit 0.06 %/mA; and the fill gas and coil dimensions, to replace the empirical gas loss with Langmuir's sheath model. A lamp of another design (a general-service or vacuum lamp) would also test L3 beyond one batch.
   - **Needed before step 3.** The starter references (CIE 15:2018 tables) are 5 nm, 380–780 nm, relative and representative rather than measured. They check chromaticity, CCT and colour rendering, but not line shapes: the HPS self-reversal dip is a few nm wide and a 5 nm table smears it out. HID line-shape work needs finely resolved (≤ 1 nm) real spectra of HPS and HP-Hg lamps, ideally with electrical data. Every reference records its `sampling_nm` so the accuracy report shows what it can and cannot check.
+    *Partly answered (2026-10-15):* the LICA-UCM lamp database (C. Tapia, A. Sánchez de Miguel & J. Zamorano, UCM eprint 40930 (2015); https://guaix.fis.ucm.es/lamps_spectra) has 9 HPS, 3 mercury-vapour and 13 metal-halide street lamps, and one low-pressure sodium lamp. It also has an Oriel mercury pencil lamp. They were measured with an Ocean Optics Jaz spectrograph, sampled at 1 nm over 300–900 nm.
+    - **Resolution.** The pencil lamp's lines, which are far narrower than the instrument, show its real response: about 2 nm wide, with a longer tail on the red side; the 546.075 nm line's centroid reads 546.79 nm, 0.7 nm to the red (tail and any wavelength-scale offset together).
+    - **What it can test.** The HPS peaks (about 10 nm apart) are resolved. The depth of the dip between them is not: the response fills it in.
+    - **What it lacks.** There is no electrical data, wattage, arc-tube size or fill: these are lamps in the street.
+    - **What remains.** To be scored, a model must pass through that response. The response must first be fitted to the pencil lamp's lines, checked on the low-pressure sodium doublet, and confirmed to be the same set-up for the street lamps.
+    - **Terms.** The site asks to be contacted before the data are used. The repository therefore does not include the files: it downloads them on first use into a cache outside git, checked by checksum, and keeps only the citation, the links and the numbers derived from them (decision, 2026-10-15).
 - **Metameric pairs.** The study's pair is constructed (§7). The CIE's standard virtual pairs (ISO/CIE 23603, the successor of CIE 51.2's metamerism index: pairs matched under D55, D65 or D75 for the 10° observer) are distributed only on the standard's companion disk, not openly (checked 2026-10-14). Those pairs, or a measured pair of real samples, would make the split a standard or a real result rather than a demonstration.
 - **LED phosphor spectra.** No tabulated excitation or emission spectra of LED garnets or nitrides were found (2026-10-14; papers, patents and maker leaflets show them as plots only). LED Level 2's shared phosphor constants are therefore fitted to the five CIE LED tables they are scored on (§4.2). A measured spectrum of a single garnet or nitride, or measured LEDs outside the CIE set, would make the scores a real test and pin the garnet's coupling S.
 - **LED drive data.** *Partly answered (2026-10-15):* the first measured LEDs at several currents (Wu et al. 2026, §4.2 L3) give the voltage and radiant power, but not the board temperature, the thermal resistance, the die count or the phosphors, and their spectra are clipped where the signal is weak. They show the die's cited peak shift is consistent and that their green phosphor quenches far faster than the cited garnet, but cannot test Level 3's quenching of the garnet and nitride it models. A real test needs an LED of known phosphors (or their measured quenching curves) measured at several currents and board temperatures, with the board's temperature and the forward voltage at each, and spectra without a signal floor.
