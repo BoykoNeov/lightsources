@@ -122,3 +122,62 @@ def test_shared_shape_findings_stay_at_their_bounds():
     p = phosphors.parameters()
     assert p["YOX.7F1.fwhm"].value == p["YOX.7F1.fwhm"].bounds[1]
     assert p["YOX.7F2-611.fwhm"].value == pytest.approx(p["YOX.7F2-611.fwhm"].bounds[1], rel=0.01)
+
+
+_MEASURED_LINES = mercury.visible_lines
+
+
+def _violet_scale(monkeypatch, preset):
+    """Fit one factor on the violet Hg lines (404.7, 407.8 nm) together with the lamp's own
+    mix, the shared shapes fixed: (factor, its standard error, NRMS before, NRMS after)."""
+    from scipy.optimize import least_squares
+
+    from lss.accuracy import fit, references
+
+    lamp = lamps.load(preset)
+    ref = references.get(lamp.reference)
+    spec = lamp.models[1]
+    names = ["hg_to_green", "blue_to_green", "red_to_green"]
+    measured = _MEASURED_LINES
+    factor = [1.0]
+    monkeypatch.setattr(mercury, "visible_lines", lambda total, t: [
+        replace(ln, power=ln.power * factor[0]) if ln.centre_nm < 410 else ln for ln in measured(total, t)])
+
+    def residuals(x):
+        factor[0] = x[0]
+        return fit._residuals(fit.with_values(lamp, 1, dict(zip(names, x[1:]))), 1, ref, "spectral")
+
+    before = np.sqrt(np.mean(residuals([1.0] + [lamp.parameter(n, spec).value for n in names]) ** 2))
+    sol = least_squares(residuals, [1.0] + [lamp.parameter(n, spec).value for n in names],
+                        bounds=([0.0, 1e-3, 1e-2, 5e-2], [3.0, 1.0, 5.0, 5.0]), diff_step=1e-6)
+    # Residual scatter as the noise: model errors are correlated, so this is a rough σ.
+    s2 = float(sol.fun @ sol.fun) / (len(sol.fun) - len(sol.x))
+    sigma = float(np.sqrt(s2 * np.linalg.pinv(sol.jac.T @ sol.jac)[0, 0]))
+    return float(sol.x[0]), sigma, float(before), float(np.sqrt(np.mean(sol.fun**2))), float(sol.x[2])
+
+
+def test_violet_loss_is_small_and_does_not_follow_the_blue_phosphor(monkeypatch):
+    # Fluorescent Level 2 was to absorb the violet Hg line in the coat's BAM (design §4.3
+    # L2). Checked first: freed per lamp, the violet lines fall by only 5-11 %, the fit
+    # gains < 0.5 % NRMS, and the loss does not follow each tube's blue phosphor content.
+    # A loss in proportion to BAM and the same loss in every tube fit about equally well,
+    # so the three tables cannot tell the two apart, and the term was not built.
+    out = {p: _violet_scale(monkeypatch, p) for p in FL}
+    for factor, sigma, before, after, _ in out.values():
+        assert 0.85 < factor < 0.97 and sigma < 0.03
+        assert before - after < 0.005
+    fl10, fl11, fl12 = (out[p] for p in FL)
+    assert fl10[4] > fl11[4] > fl12[4]  # BAM content falls from FL10 to FL12 ...
+    assert fl11[0] < fl10[0]  # ... but FL11 loses more violet than FL10
+    loss = {p: -np.log(f) for p, (f, *_ ) in out.items()}
+    sig = {p: s / f for p, (f, s, *_ ) in out.items()}
+    bam = {p: out[p][4] for p in FL}
+
+    def chi2(pred):
+        return sum(((loss[p] - pred[p]) / sig[p]) ** 2 for p in FL)
+
+    w = {p: 1 / sig[p] ** 2 for p in FL}
+    k = sum(w[p] * bam[p] * loss[p] for p in FL) / sum(w[p] * bam[p] ** 2 for p in FL)
+    shared = sum(w[p] * loss[p] for p in FL) / sum(w.values())
+    tied, flat = chi2({p: k * bam[p] for p in FL}), chi2({p: shared for p in FL})
+    assert abs(tied - flat) < 2.0  # neither explanation is preferred
