@@ -51,6 +51,40 @@ physical:
       CIE tables leave it anywhere from 200 to 500 K (design doc §4.2)
     # Sets the phosphors' phonon widths.
 
+  # Level 2's layer (read by Levels 2 and 3): this lamp's garnet composition and how much of
+  # each phosphor the light crosses.
+  garnet_zero_phonon:
+    value: 20277.5
+    unit: cm-1
+    empirical: true
+    reason: >-
+      fitted by `lss fit` (spectral objective) to cie-led-b4, jointly with
+      cie-led-b1, cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS
+      5.06e-02, du'v' 2.4e-04, dCCT -14.30 K
+    # Ce3+ zero-phonon line: 20450 cm-1 in YAG (Bachmann et al., Chem. Mater. 21, 2077
+    # (2009)); Lu and Ga raise it (greener), Gd lowers it (more orange).
+    bounds: [19500, 22000]
+  garnet_optical_depth:
+    value: 1.65003
+    unit: "1"
+    empirical: true
+    reason: >-
+      fitted by `lss fit` (spectral objective) to cie-led-b4, jointly with
+      cie-led-b1, cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS
+      5.06e-02, du'v' 2.4e-04, dCCT -14.30 K
+    # Along the normal, at the garnet's absorption peak.
+    bounds: [0, 8]
+  nitride_optical_depth:
+    value: 0.0904914
+    unit: "1"
+    empirical: true
+    reason: >-
+      fitted by `lss fit` (spectral objective) to cie-led-b4, jointly with
+      cie-led-b1, cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS
+      5.06e-02, du'v' 2.4e-04, dCCT -14.30 K
+    # Along the normal, on the nitride's blue absorption plateau.
+    bounds: [0, 4]
+
 models:
   0: {generator: reference}
   1:
@@ -115,39 +149,7 @@ models:
     # The die's blue light through a layer of a Ce3+ garnet and a red Eu2+ nitride
     # (lss/physics/led/layer.py): the leaked blue, the garnet-to-nitride balance and the
     # nitride's take of the garnet's green follow from how much of each the light crosses.
-    # The phosphor constants are shared (lss/data/phosphors.yaml); this lamp sets its
-    # garnet's composition and the two optical depths. The layer does not scatter, so
+    # The phosphor constants are shared (lss/data/phosphors.yaml); the physical description
+    # sets this lamp's garnet composition and the two optical depths. The layer does not scatter, so
     # the depths are effective values.
     generator: led_phosphor_layer
-    params:
-      garnet_zero_phonon:
-        value: 20277.5
-        unit: cm-1
-        empirical: true
-        reason: >-
-          fitted by `lss fit` (spectral objective) to cie-led-b4, jointly with
-          cie-led-b1, cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS
-          5.06e-02, du'v' 2.4e-04, dCCT -14.30 K
-        # Ce3+ zero-phonon line: 20450 cm-1 in YAG (Bachmann et al., Chem. Mater. 21, 2077
-        # (2009)); Lu and Ga raise it (greener), Gd lowers it (more orange).
-        bounds: [19500, 22000]
-      garnet_optical_depth:
-        value: 1.65003
-        unit: "1"
-        empirical: true
-        reason: >-
-          fitted by `lss fit` (spectral objective) to cie-led-b4, jointly with
-          cie-led-b1, cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS
-          5.06e-02, du'v' 2.4e-04, dCCT -14.30 K
-        # Along the normal, at the garnet's absorption peak.
-        bounds: [0, 8]
-      nitride_optical_depth:
-        value: 0.0904914
-        unit: "1"
-        empirical: true
-        reason: >-
-          fitted by `lss fit` (spectral objective) to cie-led-b4, jointly with
-          cie-led-b1, cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS
-          5.06e-02, du'v' 2.4e-04, dCCT -14.30 K
-        # Along the normal, on the nitride's blue absorption plateau.
-        bounds: [0, 4]

@@ -537,6 +537,26 @@ led_phosphors:
           5.06e-02, du'v' 2.4e-04, dCCT -14.30 K (cie-led-b4); NRMS 4.70e-02, du'v'
           5.9e-04, dCCT +9.63 K (cie-led-b5)
         bounds: [0.1, 2]
+      # Thermal quenching (Level 3, lss/physics/led/thermal.py): a yield 1/(1 + C exp(-dE/kT)),
+      # with C set by the fraction kept at 150 C against 25 C.
+      quench_retained_423k:
+        value: 0.903
+        unit: "1"
+        source: >-
+          Y2.94Al4GaO12:Ce3+ powder keeps 90.3 % of its 25 C emission at 150 C (Qiang, Yu, Chen,
+          Fang, Ceram. Int. 42, 767 (2016)). A Ga-substituted YAG, standing in for every
+          garnet here: the warm CIE LEDs' fitted garnets are greener than YAG, and Ga lowers the
+          quenching temperature; YAG itself quenches near 600 K (Ueda et al., J. Phys. Chem. C
+          119, 25003 (2015)), so it keeps more at 150 C than this.
+      quench_activation_energy:
+        value: 0.3
+        unit: eV
+        empirical: true
+        reason: >-
+          assumed: the source gives only the fraction kept at 150 C, and the barrier sets the
+          curve's shape between. Thermal ionisation of Ce3+ in YAG needs more (it sets in near
+          600 K), but concentration quenching in LED powders acts lower; how the choice moves
+          Level 3's colour is in the design doc (§4.2 L3).
   nitride:
     name: (Sr,Ca)AlSiN3:Eu2+
     activator: Eu2+ (4f6 5d -> 4f7)
@@ -592,3 +612,36 @@ led_phosphors:
           5.06e-02, du'v' 2.4e-04, dCCT -14.30 K (cie-led-b4); NRMS 4.70e-02, du'v'
           5.9e-04, dCCT +9.63 K (cie-led-b5)
         bounds: [300, 4000]
+      quench_retained_423k:
+        value: 0.94
+        unit: "1"
+        source: >-
+          CaAlSiN3:Eu2+ (3 at% Eu, 650 nm) loses about 6 % of its emission at 150 C, "as low as
+          the CaAlSiN3:Eu2+ phosphors prepared by the other methods" (H. S. Kim, K. Machida,
+          T. Horikawa, H. Hanzawa, J. Alloys Compd. 633, 97 (2015), abstract)
+      quench_activation_energy:
+        value: 0.3
+        unit: eV
+        empirical: true
+        reason: >-
+          assumed, as for the garnet: the source gives only the fraction kept at 150 C
+  # The blue die's temperature coefficients (Level 3). Not a phosphor, but shared by every
+  # LED in the same way.
+  die:
+    name: InGaN blue die
+    activator: GaInN quantum wells
+    params:
+      peak_shift:
+        value: 0.0389
+        unit: nm/K
+        source: >-
+          blue GaInN LED, peak 460-464 nm: S. Chhajed, Y. Xi, Y.-L. Li, Th. Gessmann, E. F.
+          Schubert, J. Appl. Phys. 97, 054506 (2005), as tabulated by Cengiz, Azarifar, Arik,
+          Micromachines 13, 1615 (2022), Table 1. Lin et al., Appl. Phys. Lett. 100 (2012)
+          (doi 10.1063/1.4718612) give 0.032 nm/K.
+      fwhm_shift:
+        value: 0.0466
+        unit: nm/K
+        source: >-
+          width (FWHM) of the same blue GaInN LED: Chhajed et al. (2005), via Cengiz et al. (2022),
+          Table 1; Lin et al. (2012) give 0.053 nm/K
