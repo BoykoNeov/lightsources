@@ -103,9 +103,11 @@ def _peaks_around_d(col):
 def test_self_reversal_needs_a_cooler_mantle():
     hot_core = arc.ArcColumn(radius_m=3.8e-3, axis_temperature_k=4000.0, wall_temperature_k=1500.0, fill=HPS_FILL)
     lam, m, peaks, dips = _peaks_around_d(hot_core)
-    assert len(peaks) == 2 and peaks[0] < 588.99 and peaks[1] > 589.59
-    # One dark floor spans both lines (where in it the minimum falls is immaterial).
-    assert len(dips) == 1 and 588.0 < dips[0] < 590.5
+    assert peaks[0] < 585.5 and peaks[-1] > 593.0  # the two emission peaks bracket both lines
+    # A dark floor spans both lines; with enough shells a faint bump appears between them,
+    # where the mantle absorbs least, but it stays far below the peaks.
+    floor = (lam > 588.9) & (lam < 589.7)
+    assert m[floor].max() < 0.01 * m.max() and len(dips) >= 1
     for centre in (588.995095, 589.592424):  # the mantle absorbs the line centres
         assert m[np.argmin(np.abs(lam - centre))] < 0.01 * m.max()
 
@@ -134,16 +136,23 @@ def test_thin_wings_brighten_at_grazing_angles():
     assert grazing / side == pytest.approx(2.0, rel=1e-2)
 
 
-def test_analysis_bins_converge_on_the_line_grid():
-    """Refining the line-local grid 2× moves the 1 nm bins by < 0.1 % of the peak bin."""
-    col = arc.ArcColumn(radius_m=3.8e-3, axis_temperature_k=4000.0, wall_temperature_k=1500.0, fill=HPS_FILL, shells=30)
+def test_analysis_bins_converge_on_the_grids():
+    """Refining the line-local grid or the shells 2× moves each 1 nm bin by < 0.1 % of
+    itself outside the dark centre and by < 0.1 % of the peak bin everywhere. The dark
+    centre's own level is set by the coolest shell and converges slowly (it is < 0.1 %
+    of the peaks either way)."""
     grid = analysis_grid()
+    outside = (grid.centres < 585.0) | (grid.centres > 594.0)
 
-    def bins(**kw):
+    def bins(shells=60, **kw):
+        col = arc.ArcColumn(radius_m=3.8e-3, axis_temperature_k=4000.0, wall_temperature_k=1500.0,
+                            fill=HPS_FILL, shells=shells)
         lam = arc.line_grid(LINES, 359.5, 830.5, **kw)
-        m = arc.side_radiance(col, lam).mean_radiance
+        m = arc.side_radiance(col, lam, impact_parameters=120).mean_radiance
         return Spectrum.of(TabulatedContinuum(lam, m)).bin(grid).values
 
-    coarse = bins()
-    fine = bins(first_offset_nm=5e-5, ratio=np.sqrt(1.05), base_step_nm=0.5)
-    assert np.max(np.abs(fine - coarse)) < 1e-3 * coarse.max()
+    base = bins()
+    for refined in (bins(first_offset_nm=5e-5, ratio=np.sqrt(1.05), base_step_nm=0.5), bins(shells=120)):
+        change = np.abs(refined - base)
+        assert change.max() < 1e-3 * base.max()
+        assert np.all(change[outside] < 1e-3 * base[outside])
