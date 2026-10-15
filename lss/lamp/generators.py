@@ -11,6 +11,9 @@ Each generator produces bare emission plus whatever it already folds in
 * ``tungsten_resistance`` — thermal Level 4: the coil of Level 3 at the temperature its
   hot resistance (voltage over current) and cold resistance give, through tungsten's
   measured resistivity.
+* ``tungsten_balance`` — thermal Level 4, second step: the same coil at the temperature
+  where the current's electrical power equals the radiated power plus the gas loss, so
+  the current alone sets the lamp and the voltage is predicted, not read.
 * ``led_two_band`` — LED Level 1: a blue pump band plus one asymmetric phosphor band,
   both shaped in photon energy, with fitted shapes.
 * ``led_phosphor_layer`` — LED Level 2: the die's blue light through a layer of a Ce³⁺
@@ -66,11 +69,32 @@ def _planck(lamp, spec) -> EmissionProfile:
     )
 
 
-def _tungsten(lamp, spec, coil: bool = False, electrical: bool = False) -> EmissionProfile:
+def _tungsten(lamp, spec, coil: bool = False, electrical: bool = False, balance: bool = False) -> EmissionProfile:
     from lss.physics.thermal import resistance, tungsten
 
     used, derived, data_versions = {}, {}, ["CODATA 2018 constants"]
-    if electrical:
+    if balance:
+        # Level 4, second step: the current alone sets the temperature (design §4.1 L4).
+        from lss.physics.thermal import balance as power_balance
+
+        current = _unit(lamp, spec, "lamp_current", "A", used)
+        bal = power_balance.FilamentBalance(
+            cold_resistance_ohm=_unit(lamp, spec, "cold_resistance", "ohm", used),
+            wire_area_m2=_unit(lamp, spec, "filament_wire_area", "m2", used),
+            open_fraction=_unit(lamp, spec, "coil_open_fraction", "1", used),
+            gas_share=_unit(lamp, spec, "gas_loss_share", "1", used),
+            gas_exponent=_unit(lamp, spec, "gas_loss_exponent", "1", used),
+        )
+        op = bal.operating_point(current)
+        t_value = op["temperature_k"]
+        derived = {
+            "filament_temperature": {"value": t_value, "unit": "K", "from": f"power balance at {current:g} A"},
+            "lamp_voltage": {"value": op["voltage_v"], "unit": "V", "from": "I x R_filament(T); leads not included"},
+            "radiated_power": {"value": op["radiated_w"], "unit": "W", "from": "coil, total emissivity"},
+            "gas_loss": {"value": op["gas_loss_w"], "unit": "W", "from": "empirical share and exponent"},
+        }
+        data_versions += [resistance.table().data_version, power_balance.total_emissivity_table().data_version]
+    elif electrical:
         # Level 4: the temperature follows from the operating point and the cold resistance.
         current = _unit(lamp, spec, "lamp_current", "A", used)
         voltage = _unit(lamp, spec, "lamp_voltage", "V", used)
@@ -91,7 +115,11 @@ def _tungsten(lamp, spec, coil: bool = False, electrical: bool = False) -> Emiss
         lo, hi = tab.measured_range_k
         data += f"; extrapolated linearly in T to {t_value:g} K (measured {lo:g}-{hi:g} K)"
     data_versions.append(data)
-    if coil:
+    if coil and balance:
+        f = used["coil_open_fraction"]
+        cont = tungsten.TungstenCoilContinuum(t_value, open_fraction=f.value)
+        name = f"tungsten coil {t_value:g} K, open fraction {f.value:g}"
+    elif coil:
         f = lamp.parameter("coil_open_fraction", spec)
         if f.unit != "1":
             raise ValueError("coil_open_fraction is an area ratio, unit 1")
@@ -101,7 +129,8 @@ def _tungsten(lamp, spec, coil: bool = False, electrical: bool = False) -> Emiss
     else:
         cont, name = tungsten.TungstenContinuum(t_value), f"tungsten {t_value:g} K"
     meta = {
-        "generator": "tungsten_resistance" if electrical else "tungsten_coil" if coil else "tungsten",
+        "generator": ("tungsten_balance" if balance else "tungsten_resistance" if electrical
+                      else "tungsten_coil" if coil else "tungsten"),
         "level": spec.level,
         "params": {k: p.as_dict() for k, p in used.items()},
         "valid_range_nm": tab.wavelength_range_nm,
@@ -123,6 +152,10 @@ def _tungsten_coil(lamp, spec) -> EmissionProfile:
 
 def _tungsten_resistance(lamp, spec) -> EmissionProfile:
     return _tungsten(lamp, spec, coil=True, electrical=True)
+
+
+def _tungsten_balance(lamp, spec) -> EmissionProfile:
+    return _tungsten(lamp, spec, coil=True, balance=True)
 
 
 def _nm(lamp, spec, name):
@@ -253,7 +286,7 @@ def _fluorescent_triband(lamp, spec) -> EmissionProfile:
 
 
 GENERATORS = {"reference": _reference, "planck": _planck, "tungsten": _tungsten, "tungsten_coil": _tungsten_coil,
-              "tungsten_resistance": _tungsten_resistance,
+              "tungsten_resistance": _tungsten_resistance, "tungsten_balance": _tungsten_balance,
               "led_two_band": _led_two_band, "led_phosphor_layer": _led_phosphor_layer,
               "fluorescent_triband": _fluorescent_triband}
 

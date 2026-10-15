@@ -19,7 +19,8 @@ lss accuracy                     # score models against references
 lss fit incandescent_cie_a --level 2   # fit a level's bounded parameters to its reference
 lss fit halogen_nist_fel_f455 --level 3 # coiled tungsten against a NIST-measured halogen lamp
 lss fit halogen_nist_fel_f455 --level 4 --objective uncertainty
-                                 # temperature from resistance: fits the cold resistance
+                                 # power balance (the current sets the temperature):
+                                 # fits the cold resistance
 lss fit fluorescent_cie_fl10 fluorescent_cie_fl11 fluorescent_cie_fl12 --level 1
                                  # joint fit of the shared phosphor shapes
 lss fit fluorescent_cie_fl10 fluorescent_cie_fl11 fluorescent_cie_fl12 --level 1 \

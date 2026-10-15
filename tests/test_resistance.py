@@ -1,13 +1,25 @@
-"""Filament temperature from resistance, and tungsten Level 4 (design §4.1 L4, §12)."""
+"""Filament temperature from resistance: Level 4's first step (design §4.1 L4, §12).
+
+The presets' Level 4 is now the power balance (``test_balance.py``); these tests run the
+first step, the temperature from voltage over current, in its place.
+"""
+
+from dataclasses import replace
 
 import numpy as np
 import pytest
 
 from lss.accuracy import fit, references, report
 from lss.lamp import lamp as lamps
+from lss.lamp.lamp import ModelSpec
 from lss.physics.thermal import resistance
 
 F455, F456 = "halogen_nist_fel_f455", "halogen_nist_fel_f456"
+
+
+def _resistance_step(name):
+    lamp = lamps.load(name)
+    return replace(lamp, models={**lamp.models, 4: ModelSpec(4, "tungsten_resistance")})
 
 
 def _desai_polynomials(t):
@@ -45,7 +57,7 @@ def test_temperature_round_trips_and_refuses_impossible_ratios():
 def test_level_4_on_the_fitted_lamp_is_level_3_by_construction():
     # The cold resistance is fitted to F-455, so its Level 4 only restates Level 3's
     # temperature: the same spectrum, the same scores. No test of physics here.
-    lamp = lamps.load(F455)
+    lamp = _resistance_step(F455)
     l4 = lamp.generate(4)
     t4 = l4.metadata["derived"]["filament_temperature"]["value"]
     assert t4 == pytest.approx(lamp.physical["filament_temperature"].value, abs=0.05)
@@ -62,7 +74,7 @@ def test_second_lamp_from_its_own_voltage_runs_hotter_than_its_spectrum_says():
     # its spectrum, fitted for temperature alone, says ~3 K, and the shape score gets
     # worse, not better. Either the filaments differ in cold resistance by a few tenths of
     # a per cent, or the two voltages were read differently; the data cannot tell which.
-    a, b = lamps.load(F455), lamps.load(F456)
+    a, b = _resistance_step(F455), _resistance_step(F456)
     t_a = a.generate(4).metadata["derived"]["filament_temperature"]["value"]
     t_b = b.generate(4).metadata["derived"]["filament_temperature"]["value"]
     assert 8.0 < t_b - t_a < 11.0

@@ -1,0 +1,108 @@
+# Total emissivity of tungsten: the fraction of a blackbody's power, over all wavelengths
+# and all directions, that a tungsten wire radiates (design §4.1 L4, §4.6).
+#
+# Source, 1000-3000 K: W. E. Forsythe and E. M. Watson, "Resistance and radiation of
+#   tungsten as a function of temperature", J. Opt. Soc. Am. 24, 114-118 (1934),
+#   doi:10.1364/JOSA.24.000114, Table I: "well aged, very pure tungsten wire", radiating
+#   "surrounded by a black body at 0 K". Read from the Optica abstract page's text
+#   (2026-10-15). A wire's radiated power is what was measured, so this is the total
+#   HEMISPHERICAL emissivity (all directions), not the normal one.
+# Source, 3200 and 3400 K: W. E. Forsythe and E. Q. Adams, "Radiating characteristics of
+#   tungsten and tungsten lamps", J. Opt. Soc. Am. 35, 108-113 (1945),
+#   doi:10.1364/JOSA.35.000108, Table I, "Total emissivity" column. Read the same way.
+#   Its values at 1200-3000 K are the 1934 values reprinted, digit for digit, so the two
+#   tables are NOT independent measurements; they only confirm the transcription. Where
+#   the 1945 paper's values above 3000 K come from, the page read does not say.
+#
+# Cross-checks (tests/test_balance.py):
+#  * the 1934 table also gives the radiated power per area n (W/cm2) beside each
+#    emissivity; n / (e T^4) is the same constant on every row, within the rounding of
+#    the three-figure emissivity, which checks that each pair was read from one row;
+#  * the 1934 table's own logarithmic slope of n at 3000 K, d ln n / d ln T = 4.53
+#    (kept below as `log_slope_n_3000k`), against the slope of the emissivity column.
+#
+# Limits, stated so nothing is silently over-trusted:
+#  * three significant figures: the emissivity's slope with temperature, which is what
+#    a lamp's response to its current depends on, is poorly fixed by differences of
+#    rows. Between 2800 and 3000 K the rows give d ln e / d ln T = 0.58; between 3000
+#    and 3200 K, 0.32; the 1934 table's own slope column says 0.53 at 3000 K. A lamp at
+#    3091 K sits on that kink, so the module reports its results across this spread;
+#  * a straight wire in vacuum, not a coil in a gas: the coil's cavity effect and the gas
+#    loss are separate terms (§4.1 L4);
+#  * temperatures are on the 1934 scale, about 0.5 % from ITS-90 near 3000 K (~15 K),
+#    which moves e by about 0.0005: below the table's last digit.
+#  * The same 1934 table gives resistivity too: its ratio rho(3000 K)/rho(293 K) = 16.44
+#    is 6 % below Desai et al.'s (1984) 17.55, which this project uses
+#    (tungsten_resistivity.yaml). Its log slope near 3000 K, 1.195, agrees with Desai's
+#    1.21 within 1.5 %, and only the slope matters while the cold resistance is fitted.
+
+quantity: total hemispherical emissivity
+citation: "Forsythe & Watson, J. Opt. Soc. Am. 24, 114 (1934), Table I; 3200-3400 K: Forsythe & Adams, J. Opt. Soc. Am. 35, 108 (1945), Table I"
+data_version: "Forsythe & Watson 1934 Table I (1000-3000 K) + Forsythe & Adams 1945 Table I (3200-3400 K)"
+log_slope_n_3000k: 4.53
+
+# temperature K: total emissivity (1934 and 1945)
+table:
+  1000: 0.105
+  1100: 0.121
+  1200: 0.138
+  1300: 0.156
+  1400: 0.174
+  1500: 0.192
+  1600: 0.207
+  1700: 0.222
+  1800: 0.236
+  1900: 0.248
+  2000: 0.259
+  2100: 0.269
+  2200: 0.278
+  2300: 0.286
+  2400: 0.294
+  2500: 0.301
+  2600: 0.309
+  2700: 0.315
+  2800: 0.321
+  2900: 0.329
+  3000: 0.334
+  3200: 0.341
+  3400: 0.348
+
+# temperature K: radiated power per area, W/cm2 (1934 only, for the transcription check)
+radiated_w_cm2:
+  1000: 0.600
+  1100: 1.01
+  1200: 1.63
+  1300: 2.54
+  1400: 3.82
+  1500: 5.54
+  1600: 7.74
+  1700: 10.58
+  1800: 14.15
+  1900: 18.45
+  2000: 23.65
+  2100: 29.85
+  2200: 37.20
+  2300: 45.70
+  2400: 55.70
+  2500: 67.2
+  2600: 80.6
+  2700: 95.6
+  2800: 112.5
+  2900: 132.5
+  3000: 154.5
+
+# The 1945 table's total column, reprinted from 1934 where they overlap (transcription check).
+forsythe_adams_1945:
+  1200: 0.138
+  1500: 0.192
+  1800: 0.236
+  2000: 0.259
+  2200: 0.278
+  2500: 0.301
+  2600: 0.309
+  2700: 0.315
+  2800: 0.321
+  2900: 0.329
+  3000: 0.334
+  3200: 0.341
+  3400: 0.348

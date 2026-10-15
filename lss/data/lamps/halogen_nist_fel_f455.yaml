@@ -70,9 +70,41 @@ physical:
       fitted by `lss fit` (uncertainty objective, with coil_open_fraction) to nist-fel-f455
       on 2026-10-15: NRMS 1.04e-02, du'v' 1.7e-04, dCCT -4.75 K, chi2/node 0.71; puts the
       filament at 3091.2 K, Level 3's temperature
-    # With these lamps' hot resistance (13.3-13.4 ohm) the bounds give about 3175-3185 K and
-    # 2610 K: inside the range the emissivity data reaches (to 3200 K, extrapolated).
-    bounds: [0.71, 0.90]
+    # Inside the range the spectral emissivity reaches (to 3200 K, extrapolated) for both of
+    # Level 4's steps: from the resistance (13.3-13.4 ohm hot) the bounds give 3175-3185 K
+    # and 2875-2885 K; from the power balance at 8.200 A, 3056 K and 3191 K.
+    bounds: [0.71, 0.80]
+
+  # The power balance (Level 4, second step): the current alone sets the temperature, and
+  # the voltage becomes a prediction (design §4.1 L4).
+  filament_wire_area:
+    # The wire's whole surface, at room-temperature dimensions. Solved, not measured: the
+    # surface at which the losses at Level 3's 3091.2 K equal NIST's I x V = 897.1 W.
+    # With the cold resistance it implies a wire 0.290 mm thick and 0.918 m long.
+    value: 8.36793e-4
+    unit: m2
+    empirical: true
+    reason: >-
+      solved by lss.physics.thermal.balance.solve_area from nist-fel-f455's 8.200 A,
+      109.4 V and the cold resistance and open fraction above, with gas_loss_share 0.10
+      (2026-10-15); the voltage's lead and contact resistance, if any, put it slightly high
+  gas_loss_share:
+    # Heat carried off by the fill gas and conducted into the supports, as a share of the
+    # input power at 3000 K. No source found for these lamps (fill gas, pressure and coil
+    # size unknown); 0.10 is a round guess. It does not change the lamp at its own
+    # current, only how it follows a change of current: 0-0.19 all keep NIST's measured
+    # 0.06 %/mA (design §4.1 L4).
+    value: 0.10
+    unit: "1"
+    empirical: true
+    reason: round guess; not stated for FEL lamps; bounded only loosely by NIST's 0.06 %/mA
+  gas_loss_exponent:
+    value: 2.0
+    unit: "1"
+    empirical: true
+    reason: >-
+      d ln P_gas / d ln T near 3100 K from Langmuir's sheath model with conductivity rising
+      as T^0.75 and a wall near 900 K; the fill gas is not stated
 
 models:
   0: {generator: reference}
@@ -102,4 +134,16 @@ models:
           7.14e-02, du'v' 6.5e-04, dCCT -15.62 K, chi2/node 33.92
         bounds: [2600, 3200]
   3: {generator: tungsten_coil}
-  4: {generator: tungsten_resistance}
+  4:
+    generator: tungsten_balance
+    params:
+      coil_open_fraction:
+        # Level 3's value, held fixed here (no bounds, so `lss fit` leaves it alone): the
+        # wire surface was solved for it, and with the surface fixed the open fraction
+        # alone would swing the filament from 2550 K (f = 1) to past 3400 K (f = 0.2).
+        value: 0.296894
+        unit: "1"
+        empirical: true
+        reason: >-
+          Level 3's open fraction, fitted by `lss fit` (uncertainty objective, with
+          filament_temperature) to nist-fel-f455 on 2026-10-14; held fixed at Level 4
