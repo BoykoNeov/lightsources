@@ -59,9 +59,9 @@ def test_level_4_on_the_fitted_lamp_is_level_3_by_construction():
 def test_second_lamp_from_its_own_voltage_runs_hotter_than_its_spectrum_says():
     # The finding (design §4.1 L4). F-456 draws the same current at 0.37 % more voltage.
     # With F-455's cold resistance, tungsten's resistivity turns that into ~9 K hotter;
-    # its spectrum, fitted for temperature alone, says ~3 K. So the two filaments differ
-    # in cold resistance by a few tenths of a per cent: lamp-to-lamp spread that a shared
-    # cold resistance cannot carry, and the shape score gets worse, not better.
+    # its spectrum, fitted for temperature alone, says ~3 K, and the shape score gets
+    # worse, not better. Either the filaments differ in cold resistance by a few tenths of
+    # a per cent, or the two voltages were read differently; the data cannot tell which.
     a, b = lamps.load(F455), lamps.load(F456)
     t_a = a.generate(4).metadata["derived"]["filament_temperature"]["value"]
     t_b = b.generate(4).metadata["derived"]["filament_temperature"]["value"]
@@ -72,7 +72,7 @@ def test_second_lamp_from_its_own_voltage_runs_hotter_than_its_spectrum_says():
     assert t_b - t_spec > 4.0
     ref = references.get("nist-fel-f456")
     assert report.score(b, 4, ref).chi2_per_node > 1.5 * report.score(b, 3, ref).chi2_per_node
-    # The cold resistance F-456 would need: a few tenths of a per cent above F-455's.
+    # The cold resistance F-456 would need (or its voltage's excess): a few tenths of a per cent.
     r_hot = b.physical["lamp_voltage"].value / b.physical["lamp_current"].value
     needed = r_hot / float(resistance.table().ratio(t_spec))
     assert 0.1 < 100 * (needed / b.physical["cold_resistance"].value - 1) < 0.5

@@ -52,8 +52,9 @@ physical:
     bounds: [0.05, 1.0]
 
   # The operating point (Level 4). NIST set the current; the voltage it recorded "for
-  # reference only", without saying where on the lamp it was taken, so the hot resistance
-  # (voltage over current) may include the leads and seals (a few milliohms, ~0.03 %).
+  # reference only", without saying where on the lamp it was taken, so how much lead,
+  # seal and contact resistance the hot resistance (voltage over current) includes is
+  # unknown (design §4.1 L4: it may be what separates the two lamps).
   lamp_current:
     value: 8.200
     unit: A
