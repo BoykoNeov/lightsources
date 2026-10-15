@@ -22,8 +22,20 @@
 #   of the panel (a) curves is used. Check: the digitised X curve matches Knoop et al.'s
 #   within 27-66 cm-1 rms from 5 to 24 a0 (255 cm-1 on the steep inner wall at 4-5 a0,
 #   where 0.02 a0 is 200 cm-1). Chung et al. label the triplet upper states b 3Sigma_g+
-#   and c 3Pi_g (not the usual b 3Pi_u). Beyond 24 a0 each difference potential is the
-#   resonance long-range form asymptote + c3/R^3 (c3 below, from Chung et al. Sec. III).
+#   and c 3Pi_g (not the usual b 3Pi_u). The plotted curves come in steps of about 20 cm-1 (the figure's plotting resolution),
+#   which matter where a curve is nearly flat (far apart atoms, near the lines). So they
+#   are smoothed: a least-squares cubic spline (knots every 0.25 a0 up to 12 a0, 0.5 a0
+#   beyond), joined linearly over 2 a0 (from 11 a0; A-X from 16 a0, where its curve
+#   leaves the multipole form) to a long-range form asymptote + c3/R^3 + p6/R^6 + p8/R^8,
+#   with c3 from Chung et al. Sec. III held fixed and p6, p8 fitted to the digitised
+#   curve beyond the join. Residuals: spline 3-8 cm-1 rms, long-range form 4-10 cm-1 rms,
+#   within the plotting steps. Beyond 24 a0 the long-range form is used as it is.
+#   p6 and p8 are a fitted representation of the plotted curve, not physical dispersion
+#   coefficients: over the fitted range they trade off against each other, and they
+#   differ in sign from the published ones (A-X: +12 600 a.u. fitted, against about
+#   -2 500 from Chung et al.'s A-state C6 minus Knoop's X-state C6). Beyond 24 a0 this
+#   moves the transition energy by a few cm-1, which reaches only within about 3-7 nm of
+#   the lines. The procedure is scripts/digitise_na2_curves.py.
 #   Vacuum wavenumbers, cm-1, on R = 4.20, 4.25, ... 24.00 a0.
 #
 # Transition dipoles: Chung et al. Sec. III F give the singlet functions' long-range
@@ -34,9 +46,9 @@
 #   paper's Fig. 6 (see design §4.4). The triplet functions (Konowalow et al.) are not
 #   given; each triplet band takes the singlet form of the same symmetry change
 #   (Sigma-Sigma: a -> b like X -> A; Sigma-Pi: a -> c like X -> B), an assumption.
-#   One measurement is open: Ahmed et al., J. Chem. Phys. 124, 084308 (2006), the X-A
-#   moment 9.72 D (3.82 a.u.) at 4.81 A (9.09 a0), between the two forms there
-#   (3.97 and 3.59 a.u.).
+#   One measurement, from its abstract: Ahmed et al., J. Chem. Phys. 124, 084308 (2006),
+#   the X-A moment 9.72 D (3.82 a.u.) at an R-centroid of 4.81 A (9.09 a0), between the
+#   two forms there (3.97 and 3.59 a.u.).
 
 source: "Knoop et al. PRA 83, 042704 (2011); Chung, Kirby & Babb PRA 63, 032516 (2001), digitised 2026-10-15"
 asymptote_cm1: 16956.172   # 3s -> 3p, Chung et al. (fine structure not resolved)

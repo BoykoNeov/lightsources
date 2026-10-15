@@ -67,10 +67,11 @@ def test_difference_potentials_hold_the_satellites():
 
 
 def test_long_range_pairs_reproduce_the_measured_resonance_wing():
-    """With only distances beyond 24 a0, where every curve is the resonance c3/R^3 term, the
-    pair absorption 5 nm from the D lines (from about 20 a0, where the curves are nearly that term) lands within a factor 2 of the impact wing of
-    Huennekens & Gallagher's measured widths: the weights (spin, Λ, the ½ for identical
-    atoms) are right to that level. Recorded: 1.3–1.9 times, more on the red side."""
+    """5 nm from the D lines the pairs are about 20 a0 apart, where every curve is nearly the
+    resonance c3/R^3 term. There the pair absorption lands within a factor 2 of the impact
+    wing of Huennekens & Gallagher's measured widths: the weights (spin, Λ, the ½ for
+    identical atoms) are right to that level. Recorded: 1.37 (blue) and 1.99 (red), the red
+    side at the edge of the mark."""
     t = 1500.0
     comp = composition(t, Fill(sodium_pa=13e3))
     d_lines = [ln for ln in sodium.data().lines if ln.lower_energy_cm1 == 0.0]
@@ -84,7 +85,7 @@ def test_long_range_pairs_reproduce_the_measured_resonance_wing():
 
 def test_finding_the_pairs_miss_the_mark_set_against_chung_et_al():
     """Set before running (2026-10-15): within 30 % of Chung et al.'s Fig. 6 in 640–700 and
-    525–540 nm at 2000 and 3000 K. Three of the four miss: the semiclassical pairs run 28–51 %
+    525–540 nm at 2000 and 3000 K. Three of the four miss: the semiclassical pairs run 29–51 %
     above. The 1981 discharge measurement at 500 nm is met."""
     ratios = {(t, lo): window(t, lo, hi) / CHUNG_FIG6[(t, lo, hi)] for t in (2000, 3000) for lo, hi in ((640, 700), (525, 540))}
     assert sum(r > 1.3 for r in ratios.values()) == 3

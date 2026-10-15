@@ -21,8 +21,9 @@ interaction c₃/R³, so the bands together reproduce the resonance-broadening w
 in, the curves' shapes and the bound X-state pairs (a 6022 cm⁻¹ well) make the wings
 asymmetric and give the satellites at 551.5 and 804 nm.
 
-Classical limit: no rovibrational structure. That structure is finer than 1 nm, which
-is what the measured lamps resolve, so the limit loses nothing they can show.
+Classical limit: no rovibrational structure, which is finer than the 1 nm the measured
+lamps resolve. Near the satellites, where ΔV has an extremum, the classical limit is least
+accurate and its peaks come out sharper than a quantum calculation's.
 """
 
 from dataclasses import dataclass
