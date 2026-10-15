@@ -47,6 +47,7 @@ class LampSheet:
     luminous_flux_lm: float | None
     valid_range_nm: tuple[float, float] | None
     params: dict
+    derived: dict  # quantities the model computed from its parameters (e.g. a temperature)
     quick_path: dict  # components applied after the generator, with their parameters
     data_versions: list[str]
     code_version: str
@@ -117,6 +118,7 @@ def make(lamp: Lamp, level: int) -> LampSheet:
         luminous_flux_lm=flux_lm,
         valid_range_nm=tuple(valid) if valid else None,
         params=meta.get("params", {}),
+        derived=meta.get("derived", {}),
         quick_path=meta.get("quick_path", {}),
         data_versions=list(meta.get("data_versions", [])),
         code_version=code_version(),
@@ -169,6 +171,8 @@ def format_text(sheet: LampSheet) -> str:
     for name, p in sheet.params.items():
         src = p.get("source") or f"EMPIRICAL: {p.get('reason')}"
         lines.append(row(name, f"{p['value']:g} {p['unit']}  ({src})"))
+    for name, d in sheet.derived.items():
+        lines.append(row(name, f"{d['value']:.6g} {d['unit']}  (derived: {d['from']})"))
     env = sheet.quick_path.get("envelope")
     if env:
         w = env["wall_thickness"]

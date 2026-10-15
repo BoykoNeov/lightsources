@@ -209,6 +209,43 @@
     "reference_sampling_nm": null,
     "spectral_nrms": 0.010414449133011676
   },
+  "halogen_nist_fel_f455@L4": {
+    "band_nrms": {
+      "1100-1700": 0.00924644797484631,
+      "1700-2500": 0.009030718148455038,
+      "250-380": 0.006632737804131754,
+      "380-480": 0.0022669985133132657,
+      "480-580": 0.001061759881260593,
+      "580-680": 0.001515399690663344,
+      "680-780": 0.0007997852854447771,
+      "780-1100": 0.008977535764861468
+    },
+    "chi2_per_node": 0.7062782614305118,
+    "comparable": true,
+    "delta_cct_k": -4.747977419358904,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": 0.012410441609176814,
+    "delta_rf": 0.025912849562431006,
+    "delta_uv_prime": 0.0001735447162518961,
+    "empirical_params": 2,
+    "empirical_shared": 0,
+    "generator": "tungsten_resistance",
+    "lamp_id": "halogen_nist_fel_f455",
+    "level": 4,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      300.0,
+      2400.0
+    ],
+    "reference": "nist-fel-f455",
+    "reference_bandpass_nm": null,
+    "reference_nodes": 30,
+    "reference_sampling_nm": null,
+    "spectral_nrms": 0.010414454667515774
+  },
   "halogen_nist_fel_f456@L1": {
     "band_nrms": {
       "1100-1700": 0.10103258635951733,
@@ -319,6 +356,43 @@
     "reference_nodes": 30,
     "reference_sampling_nm": null,
     "spectral_nrms": 0.007312841225259992
+  },
+  "halogen_nist_fel_f456@L4": {
+    "band_nrms": {
+      "1100-1700": 0.014489649641958053,
+      "1700-2500": 0.010189398121667694,
+      "250-380": 0.006068241175457513,
+      "380-480": 0.0037820472627546667,
+      "480-580": 0.0003128984070357506,
+      "580-680": 0.0002869654328197626,
+      "680-780": 0.0018047136856056611,
+      "780-1100": 0.014647733341837443
+    },
+    "chi2_per_node": 2.2859864817128277,
+    "comparable": true,
+    "delta_cct_k": 1.7051674410063242,
+    "delta_efficacy": null,
+    "delta_flux": null,
+    "delta_ra": 0.003833554395214378,
+    "delta_rf": 0.02054584530384318,
+    "delta_uv_prime": 7.206677859796995e-05,
+    "empirical_params": 2,
+    "empirical_shared": 0,
+    "generator": "tungsten_resistance",
+    "lamp_id": "halogen_nist_fel_f456",
+    "level": 4,
+    "normalisation": "equal luminous flux",
+    "note": "",
+    "path": "quick",
+    "range_nm": [
+      300.0,
+      2400.0
+    ],
+    "reference": "nist-fel-f456",
+    "reference_bandpass_nm": null,
+    "reference_nodes": 30,
+    "reference_sampling_nm": null,
+    "spectral_nrms": 0.016358992713948417
   },
   "incandescent_cie_a@L1": {
     "band_nrms": {

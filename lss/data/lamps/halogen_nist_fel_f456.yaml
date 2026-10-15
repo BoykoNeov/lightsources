@@ -51,6 +51,34 @@ physical:
     # cavity, which a coil whose turns are spaced by about a wire diameter is not.
     bounds: [0.05, 1.0]
 
+  # The operating point (Level 4). NIST set the current; the voltage it recorded "for
+  # reference only", without saying where on the lamp it was taken, so the hot resistance
+  # (voltage over current) may include the leads and seals (a few milliohms, ~0.03 %).
+  lamp_current:
+    value: 8.200
+    unit: A
+    source: NIST Report of Calibration 39045C, lamp F-456 (test 844/257096-96-2), DC
+  lamp_voltage:
+    value: 109.8
+    unit: V
+    source: NIST Report of Calibration 39045C, lamp F-456 (test 844/257096-96-2), "for reference only"
+  cold_resistance:
+    # At 293 K. Neither NIST report nor any FEL datasheet found (2026-10-15) states it, nor
+    # the wire's dimensions, so it is fitted: the resistance at which tungsten's
+    # resistivity puts the filament at the temperature the spectrum shows.
+    # F-455's value, NOT refitted: the test is whether one lamp's filament predicts the
+    # other's temperature from its own voltage (design §4.1 L4).
+    value: 0.733126
+    unit: ohm
+    empirical: true
+    reason: >-
+      fitted by `lss fit` (uncertainty objective, with coil_open_fraction) to nist-fel-f455
+      on 2026-10-15: NRMS 1.04e-02, du'v' 1.7e-04, dCCT -4.75 K, chi2/node 0.71; puts the
+      filament at 3091.2 K, Level 3's temperature
+    # With these lamps' hot resistance (13.3-13.4 ohm) the bounds give about 3175-3185 K and
+    # 2610 K: inside the range the emissivity data reaches (to 3200 K, extrapolated).
+    bounds: [0.71, 0.90]
+
 models:
   0: {generator: reference}
   1:
@@ -79,3 +107,4 @@ models:
           7.14e-02, du'v' 6.5e-04, dCCT -15.62 K, chi2/node 33.92
         bounds: [2600, 3200]
   3: {generator: tungsten_coil}
+  4: {generator: tungsten_resistance}

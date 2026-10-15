@@ -1,0 +1,63 @@
+# Electrical resistivity of tungsten (design §4.1 L4, §4.6).
+#
+# Source: P. D. Desai, T. K. Chu, H. M. James and C. Y. Ho, "Electrical Resistivity of
+#   Selected Elements", J. Phys. Chem. Ref. Data 13, 1069-1096 (1984),
+#   doi:10.1063/1.555723, Table 5 (recommended values, tungsten of 99.99 % purity or
+#   higher). Copy read: https://srd.nist.gov/jpcrdreprint/1.555723.pdf (2026-10-15).
+#   The values below 293 K are left out: a lamp filament never needs them, and below
+#   200 K they depend on the specimen's purity.
+#
+# Column used: "uncorrected", i.e. resistance times the wire's ROOM-temperature cross
+#   section over its room-temperature length. That is exactly what a filament's ratio
+#   R(T)/R(293 K) measures, so no thermal-expansion correction is applied. (Desai's
+#   "corrected" column, the true resistivity of the expanded metal, is 1.6 % higher at
+#   3000 K.)
+#
+# Cross-check (tests/test_resistance.py): Desai's own polynomials (90-750 K and
+#   750-3600 K, given beside the table "for easy numerical manipulation", with the
+#   warning that they do not imply a recommended slope) agree with this table, as the
+#   module interpolates it, within 0.06 % from 293 to 3600 K. That also checks the
+#   transcription: any misread digit but the last would stand out by far more.
+#
+# Uncertainty (Desai): +-2 % from 300 to 2500 K, +-3 % from 2500 K to the melting
+#   point. How the errors at 293 K and at 3000 K correlate is not stated. If they are
+#   independent, a temperature from a MEASURED cold resistance carries about
+#   3.6 % / 1.2 = 3 %, ~90 K at 3000 K, from this alone (resistivity rises as T^1.2
+#   there); if fully correlated, they cancel. When the cold resistance is instead fitted
+#   to a spectrum, the absolute level cancels and only the local slope matters.
+
+quantity: electrical resistivity, uncorrected for thermal expansion
+unit: 1e-8 ohm m
+citation: "Desai, Chu, James & Ho, J. Phys. Chem. Ref. Data 13, 1069 (1984), Table 5"
+uncertainty_rel: 0.03  # 2500 K to the melting point; 0.02 from 300 to 2500 K
+data_version: "Desai et al. 1984 Table 5 (uncorrected column, 293-3600 K)"
+
+# temperature K: resistivity, 1e-8 ohm m
+table:
+  293: 5.28
+  300: 5.44
+  400: 7.83
+  500: 10.34
+  600: 12.98
+  700: 15.73
+  800: 18.56
+  900: 21.47
+  1000: 24.43
+  1100: 27.46
+  1200: 30.54
+  1300: 33.68
+  1400: 36.86
+  1500: 40.09
+  1600: 43.36
+  1700: 46.67
+  1800: 50.02
+  1900: 53.41
+  2000: 56.83
+  2200: 63.76
+  2400: 70.81
+  2600: 77.98
+  2800: 85.26
+  3000: 92.66
+  3200: 100.2
+  3400: 107.8
+  3600: 115.6
