@@ -13,10 +13,10 @@ from lss.physics.thermal import balance
 
 F455, F456 = "halogen_nist_fel_f455", "halogen_nist_fel_f456"
 
-#: NIST: "measurements made on our FEL-type standard spectral irradiance lamps operating
-#: at 8.000 A ... give a value of about 0.06% per 1 mA in irradiance at 655 nm" (Walker &
-#: Thompson, J. Res. NIST 99, 255 (1994)). One figure, so "about 0.06" is read as
-#: 0.05-0.07; the band was set before the model was run.
+#: NIST (Walker & Thompson, J. Res. NIST 99, 255 (1994), §1): "By way of comparison,
+#: measurements made on our FEL-type standard spectral irradiance lamps operating at
+#: 8.000 A give a value of about 0.06% per 1 mA in irradiance at 655 nm." One digit, so
+#: "about 0.06" is read as 0.05-0.07; the band was set before the model was run.
 NIST_BAND = (0.05, 0.07)
 
 
@@ -88,13 +88,14 @@ def test_balance_closes_and_follows_the_current():
 
 
 def test_lamp_at_8_000_a_matches_nists_measured_response():
-    # A sanity check, not a verdict (design §4.1 L4): NIST's one-figure 0.06 %/mA holds over
+    # A sanity check, not a verdict (design §4.1 L4): NIST's one-digit 0.06 %/mA holds over
     # the whole plausible range of the unknowns, so passing it shows sensible behaviour,
-    # not that the physics is right. It does bound the gas loss loosely from above.
-    for g in (0.0, 0.10, 0.15):
-        s = balance.irradiance_sensitivity(_calibrated(g), 8.000, 655.0)
+    # not that the physics is right. The response rises with the gas share, but where it
+    # leaves the band (0.10-0.19) depends on how the one digit is read: no useful bound.
+    responses = [balance.irradiance_sensitivity(_calibrated(g), 8.000, 655.0) for g in (0.0, 0.10, 0.15)]
+    for g, s in zip((0.0, 0.10, 0.15), responses):
         assert NIST_BAND[0] < s < NIST_BAND[1], (g, s)
-    assert balance.irradiance_sensitivity(_calibrated(0.20), 8.000, 655.0) > NIST_BAND[1]
+    assert np.all(np.diff(responses) > 0)
     # A straight wire (no cavity), and either end of the emissivity slope's spread.
     assert NIST_BAND[0] < balance.irradiance_sensitivity(_calibrated(0.10, open_fraction=1.0), 8.000, 655.0) < NIST_BAND[1]
     for slope in (0.32, 0.53):

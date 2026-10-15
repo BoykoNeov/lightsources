@@ -78,9 +78,10 @@ physical:
   # The power balance (Level 4, second step): the current alone sets the temperature, and
   # the voltage becomes a prediction (design §4.1 L4).
   filament_wire_area:
-    # The wire's whole surface, at room-temperature dimensions. Solved, not measured: the
-    # surface at which the losses at Level 3's 3091.2 K equal NIST's I x V = 897.1 W.
-    # With the cold resistance it implies a wire 0.290 mm thick and 0.918 m long.
+    # The wire's whole surface, hot (about 3 % above its room-temperature size). Solved,
+    # not measured: the surface at which the losses at Level 3's 3091.2 K equal NIST's
+    # I x V = 897.1 W. With the cold resistance it implies a wire about 0.29 mm thick and
+    # 0.92 m long (1-2 % off, since the resistance is at room-temperature dimensions).
     value: 8.36793e-4
     unit: m2
     empirical: true
@@ -92,12 +93,13 @@ physical:
     # Heat carried off by the fill gas and conducted into the supports, as a share of the
     # input power at 3000 K. No source found for these lamps (fill gas, pressure and coil
     # size unknown); 0.10 is a round guess. It does not change the lamp at its own
-    # current, only how it follows a change of current: 0-0.19 all keep NIST's measured
-    # 0.06 %/mA (design §4.1 L4).
+    # current, only how it follows a change of current. NIST's measured "about 0.06 %/mA"
+    # does not usefully bound it: the cut-off is 0.10-0.19 depending on how its one digit
+    # is read (design §4.1 L4).
     value: 0.10
     unit: "1"
     empirical: true
-    reason: round guess; not stated for FEL lamps; bounded only loosely by NIST's 0.06 %/mA
+    reason: round guess; not stated for FEL lamps; NIST's one-digit 0.06 %/mA does not usefully bound it
   gas_loss_exponent:
     value: 2.0
     unit: "1"
