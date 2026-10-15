@@ -40,8 +40,9 @@
 #   interpolates per electron in density as well as temperature. C: the isolated-line
 #   approximation holds for N < C/w (at the 1e16 cm-3 row). The STARK-B values are
 #   theory. Griem states about 30 % for such calculations (as quoted by Miokovic et al.,
-#   arXiv physics/0410146 (2004), whose +-25 % measurements in Na-Hg arcs agree for 7s
-#   and the 5d shift, and differ slightly for 5s and 6s); for the D lines Konjevic et al.
+#   arXiv physics/0410146 (2004); their +-25 % measurements in Na-Hg arcs take the
+#   electron density from the 7s shift with these values, so that shift agrees by
+#   construction; their 7s widths and 5d shifts agree, 5s and 6s differ slightly); for the D lines Konjevic et al.
 #   (J. Phys. Chem. Ref. Data 31, 819 (2002)) report measured widths 13 % above these
 #   values, and these shifts 40 % above measured ones. Ion (quasi-static)
 #   broadening is not included in w, and STARK-B gives no ion parameter for Na I.

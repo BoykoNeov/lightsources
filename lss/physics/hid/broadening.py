@@ -5,7 +5,8 @@ thermal motion, convolved with one Lorentzian whose width is the sum of
 
 * the natural width, taken as the line's own A_ki. The full natural width is the sum of
   both levels' total decay rates, so this undercounts (for a line ending on 3p by about
-  6×10⁷ s⁻¹), but every other width here is above 10¹⁰ rad/s in the arc;
+  6×10⁷ s⁻¹), against a resonance width of at least 6.9×10¹⁰ rad/s anywhere in an HPS
+  arc (13 kPa sodium);
 * resonance broadening of the 3p level by ground-state sodium, measured (Huennekens &
   Gallagher 1983, in ``lss/data/na_atomic.yaml``), for the D lines and for every line
   ending on 3p; impact theory makes it independent of temperature;
