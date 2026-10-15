@@ -1,5 +1,6 @@
-"""HID Stages A and B for the sodium resonance lines (design §4.4, §12): checks against
-physical limits, independent of any measured lamp."""
+"""HID Stages A and B for sodium (design §4.4, §12): checks against physical limits and
+the cited tables, independent of any measured lamp. The D-line tests pass the D lines
+alone, so the lines ending on 3p do not change what they measure."""
 
 import numpy as np
 import pytest
@@ -15,6 +16,7 @@ from lss.spectral.units import C, H, K_B, air_to_vacuum
 
 HPS_FILL = Fill(sodium_pa=13e3, mercury_pa=70e3, xenon_pa=20e3)
 LINES = sodium.data().lines
+D_LINES = (sodium.data().line("D2"), sodium.data().line("D1"))
 
 
 def test_partition_function_is_the_ground_level_when_cold():
@@ -42,7 +44,7 @@ def test_widths_follow_their_sources():
     w = broadening.widths(d2, c)
     ground = c.sodium * sodium.level_population_fraction(0.0, 2, 4000.0, c.lowering_cm1)
     assert w.resonance == pytest.approx(4.67e-13 * ground, rel=1e-12)  # Huennekens & Gallagher
-    assert w.shift / w.van_der_waals == pytest.approx(-2.94 / 8.08, rel=1e-12)  # Lindholm–Foley
+    assert w.shift_van_der_waals / w.van_der_waals == pytest.approx(-2.94 / 8.08, rel=1e-12)  # Lindholm–Foley
     # Sodium's own atoms dominate; the Unsöld estimate for Hg and Xe is a minor part.
     assert 0.05 < w.van_der_waals / w.resonance < 0.5
     # Doppler: σ_ν = ν₀ sqrt(kT/mc²)
@@ -81,20 +83,20 @@ def test_thin_arc_is_the_sum_of_line_emissions():
     """With τ ≪ 1 each chord gives ∫I dλ = Σ (hν₀/4π) A n_k · chord length."""
     t = 2000.0
     col = arc.ArcColumn(radius_m=3.8e-3, axis_temperature_k=t, wall_temperature_k=t, fill=Fill(sodium_pa=1e-6), shells=4)
-    lam = arc.line_grid(LINES, 588.5, 590.1, first_offset_nm=2e-5, ratio=1.01, base_step_nm=0.01)
-    s = arc.side_radiance(col, lam, impact_parameters=5)
+    lam = arc.line_grid(D_LINES, 588.5, 590.1, first_offset_nm=2e-5, ratio=1.01, base_step_nm=0.01)
+    s = arc.side_radiance(col, lam, impact_parameters=5, lines=D_LINES)
     c = composition(t, col.fill)
     per_length = sum(H * ln.frequency_hz / (4 * np.pi) * ln.a_ki
                      * c.sodium * sodium.level_population_fraction(ln.upper_energy_cm1, ln.upper_g, t, c.lowering_cm1)
-                     for ln in LINES)  # W m⁻³ sr⁻¹
+                     for ln in D_LINES)  # W m⁻³ sr⁻¹
     chord = 2.0 * np.sqrt(col.radius_m**2 - s.impact_parameter_m**2)
     assert s.radiance.max() < 1e-2 * planck.spectral_radiance(589.0, t)  # really thin
     assert np.trapezoid(s.radiance, lam, axis=1) == pytest.approx(per_length * chord, rel=2e-3)
 
 
 def _peaks_around_d(col):
-    lam = arc.line_grid(LINES, 560.0, 620.0)
-    m = arc.side_radiance(col, lam).mean_radiance
+    lam = arc.line_grid(D_LINES, 560.0, 620.0)
+    m = arc.side_radiance(col, lam, lines=D_LINES).mean_radiance
     peaks = argrelextrema(m, np.greater)[0]
     dips = argrelextrema(m, np.less)[0]
     return lam, m, lam[peaks], lam[dips]
@@ -130,9 +132,9 @@ def test_peaks_separate_as_sodium_pressure_rises():
 
 def test_thin_wings_brighten_at_grazing_angles():
     col = arc.ArcColumn(radius_m=3.8e-3, axis_temperature_k=4000.0, wall_temperature_k=1500.0, fill=HPS_FILL, shells=20)
-    lam = np.array([450.0])  # far wing: optically thin
-    side = arc.side_radiance(col, lam).mean_radiance[0]
-    grazing = arc.side_radiance(col, lam, theta_rad=np.pi / 6).mean_radiance[0]
+    lam = np.array([450.0])  # far wing of the D lines: optically thin
+    side = arc.side_radiance(col, lam, lines=D_LINES).mean_radiance[0]
+    grazing = arc.side_radiance(col, lam, theta_rad=np.pi / 6, lines=D_LINES).mean_radiance[0]
     assert grazing / side == pytest.approx(2.0, rel=1e-2)
 
 
@@ -156,3 +158,75 @@ def test_analysis_bins_converge_on_the_grids():
         change = np.abs(refined - base)
         assert change.max() < 1e-3 * base.max()
         assert np.all(change[outside] < 1e-3 * base[outside])
+
+
+def _multiplet(name):
+    return tuple(ln for ln in LINES if ln.stark is not None and ln.stark.name == name)
+
+
+def test_stark_widths_follow_stark_b_by_hand():
+    """STARK-B gives the FWHM w and the shift d (positive to the red) in Å at the multiplet's
+    mean wavelength; in angular frequency they are 2πc·w/λ², the same for every component."""
+    table = _multiplet("3p-4d")[0].stark
+    per_angstrom = 2 * np.pi * C * 1e-10 / (5686.4e-10) ** 2
+    w, d = table.width_and_shift_rad_s(1e22, 5000.0)  # 10¹⁶ cm⁻³, a tabulated point
+    assert w == pytest.approx(2.22 * per_angstrom, rel=1e-12)
+    assert d == pytest.approx(-0.772 * per_angstrom, rel=1e-12)  # to the red: negative
+    # Between grid points: per electron, linear in log N and log T. At √(10¹⁵·10¹⁶) cm⁻³
+    # and √(2500·5000) K, the mean of the four per-electron values.
+    n = np.sqrt(1e15 * 1e16)
+    per_e = np.mean([0.253 / 1e15, 0.242 / 1e15, 2.25 / 1e16, 2.22 / 1e16])
+    w, _ = table.width_and_shift_rad_s(n * 1e6, np.sqrt(2500.0 * 5000.0))
+    assert w == pytest.approx(per_e * n * per_angstrom, rel=1e-12)
+    # Below the table, proportional to nₑ; above 10 000 K, held.
+    w_low, _ = table.width_and_shift_rad_s(1e17, 5000.0)
+    assert w_low == pytest.approx(0.0243e-3 * per_angstrom, rel=1e-12)
+    assert table.width_and_shift_rad_s(1e22, 20000.0) == table.width_and_shift_rad_s(1e22, 10000.0)
+
+
+def test_lines_ending_on_3p_take_their_level_s_resonance_width():
+    c = composition(3000.0, HPS_FILL)
+    d2, d1 = (broadening.widths(ln, c).resonance for ln in D_LINES)
+    for ln in LINES:
+        if ln.lower_energy_cm1 > 0:
+            expected = d2 if ln.lower_g == 4 else d1
+            assert broadening.widths(ln, c).resonance == pytest.approx(expected, rel=1e-12)
+
+
+def test_every_line_is_isolated_at_an_hps_axis():
+    """The line set: every 3p-lower multiplet STARK-B tabulates at 10¹⁶ cm⁻³. Each stays
+    inside its isolated-line limit at the axis's nₑ (3p–5d only just: 1.07×10²² m⁻³)."""
+    axis = composition(4000.0, HPS_FILL).electrons
+    assert {ln.stark.name for ln in LINES} == {"3s-3p", "3p-3d", "3p-4d", "3p-5d", "3p-4s", "3p-5s", "3p-6s", "3p-7s"}
+    for ln in LINES:
+        assert ln.stark.isolated_line_limit_m3() > axis
+
+
+def test_stark_shift_moves_a_line_to_the_red():
+    """On an HPS axis 3p–5d is Stark-dominated: its absorption peaks to the red of the line,
+    by the profile's shift (Stark plus van der Waals), and Stark is most of that shift."""
+    c = composition(4000.0, HPS_FILL)
+    ln = sodium.data().line("3p1/2-5d3/2")
+    w = broadening.widths(ln, c)
+    assert w.shift_stark < 0 and w.shift_stark / w.shift > 0.8
+    lam = np.linspace(ln.wavelength_nm - 0.5, ln.wavelength_nm + 0.5, 20001)
+    kappa = arc.absorption_coefficient(c, C / (air_to_vacuum(lam) * 1e-9), lines=(ln,))
+    expected = ln.vacuum_wavelength_nm**2 * 1e-9 * (-w.shift) / (2 * np.pi * C)  # nm
+    assert lam[np.argmax(kappa)] - ln.wavelength_nm == pytest.approx(expected, rel=2e-3, abs=1e-4)
+
+
+def test_thin_arc_gives_the_819_nm_lines_emission():
+    """The absolute check of the D lines, for the 3p–3d lines: with τ ≪ 1 each chord gives
+    ∫I dλ = Σ (hν₀/4π) A n_k · chord length, n_k the 3d population."""
+    t = 2500.0
+    lines = _multiplet("3p-3d")
+    col = arc.ArcColumn(radius_m=3.8e-3, axis_temperature_k=t, wall_temperature_k=t, fill=Fill(sodium_pa=1e-3), shells=4)
+    lam = arc.line_grid(lines, 817.5, 820.3, first_offset_nm=2e-5, ratio=1.01, base_step_nm=0.01)
+    s = arc.side_radiance(col, lam, impact_parameters=5, lines=lines)
+    c = composition(t, col.fill)
+    per_length = sum(H * ln.frequency_hz / (4 * np.pi) * ln.a_ki
+                     * c.sodium * sodium.level_population_fraction(ln.upper_energy_cm1, ln.upper_g, t, c.lowering_cm1)
+                     for ln in lines)
+    chord = 2.0 * np.sqrt(col.radius_m**2 - s.impact_parameter_m**2)
+    assert s.radiance.max() < 1e-2 * planck.spectral_radiance(819.0, t)
+    assert np.trapezoid(s.radiance, lam, axis=1) == pytest.approx(per_length * chord, rel=2e-3)

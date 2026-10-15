@@ -3,19 +3,26 @@
 Each line gets a Voigt profile in frequency: the Doppler Gaussian of the emitters'
 thermal motion, convolved with one Lorentzian whose width is the sum of
 
-* the natural width, Σ A of the upper and lower levels (here the upper level's A_ki);
-* resonance broadening by ground-state sodium, measured (Huennekens & Gallagher 1983,
-  in ``lss/data/na_atomic.yaml``); impact theory makes it independent of temperature;
+* the natural width, taken as the line's own A_ki. The full natural width is the sum of
+  both levels' total decay rates, so this undercounts (for a line ending on 3p by about
+  6×10⁷ s⁻¹), but every other width here is above 10¹⁰ rad/s in the arc;
+* resonance broadening of the 3p level by ground-state sodium, measured (Huennekens &
+  Gallagher 1983, in ``lss/data/na_atomic.yaml``), for the D lines and for every line
+  ending on 3p; impact theory makes it independent of temperature;
 * van der Waals broadening by mercury and xenon, from Lindholm–Foley impact theory with
   Unsöld's C₆: an estimate, known to fall short of measured widths by a factor of about 2
   (it stands in until measured Na–Hg and Na–Xe constants are adopted, e.g. M. J. Jongerius,
-  J. Phys. B 20, 3345 (1987) for xenon).
+  J. Phys. B 20, 3345 (1987) for xenon);
+* Stark broadening and shift by electron impacts, from STARK-B's semiclassical tables
+  (Dimitrijević & Sahal-Bréchot; :class:`lss.physics.hid.sodium.StarkTable`). Small for
+  the D lines (about 7 % of their resonance width on an HPS axis), dominant for the lines
+  from loosely bound upper levels (4d, 5d → 3p).
 
-Stark broadening by the electrons is left out of this first step: the resonance lines
-come from tightly bound levels, whose Stark widths are small, but that is not yet checked
-against tabulated Stark widths. It enters with the subordinate lines (4d, 5s, 5d → 3p),
-whose upper levels are loosely bound and broaden strongly. Rung 1 is symmetric about the shifted
-centre; the asymmetric quasi-static wings (red Na–Hg wing, the 551 nm satellite) are rung 2.
+Left out: broadening by the ions' quasi-static fields (up to about 25 % of the width of
+the nd → 3p lines in HPS-like arcs, Mioković et al. 2004, arXiv physics/0410146), and the
+forbidden components (3p–nf, ng) that appear where a line stops being isolated. Rung 1
+is symmetric about the shifted centre; the asymmetric quasi-static wings (red Na–Hg
+wing, the 551 nm satellite) are rung 2.
 
 Widths are full widths at half maximum in angular frequency (rad/s), as the sources give
 them; :func:`voigt_parameters` turns them into the σ and γ of a profile in Hz.
@@ -56,11 +63,17 @@ class Widths:
     natural: float
     resonance: float
     van_der_waals: float
-    shift: float  # centre shift, rad/s; negative is to the red
+    stark: float
+    shift_van_der_waals: float  # centre shifts, rad/s; negative is to the red
+    shift_stark: float
 
     @property
     def lorentzian(self) -> float:
-        return self.natural + self.resonance + self.van_der_waals
+        return self.natural + self.resonance + self.van_der_waals + self.stark
+
+    @property
+    def shift(self) -> float:
+        return self.shift_van_der_waals + self.shift_stark
 
 
 def unsold_c6(line: sodium.Transition, perturber: str) -> float:
@@ -78,6 +91,7 @@ def _mean_relative_speed(perturber: str, temperature_k: float) -> float:
 def widths(line: sodium.Transition, comp: Composition) -> Widths:
     t = comp.temperature_k
     ground = comp.sodium * sodium.level_population_fraction(0.0, 2, t, comp.lowering_cm1)
+    stark, stark_shift = line.stark.width_and_shift_rad_s(comp.electrons, t) if line.stark else (0.0, 0.0)
     vdw_width = vdw_shift = 0.0
     for perturber, n in (("mercury", comp.mercury), ("xenon", comp.xenon)):
         if n <= 0:
@@ -90,7 +104,9 @@ def widths(line: sodium.Transition, comp: Composition) -> Widths:
         natural=line.a_ki,
         resonance=line.self_broadening_m3_s * float(ground),
         van_der_waals=vdw_width,
-        shift=vdw_shift,
+        stark=stark,
+        shift_van_der_waals=vdw_shift,
+        shift_stark=stark_shift,
     )
 
 

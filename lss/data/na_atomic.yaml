@@ -1,4 +1,5 @@
-# Neutral sodium (Na I): energy levels and the resonance lines (design §4.4, §4.6).
+# Neutral sodium (Na I): energy levels, the resonance lines and the lines ending on 3p
+# (design §4.4, §4.6).
 #
 # Source: NIST Atomic Spectra Database, version 5.12 (A. Kramida, Yu. Ralchenko, J. Reader
 #   and NIST ASD Team), https://physics.nist.gov/asd, retrieved 2026-10-15.
@@ -6,7 +7,8 @@
 #   limit. Levels NIST marks as derived rather than observed ([...] in its tables) are
 #   flagged `derived`; they only matter for the partition function above 6000 K.
 #   Lines: air wavelengths (observed), transition probabilities A_ki with NIST's
-#   accuracy grade (AA: <= 1 %), level energies and statistical weights.
+#   accuracy grade (AA <= 1 %, A+ <= 2 %, A <= 3 %, B+ <= 7 %, B <= 10 %), level
+#   energies and statistical weights.
 #
 # Broadening constants (for lss/physics/hid/broadening.py):
 #   Self (resonance) broadening: J. Huennekens and A. Gallagher, "Self-broadening of the
@@ -15,6 +17,38 @@
 #   width at half maximum, in angular frequency, is Gamma = k_br * N(Na ground), with
 #   k_br = 4.67e-7 cm3/s for D2 and 3.07e-7 cm3/s for D1, each +-15 %, measured at
 #   about 300 C. Impact theory makes it independent of temperature.
+#   It is the width of the 3p level: a ground-state perturber couples resonantly to the
+#   emitter's 3p level only (the emitter's 3s level would need an excited perturber), and
+#   each fine-structure level keeps its own rate (§II: for well-isolated states only the
+#   3P3/2 levels affect D2's broadening). So a line whose lower level is 3p_J carries
+#   that level's D-line constant; resonance broadening has been measured on such lines
+#   for that reason (§I: "transitions whose lower level is the resonance state").
+#   Lines from 3p1/2 take D1's constant, lines from 3p3/2 D2's. Their upper levels have
+#   no resonance partner among ground-state atoms.
+#
+#   Stark broadening by electrons: STARK-B database (S. Sahal-Bréchot, M. S. Dimitrijević
+#   and N. Moreau, https://stark-b.obspm.fr, retrieved 2026-10-15; Observatory of Paris,
+#   LERMA and Astronomical Observatory of Belgrade), dataset "Na I, method SCP", from
+#   M. S. Dimitrijević and S. Sahal-Bréchot, JQSRT 34, 149 (1985); JQSRT 44, 421 (1990);
+#   Bull. Obs. Astron. Belgrade 142, 59 (1990). Semiclassical perturbation theory, impact
+#   approximation, isolated lines. Per multiplet: full width at half maximum w and shift
+#   d (positive to the red) in Å at the multiplet's mean wavelength, at electron
+#   densities 1e14, 1e15 and 1e16 cm-3 and temperatures 2500, 5000 and 10000 K. Every
+#   component of a multiplet has w_line = w * (lambda_line / lambda_mult)^2, i.e. the
+#   same width in frequency. w and d are not proportional to the density for the 3p-nd
+#   lines (4d: 9 %, 5d: 26 % less per electron at 1e16 than at 1e15), so the code
+#   interpolates per electron in density as well as temperature. C: the isolated-line
+#   approximation holds for N < C/w (at the 1e16 cm-3 row). The STARK-B values are
+#   theory. Griem states about 30 % for such calculations (as quoted by Miokovic et al.,
+#   arXiv physics/0410146 (2004), whose +-25 % measurements in Na-Hg arcs agree for 7s
+#   and the 5d shift, and differ slightly for 5s and 6s); for the D lines Konjevic et al.
+#   (J. Phys. Chem. Ref. Data 31, 819 (2002)) report measured widths 13 % above these
+#   values, and these shifts 40 % above measured ones. Ion (quasi-static)
+#   broadening is not included in w, and STARK-B gives no ion parameter for Na I.
+#
+#   Line set: every multiplet with lower level 3p that STARK-B tabulates at 1e16 cm-3,
+#   an HPS axis's electron density (3p-3d, 4d, 5d, 4s, 5s, 6s, 7s). Higher ones (3p-6d at
+#   466.9 nm and up) stop being isolated lines below that density and are left out.
 
 source: "NIST ASD v5.12, retrieved 2026-10-15"
 ionisation_limit_cm1: 41449.451  # Na II 2p6 1S0, NIST ASD (uncertainty 0.002 cm-1)
@@ -162,7 +196,7 @@ levels:
   - ["20f", "2F*", "5/2,7/2", 14, 41175.07, true]
   - ["20g", "2G", "7/2,9/2", 18, 41175.102, true]
 
-# Resonance lines. Upper and lower levels by energy; medium air.
+# Resonance lines, then the lines ending on 3p. Upper and lower levels by energy; medium air.
 lines:
   - name: D2
     wavelength_nm: 588.995095
@@ -170,9 +204,228 @@ lines:
     lower: {energy_cm1: 0.0, g: 2}
     upper: {energy_cm1: 16973.36619, g: 4}
     self_broadening_cm3_s: 4.67e-07  # Huennekens & Gallagher 1983, +-15 %
+    stark: 3s-3p
   - name: D1
     wavelength_nm: 589.592424
     a_ki: 6.140e+07  # s-1, NIST accuracy AA
     lower: {energy_cm1: 0.0, g: 2}
     upper: {energy_cm1: 16956.17025, g: 2}
     self_broadening_cm3_s: 3.07e-07  # Huennekens & Gallagher 1983, +-15 %
+    stark: 3s-3p
+  # Lines ending on 3p (subordinate lines). self_broadening_cm3_s: the lower level's
+  # resonance broadening, D1's constant for 3p1/2 and D2's for 3p3/2 (header).
+  - name: 3p1/2-3d3/2
+    wavelength_nm: 818.32556
+    a_ki: 4.29e+07  # NIST accuracy A+
+    lower: {energy_cm1: 16956.17025, g: 2}
+    upper: {energy_cm1: 29172.887, g: 4}
+    self_broadening_cm3_s: 3.07e-07
+    stark: 3p-3d
+  - name: 3p3/2-3d3/2
+    wavelength_nm: 819.47905
+    a_ki: 8.57e+06  # A
+    lower: {energy_cm1: 16973.36619, g: 4}
+    upper: {energy_cm1: 29172.887, g: 4}
+    self_broadening_cm3_s: 4.67e-07
+    stark: 3p-3d
+  - name: 3p3/2-3d5/2
+    wavelength_nm: 819.48237
+    a_ki: 5.14e+07  # A+
+    lower: {energy_cm1: 16973.36619, g: 4}
+    upper: {energy_cm1: 29172.837, g: 6}
+    self_broadening_cm3_s: 4.67e-07
+    stark: 3p-3d
+  - name: 3p1/2-4d3/2
+    wavelength_nm: 568.26333
+    a_ki: 1.01e+07  # A
+    lower: {energy_cm1: 16956.17025, g: 2}
+    upper: {energy_cm1: 34548.764, g: 4}
+    self_broadening_cm3_s: 3.07e-07
+    stark: 3p-4d
+  - name: 3p3/2-4d3/2
+    wavelength_nm: 568.81934
+    a_ki: 2.02e+06  # A
+    lower: {energy_cm1: 16973.36619, g: 4}
+    upper: {energy_cm1: 34548.764, g: 4}
+    self_broadening_cm3_s: 4.67e-07
+    stark: 3p-4d
+  - name: 3p3/2-4d5/2
+    wavelength_nm: 568.82046
+    a_ki: 1.21e+07  # A
+    lower: {energy_cm1: 16973.36619, g: 4}
+    upper: {energy_cm1: 34548.729, g: 6}
+    self_broadening_cm3_s: 4.67e-07
+    stark: 3p-4d
+  - name: 3p1/2-5d3/2
+    wavelength_nm: 497.85414
+    a_ki: 4.09e+06  # A
+    lower: {energy_cm1: 16956.17025, g: 2}
+    upper: {energy_cm1: 37036.772, g: 4}
+    self_broadening_cm3_s: 3.07e-07
+    stark: 3p-5d
+  - name: 3p3/2-5d3/2
+    wavelength_nm: 498.28084
+    a_ki: 8.15e+05  # A
+    lower: {energy_cm1: 16973.36619, g: 4}
+    upper: {energy_cm1: 37036.772, g: 4}
+    self_broadening_cm3_s: 4.67e-07
+    stark: 3p-5d
+  - name: 3p3/2-5d5/2
+    wavelength_nm: 498.28134
+    a_ki: 4.88e+06  # A
+    lower: {energy_cm1: 16973.36619, g: 4}
+    upper: {energy_cm1: 37036.752, g: 6}
+    self_broadening_cm3_s: 4.67e-07
+    stark: 3p-5d
+  - name: 3p1/2-4s
+    wavelength_nm: 1138.145
+    a_ki: 8.80e+06  # A
+    lower: {energy_cm1: 16956.17025, g: 2}
+    upper: {energy_cm1: 25739.999, g: 2}
+    self_broadening_cm3_s: 3.07e-07
+    stark: 3p-4s
+  - name: 3p3/2-4s
+    wavelength_nm: 1140.378
+    a_ki: 1.76e+07  # A
+    lower: {energy_cm1: 16973.36619, g: 4}
+    upper: {energy_cm1: 25739.999, g: 2}
+    self_broadening_cm3_s: 4.67e-07
+    stark: 3p-4s
+  - name: 3p1/2-5s
+    wavelength_nm: 615.42253
+    a_ki: 2.50e+06  # A
+    lower: {energy_cm1: 16956.17025, g: 2}
+    upper: {energy_cm1: 33200.673, g: 2}
+    self_broadening_cm3_s: 3.07e-07
+    stark: 3p-5s
+  - name: 3p3/2-5s
+    wavelength_nm: 616.07470
+    a_ki: 4.98e+06  # A
+    lower: {energy_cm1: 16973.36619, g: 4}
+    upper: {energy_cm1: 33200.673, g: 2}
+    self_broadening_cm3_s: 4.67e-07
+    stark: 3p-5s
+  - name: 3p1/2-6s
+    wavelength_nm: 514.88381
+    a_ki: 1.14e+06  # B+
+    lower: {energy_cm1: 16956.17025, g: 2}
+    upper: {energy_cm1: 36372.618, g: 2}
+    self_broadening_cm3_s: 3.07e-07
+    stark: 3p-6s
+  - name: 3p3/2-6s
+    wavelength_nm: 515.34024
+    a_ki: 2.27e+06  # B+
+    lower: {energy_cm1: 16973.36619, g: 4}
+    upper: {energy_cm1: 36372.618, g: 2}
+    self_broadening_cm3_s: 4.67e-07
+    stark: 3p-6s
+  - name: 3p1/2-7s
+    wavelength_nm: 474.79410
+    a_ki: 6.19e+05  # B
+    lower: {energy_cm1: 16956.17025, g: 2}
+    upper: {energy_cm1: 38012.042, g: 2}
+    self_broadening_cm3_s: 3.07e-07
+    stark: 3p-7s
+  - name: 3p3/2-7s
+    wavelength_nm: 475.18218
+    a_ki: 1.23e+06  # B
+    lower: {energy_cm1: 16973.36619, g: 4}
+    upper: {energy_cm1: 38012.042, g: 2}
+    self_broadening_cm3_s: 4.67e-07
+    stark: 3p-7s
+
+# Stark broadening by electrons, STARK-B (header). Rows: electron density; columns:
+# temperature. width: FWHM, shift: positive to the red, both in Å at the multiplet's
+# mean wavelength. c: STARK-B's C at 1e16 cm-3, in Å cm-3 (isolated lines for N < C/w).
+stark:
+  electron_density_cm3: [1.0e+14, 1.0e+15, 1.0e+16]
+  temperature_k: [2500, 5000, 10000]
+  multiplets:
+    3s-3p:
+      wavelength_angstrom: 5891.8
+      c_angstrom_cm3: 3.0e+19
+      width_angstrom:
+        - [1.910e-4, 2.110e-4, 2.490e-4]
+        - [1.910e-3, 2.110e-3, 2.490e-3]
+        - [1.910e-2, 2.110e-2, 2.490e-2]
+      shift_angstrom:
+        - [1.320e-4, 1.550e-4, 1.780e-4]
+        - [1.320e-3, 1.550e-3, 1.780e-3]
+        - [1.300e-2, 1.540e-2, 1.770e-2]
+    3p-3d:
+      wavelength_angstrom: 8191.1
+      c_angstrom_cm3: 7.4e+18
+      width_angstrom:
+        - [3.120e-3, 3.550e-3, 3.850e-3]
+        - [3.120e-2, 3.550e-2, 3.850e-2]
+        - [3.120e-1, 3.550e-1, 3.850e-1]
+      shift_angstrom:
+        - [2.280e-3, 2.470e-3, 2.470e-3]
+        - [2.260e-2, 2.460e-2, 2.460e-2]
+        - [2.190e-1, 2.410e-1, 2.440e-1]
+    3p-4d:
+      wavelength_angstrom: 5686.4
+      c_angstrom_cm3: 1.3e+17
+      width_angstrom:
+        - [2.550e-2, 2.430e-2, 2.260e-2]
+        - [2.530e-1, 2.420e-1, 2.250e-1]
+        - [2.250e+0, 2.220e+0, 2.110e+0]
+      shift_angstrom:
+        - [1.230e-2, 1.060e-2, 8.330e-3]
+        - [1.120e-1, 9.930e-2, 8.040e-2]
+        - [8.090e-1, 7.720e-1, 6.690e-1]
+    3p-5d:
+      wavelength_angstrom: 4981.4
+      c_angstrom_cm3: 5.2e+16
+      width_angstrom:
+        - [6.720e-2, 6.330e-2, 5.850e-2]
+        - [6.440e-1, 6.130e-1, 5.710e-1]
+        - [4.620e+0, 4.860e+0, 4.810e+0]
+      shift_angstrom:
+        - [3.040e-2, 2.430e-2, 1.870e-2]
+        - [2.460e-1, 2.210e-1, 1.710e-1]
+        - [1.430e+0, 1.450e+0, 1.240e+0]
+    3p-4s:
+      wavelength_angstrom: 11397.0
+      c_angstrom_cm3: 5.9e+19
+      width_angstrom:
+        - [3.670e-3, 4.200e-3, 4.660e-3]
+        - [3.670e-2, 4.200e-2, 4.660e-2]
+        - [3.670e-1, 4.200e-1, 4.660e-1]
+      shift_angstrom:
+        - [2.620e-3, 3.010e-3, 3.560e-3]
+        - [2.620e-2, 3.000e-2, 3.560e-2]
+        - [2.580e-1, 2.960e-1, 3.550e-1]
+    3p-5s:
+      wavelength_angstrom: 6158.6
+      c_angstrom_cm3: 7.0e+18
+      width_angstrom:
+        - [4.050e-3, 4.680e-3, 5.080e-3]
+        - [4.050e-2, 4.680e-2, 5.080e-2]
+        - [4.050e-1, 4.680e-1, 5.080e-1]
+      shift_angstrom:
+        - [2.930e-3, 3.500e-3, 3.830e-3]
+        - [2.890e-2, 3.490e-2, 3.820e-2]
+        - [2.760e-1, 3.390e-1, 3.760e-1]
+    3p-6s:
+      wavelength_angstrom: 5151.9
+      c_angstrom_cm3: 2.5e+18
+      width_angstrom:
+        - [7.800e-3, 8.920e-3, 9.740e-3]
+        - [7.800e-2, 8.920e-2, 9.740e-2]
+        - [7.800e-1, 8.910e-1, 9.740e-1]
+      shift_angstrom:
+        - [5.710e-3, 6.480e-3, 6.760e-3]
+        - [5.620e-2, 6.400e-2, 6.730e-2]
+        - [5.190e-1, 6.110e-1, 6.540e-1]
+    3p-7s:
+      wavelength_angstrom: 4750.6
+      c_angstrom_cm3: 1.2e+18
+      width_angstrom:
+        - [1.520e-2, 1.730e-2, 1.900e-2]
+        - [1.520e-1, 1.730e-1, 1.900e-1]
+        - [1.520e+0, 1.730e+0, 1.900e+0]
+      shift_angstrom:
+        - [1.070e-2, 1.220e-2, 1.180e-2]
+        - [1.040e-1, 1.210e-1, 1.170e-1]
+        - [9.200e-1, 1.120e+0, 1.120e+0]

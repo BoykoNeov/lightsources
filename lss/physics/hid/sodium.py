@@ -1,7 +1,9 @@
-"""Neutral sodium: levels, partition function and resonance lines (design §4.4 Stage A).
+"""Neutral sodium: levels, partition function, the resonance lines and the lines ending
+on 3p (design §4.4 Stage A).
 
-Data from the NIST Atomic Spectra Database (``lss/data/na_atomic.yaml``). Energies are
-kept in cm⁻¹ as NIST gives them; ``hc/k`` turns them into temperatures.
+Data from the NIST Atomic Spectra Database, with Stark parameters from STARK-B
+(``lss/data/na_atomic.yaml``). Energies are kept in cm⁻¹ as NIST gives them; ``hc/k``
+turns them into temperatures.
 """
 
 from dataclasses import dataclass
@@ -25,6 +27,54 @@ RYDBERG_NA_CM1 = 109737.31568 / (1.0 + 5.48579909e-4 / 22.98976928)
 
 
 @dataclass(frozen=True)
+class StarkTable:
+    """Electron-impact Stark width and shift of one multiplet (STARK-B, semiclassical).
+
+    ``width_angstrom`` (FWHM) and ``shift_angstrom`` (positive to the red) are at the
+    multiplet's mean wavelength, rows by ``electron_density_cm3``, columns by
+    ``temperature_k``. Every component has the same width and shift in frequency.
+    """
+
+    name: str
+    wavelength_angstrom: float
+    c_angstrom_cm3: float  # isolated lines for N < C/w, at the highest tabulated density
+    electron_density_cm3: tuple[float, ...]
+    temperature_k: tuple[float, ...]
+    width_angstrom: tuple[tuple[float, ...], ...]
+    shift_angstrom: tuple[tuple[float, ...], ...]
+
+    def _per_electron(self, table, electrons_m3: float, temperature_k: float) -> float:
+        """Table value per electron, bilinear in (log N, log T), held at the table's edges."""
+        n = np.log(np.asarray(self.electron_density_cm3))
+        t = np.log(np.asarray(self.temperature_k, dtype=float))
+        per = np.asarray(table) / np.asarray(self.electron_density_cm3)[:, None]  # Å per cm⁻³
+        ln = float(np.clip(np.log(max(electrons_m3, 1e-30) * 1e-6), n[0], n[-1]))
+        lt = float(np.clip(np.log(temperature_k), t[0], t[-1]))
+        by_density = [np.interp(lt, t, row) for row in per]
+        return float(np.interp(ln, n, by_density))
+
+    def width_and_shift_rad_s(self, electrons_m3: float, temperature_k: float) -> tuple[float, float]:
+        """(FWHM, shift) in angular frequency at nₑ (m⁻³) and T; the shift is negative to the red.
+
+        Below 10¹⁴ cm⁻³ width and shift are taken as proportional to nₑ (from 10¹⁴ to 10¹⁵
+        the tabulated widths are, to 5 %, and the shifts to 20 %; below 10¹⁴ both are under
+        0.07 Å for every line here). Outside 2500–10 000 K they are held at the nearest
+        tabulated temperature.
+        """
+        to_omega = 2.0 * np.pi * C / (self.wavelength_angstrom * 1e-10) ** 2 * 1e-10  # rad/s per Å
+        n_cm3 = electrons_m3 * 1e-6
+        w = self._per_electron(self.width_angstrom, electrons_m3, temperature_k) * n_cm3
+        d = self._per_electron(self.shift_angstrom, electrons_m3, temperature_k) * n_cm3
+        return w * to_omega, -d * to_omega
+
+    def isolated_line_limit_m3(self) -> float:
+        """STARK-B's limit of the isolated-line approximation, C/w at the highest tabulated
+        density and the middle temperature, m⁻³."""
+        mid = len(self.temperature_k) // 2
+        return self.c_angstrom_cm3 / self.width_angstrom[-1][mid] * 1e6
+
+
+@dataclass(frozen=True)
 class Transition:
     """One line, upper level k → lower level i. ``wavelength_nm`` is in standard air."""
 
@@ -38,6 +88,7 @@ class Transition:
     self_broadening_m3_s: float  # Lorentzian FWHM in rad/s per ground-state atom per m³
     lower_l: int = 0  # orbital angular momentum of the valence electron, lower level
     upper_l: int = 1
+    stark: StarkTable | None = None
 
     @property
     def vacuum_wavelength_nm(self) -> float:
@@ -78,6 +129,20 @@ def data() -> SodiumData:
     def l_at(e):
         return int(orbital[np.argmin(np.abs(energy - float(e)))])
 
+    st = doc["stark"]
+    stark = {
+        name: StarkTable(
+            name=name,
+            wavelength_angstrom=float(m["wavelength_angstrom"]),
+            c_angstrom_cm3=float(m["c_angstrom_cm3"]),
+            electron_density_cm3=tuple(float(x) for x in st["electron_density_cm3"]),
+            temperature_k=tuple(float(x) for x in st["temperature_k"]),
+            width_angstrom=tuple(tuple(float(x) for x in row) for row in m["width_angstrom"]),
+            shift_angstrom=tuple(tuple(float(x) for x in row) for row in m["shift_angstrom"]),
+        )
+        for name, m in st["multiplets"].items()
+    }
+
     lines = tuple(
         Transition(
             name=d["name"],
@@ -90,6 +155,7 @@ def data() -> SodiumData:
             self_broadening_m3_s=float(d["self_broadening_cm3_s"]) * 1e-6,
             lower_l=l_at(d["lower"]["energy_cm1"]),
             upper_l=l_at(d["upper"]["energy_cm1"]),
+            stark=stark[d["stark"]] if "stark" in d else None,
         )
         for d in doc["lines"]
     )
