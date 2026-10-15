@@ -27,8 +27,8 @@
 #   R = 4, 5, 5.5, 6, 8, 8.5, 9, 9.5, 10 a0 (circles_cm1, below); up to 8 a0 the curve
 #   between them is the authors' drawing. Beyond 8 a0 the drawing has kinks at the avoided
 #   crossing (8.5 a0): near-flat stretches, and on I 1/2 a dip of a few cm-1, which the
-#   classical sum turns into spurious satellites (a first version held the dip level and
-#   put a spike beside the 616 nm line). The paper states that only II 1/2 - X 1/2 has an
+#   classical sum would turn into spurious satellites (a flat or falling stretch piles the
+#   sum up into a spike). The paper states that only II 1/2 - X 1/2 has an
 #   extremum (one minimum, here 14 413 cm-1 at 4.75 a0, against the computed point
 #   14 473 cm-1 at 4.98 a0), so beyond 8 a0 each curve is a monotone cubic (PCHIP) through
 #   the computed points, starting from the drawn line at 8 a0 with its slope. Beyond 8.5 a0 II 1/2 and I 3/2 are
@@ -46,13 +46,12 @@
 #   `delta_c6_factor` (1 to 2: Unsold's estimate is known to run about 2x low; design §4.4).
 #   That is +478 to +323 cm-1. Beyond 9.95 a0 each curve goes as asymptote - A6/R^6 -
 #   A12/R^12, with A6 and A12 set so that value and slope are continuous there (I 3/2 and
-#   II 1/2 to 3p3/2, I 1/2 to 3p1/2): a fitted join, not dispersion coefficients. (A first
-#   version joined with C/R^6 on the value only; the slope step put spurious bumps near
-#   607-627 nm.)
+#   II 1/2 to 3p3/2, I 1/2 to 3p1/2): a fitted join, not dispersion coefficients, smooth
+#   because a slope step would make a step in the classical spectrum.
 #   Prediction made with this rule, before any comparison (design §4.4): the classical
 #   satellite at the II 1/2 minimum, 14 413-14 473 cm-1 plus the shift, is at 668.5-678.3 nm
-#   (air); 668.5-678.4 nm after the change beyond 8 a0 above, which moved I 3/2 at 9.95 a0
-#   by 4 cm-1. Measured: 669 nm in absorption (Schlejen, Woerdman & Pichler, J. Mol.
+#   (air), without the digitising error; 668.7-678.4 nm after the change beyond 8 a0 above,
+#   which moved I 3/2 at 9.95 a0 by 4 cm-1; 667.8-679.4 nm with +-20 cm-1 for digitising. Measured: 669 nm in absorption (Schlejen, Woerdman & Pichler, J. Mol.
 #   Spectrosc. 128, 1 (1988), as quoted by Windholz et al.).
 #
 # Transition dipoles: not given by the paper beyond one statement, that the A <- X

@@ -86,8 +86,9 @@ def test_counting_matches_the_analytic_quasistatic_wing():
 def test_finding_the_satellite_lands_where_it_was_predicted():
     """Set before comparing (2026-10-15): one shift for the three curves, fixed at 9.95 a0 by
     Unsöld's ΔC₆ (1 to 2 times); the classical satellite at the II½ minimum (drawn 14 413 cm⁻¹,
-    computed point 14 473 cm⁻¹) plus the shift. The window is 668.7–678.4 nm; the measured S1
-    at 669 nm is inside it, near its blue edge. A coarse test: the window is 10 nm wide."""
+    computed point 14 473 cm⁻¹) plus the shift. The window is 668.7–678.4 nm (667.8–679.4 nm with
+    the digitising error); the measured S1 at 669 nm is inside it, near its blue edge. A coarse
+    test: the window is 10 nm wide."""
     assert mp.shift_cm1(1.0) == pytest.approx(477.5, abs=1.0)
     assert mp.shift_cm1(2.0) == pytest.approx(322.6, abs=1.0)
     blue = float(vacuum_to_air(1e7 / (14473.0 + mp.shift_cm1(1.0))))
@@ -95,6 +96,9 @@ def test_finding_the_satellite_lands_where_it_was_predicted():
     red = float(vacuum_to_air(1e7 / mp.difference_potential_cm1("II1/2", r, 2.0).min()))
     assert blue == pytest.approx(668.7, abs=0.1) and red == pytest.approx(678.4, abs=0.1)
     assert blue <= S1_NM <= red
+    # with ±20 cm⁻¹ for digitising, as the mark included: 667.8–679.4 nm
+    wide = [float(vacuum_to_air(1e7 / (e + mp.shift_cm1(k)))) for e, k in ((14473.0 + 20.0, 1.0), (14413.0 - 20.0, 2.0))]
+    assert wide[0] == pytest.approx(667.8, abs=0.1) and wide[1] == pytest.approx(679.4, abs=0.1)
 
 
 def test_finding_the_classical_satellite_is_weak():
