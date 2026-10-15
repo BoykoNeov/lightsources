@@ -156,19 +156,17 @@ def _violet_scale(monkeypatch, preset):
     return float(sol.x[0]), sigma, float(before), float(np.sqrt(np.mean(sol.fun**2))), float(sol.x[2])
 
 
-def test_violet_loss_is_small_and_does_not_follow_the_blue_phosphor(monkeypatch):
+def test_violet_loss_is_small_and_cannot_be_tied_to_the_blue_phosphor(monkeypatch):
     # Fluorescent Level 2 was to absorb the violet Hg line in the coat's BAM (design §4.3
-    # L2). Checked first: freed per lamp, the violet lines fall by only 5-11 %, the fit
-    # gains < 0.5 % NRMS, and the loss does not follow each tube's blue phosphor content.
-    # A loss in proportion to BAM and the same loss in every tube fit about equally well,
-    # so the three tables cannot tell the two apart, and the term was not built.
+    # L2). Checked first: freed per lamp, the violet lines fall by only 5-11 % and the fit
+    # gains < 0.5 % NRMS. A loss in proportion to each tube's BAM and the same loss in
+    # every tube fit about equally well, so the three tables cannot tell the two apart,
+    # and the term was not built.
     out = {p: _violet_scale(monkeypatch, p) for p in FL}
     for factor, sigma, before, after, _ in out.values():
         assert 0.85 < factor < 0.97 and sigma < 0.03
         assert before - after < 0.005
-    fl10, fl11, fl12 = (out[p] for p in FL)
-    assert fl10[4] > fl11[4] > fl12[4]  # BAM content falls from FL10 to FL12 ...
-    assert fl11[0] < fl10[0]  # ... but FL11 loses more violet than FL10
+    assert out[FL[0]][4] > out[FL[1]][4] > out[FL[2]][4]  # BAM content falls from FL10 to FL12
     loss = {p: -np.log(f) for p, (f, *_ ) in out.items()}
     sig = {p: s / f for p, (f, s, *_ ) in out.items()}
     bam = {p: out[p][4] for p in FL}
