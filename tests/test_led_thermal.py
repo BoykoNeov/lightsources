@@ -112,3 +112,22 @@ def test_calibrated_findings_of_the_measured_led():
         assert all(r.drift_voltage_v < 0 and r.drift_uv[1] < 0 for r in rows)
         # From 150 to 500 mA v' falls too (by 1.3e-3 to 4e-3, depending on the window).
         assert rows[-1].uv[1] - rows[0].uv[1] < -1e-3
+
+
+@needs_data
+def test_calibrated_finding_the_green_dims_faster_than_any_cited_curve_allows():
+    # Recorded in the design doc (§4.2 L3). Warming at a fixed current: the blue's change,
+    # through the die's cited peak shift, implies a few kelvin, inside the 4-9 K the voltage
+    # drop suggests; at that warming the measured green loses at least twice what Level 3
+    # gives with the steepest quenching the cited points allow, while the red agrees.
+    pytest.importorskip("openpyxl")
+    steep = {"garnet.quench_activation_energy": led_drive.STEEPEST_BARRIER_EV,
+             "nitride.quench_activation_energy": led_drive.STEEPEST_BARRIER_EV}
+    for sample in led_drive.SAMPLES:
+        measured = led_drive.group_means(led_drive.measured_drift(sample))
+        for preset in LEDS[:3]:
+            k = led_drive.die_warming(sample, preset)
+            assert 3.0 < k < 9.0
+            model = led_drive.group_means(led_drive.model_change(preset, k, steep))
+            assert measured["green"] < 2.0 * model["green"] < 0
+            assert 0.5 * model["red"] > measured["red"] > 2.0 * model["red"]
