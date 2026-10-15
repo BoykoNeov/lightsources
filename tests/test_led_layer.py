@@ -118,6 +118,25 @@ def test_generator_zones_make_up_the_lamp(preset):
     assert "garnet_zero_phonon" not in shared  # each lamp's own garnet
 
 
+def test_die_tail_and_phosphor_temperatures_are_separate_inputs():
+    # Level 2 once used one temperature for both; the fits showed it is the die tail's shape
+    # (design §4.2), so each now has its own input and each alone changes the spectrum.
+    from lss.accuracy import fit
+    from lss.spectral.grids import BinGrid
+
+    lamp = lamps.load("led_cie_b4")
+    assert {"die_tail_temperature", "phosphor_temperature"} <= set(lamp.generate(2).metadata["params"])
+    grid = BinGrid(np.arange(380.0, 781.0, 5.0))
+
+    def binned(values):
+        return fit.with_values(lamp, 2, values).generate(2).spectrum.bin(grid).values
+
+    cold = binned({})
+    for name in ("die_tail_temperature", "phosphor_temperature"):
+        hot = binned({name: lamp.physical[name].value + 40.0})
+        assert np.max(np.abs(hot / hot.sum() - cold / cold.sum())) > 1e-4
+
+
 @pytest.mark.parametrize("preset", LEDS)
 def test_layer_beats_the_two_band_fit(preset):
     lamp = lamps.load(preset)
@@ -130,7 +149,7 @@ def test_calibrated_findings():
     for preset in LEDS:
         assert 18.0 <= lamps.load(preset).physical["die_fwhm"].value <= 25.0
     # Findings the design doc records (§4.2); a refit that moves them should update it.
-    warm = [lamps.load(p).physical["junction_temperature"] for p in LEDS[:3]]
+    warm = [lamps.load(p).physical["die_tail_temperature"] for p in LEDS[:3]]
     assert all(t.value == pytest.approx(t.bounds[0], abs=0.1) for t in warm)
     s = phosphors.parameters()["garnet.huang_rhys"].value
     assert s < 4.0  # below YAG:Ce's measured S ~ 6: half its Stokes shift

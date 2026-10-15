@@ -29,7 +29,7 @@ physical:
       5.9e-04, dCCT +9.63 K
     # Blue InGaN emitters are typically 18-25 nm wide; the margin allows broader dies.
     bounds: [12, 35]
-  junction_temperature:
+  die_tail_temperature:
     value: 378.928
     unit: K
     empirical: true
@@ -37,9 +37,19 @@ physical:
       fitted by `lss fit` (spectral objective) to cie-led-b5, jointly with cie-led-b1,
       cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS 4.70e-02, du'v'
       5.9e-04, dCCT +9.63 K
-    # Sets the die's blue tail (kT) and the phosphor's phonon widths. White LEDs run
-    # their junctions at roughly 25-150 C.
+    # The slope of the die's short-wavelength tail, exp(-dE/kT), written as a temperature.
+    # A shape parameter, not the junction temperature: with the phosphor's temperature
+    # free as well, the warm LEDs' fits push it below room temperature (design doc §4.2).
     bounds: [300, 420]
+  phosphor_temperature:
+    value: 378.928
+    unit: K
+    empirical: true
+    reason: >-
+      held at the single temperature the 2026-10-14 joint fit gave the die tail and the
+      phosphors together, when the two were split (2026-10-15); not fitted on its own: the
+      CIE tables leave it anywhere from 200 to 500 K (design doc §4.2)
+    # Sets the phosphors' phonon widths.
 
 models:
   0: {generator: reference}

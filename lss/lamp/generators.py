@@ -214,11 +214,11 @@ def _led_phosphor_layer(lamp, spec) -> EmissionProfile:
     def val(name, unit):
         return _unit(lamp, spec, name, unit, used)
 
-    t_j = val("junction_temperature", "K")
-    pump = layer.die_emission(val("die_peak", "nm"), val("die_fwhm", "nm"), t_j)
-    # The phosphor runs at the junction temperature at this rung (Level 3 heats each part).
+    # The die's tail slope is a shape parameter, not the junction temperature (design §4.2):
+    # the phosphors have their own temperature.
+    pump = layer.die_emission(val("die_peak", "nm"), val("die_fwhm", "nm"), val("die_tail_temperature", "K"))
     g_abs, g_em = layer.ce_garnet(val("garnet_zero_phonon", "cm-1"), val("garnet.huang_rhys", "1"),
-                                  val("garnet.phonon_energy", "cm-1"), t_j,
+                                  val("garnet.phonon_energy", "cm-1"), val("phosphor_temperature", "K"),
                                   val("garnet.inhomogeneous_fwhm", "cm-1"), val("garnet.ground_splitting", "cm-1"),
                                   val("garnet.ratio_2f7_2f5", "1"))
     n_abs, n_em = layer.eu_nitride(val("nitride.emission_peak", "nm"), val("nitride.emission_fwhm", "nm"),

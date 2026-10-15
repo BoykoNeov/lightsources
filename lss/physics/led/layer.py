@@ -74,8 +74,9 @@ def die_emission(peak_nm: float, fwhm_nm: float, temperature_k: float) -> np.nda
     the energy-shape convention) convolved with the Boltzmann tail exp(−ΔE/kT) of
     carriers above the band edge, which gives the emission a longer short-wavelength
     side (E. F. Schubert, *Light-Emitting Diodes*, 2nd ed., §5.1: the high-energy
-    slope of an LED's spectrum is set by kT). T is the junction temperature, taken
-    as the carrier temperature.
+    slope of an LED's spectrum is set by kT). T is the tail's slope written as a
+    temperature. In the CIE LEDs' fits it is a shape parameter rather than the junction
+    temperature: the warm ones want it below room temperature (design §4.2).
     """
     nu0 = 1e7 / peak_nm
     sigma = _sigma_from_fwhm_nm(peak_nm, fwhm_nm)
