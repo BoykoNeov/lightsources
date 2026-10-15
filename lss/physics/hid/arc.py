@@ -20,7 +20,9 @@ The temperature falls from the axis to the wall as T(r) = T_w + (T_ax − T_w)(1
 prescribed (parabolic for p = 2) until Stage C solves it.
 
 With ``pairs`` set, the D lines' far wings come from sodium atom pairs
-(:mod:`lss.physics.hid.pairs`) instead of the resonance share of their impact profile.
+(:mod:`lss.physics.hid.pairs`) instead of the resonance share of their impact profile; with
+``mercury_pairs``, from sodium–mercury pairs (:mod:`lss.physics.hid.mercury_pairs`) instead
+of the mercury van der Waals share.
 """
 
 from dataclasses import dataclass, replace
@@ -28,7 +30,7 @@ from dataclasses import dataclass, replace
 import numpy as np
 from scipy.special import voigt_profile
 
-from lss.physics.hid import broadening, pairs as na_pairs, sodium
+from lss.physics.hid import broadening, mercury_pairs as hg_pairs, pairs as na_pairs, sodium
 from lss.physics.hid.composition import Composition, Fill, composition
 from lss.physics.thermal import planck
 from lss.spectral.units import C, H, K_B, air_to_vacuum
@@ -43,6 +45,7 @@ class ArcColumn:
     profile_exponent: float = 2.0
     shells: int = 60
     pairs: na_pairs.PairWings | None = None
+    mercury_pairs: hg_pairs.MercuryPairWings | None = None
 
     def __post_init__(self):
         if self.radius_m <= 0 or self.shells < 1 or self.profile_exponent <= 0:
@@ -83,33 +86,47 @@ def _profile(frequency_hz, ln, w: broadening.Widths) -> np.ndarray:
 
 
 def absorption_coefficient(comp: Composition, frequency_hz: np.ndarray, lines=None,
-                           pairs: na_pairs.PairWings | None = None) -> np.ndarray:
+                           pairs: na_pairs.PairWings | None = None,
+                           mercury_pairs: hg_pairs.MercuryPairWings | None = None) -> np.ndarray:
     """κ_ν in m⁻¹ at the given (vacuum) frequencies, summed over ``lines`` (default: all).
 
     With ``pairs``, each resonance line (lower level 3s) loses its resonance width beyond
-    ``pairs.splice_nm`` from its centre, and the pair absorption is added wherever every
-    resonance line in ``lines`` is that far away.
+    ``pairs.splice_nm`` from its centre, and the sodium-pair absorption is added wherever
+    every resonance line in ``lines`` is that far away. ``mercury_pairs`` does the same
+    with the mercury van der Waals width and the sodium–mercury pair absorption.
     """
     lines = sodium.data().lines if lines is None else lines
     t = comp.temperature_k
     stimulated = -np.expm1(-H * frequency_hz / (K_B * t))
     vacuum_nm = C / frequency_hz * 1e9
     kappa = np.zeros_like(frequency_hz)
-    far_from_resonance = np.ones(frequency_hz.shape, dtype=bool)
+    far_na = np.ones(frequency_hz.shape, dtype=bool)
+    far_hg = np.ones(frequency_hz.shape, dtype=bool)
     resonance_lines = 0
     for ln in lines:
         n_lower = comp.sodium * sodium.level_population_fraction(ln.lower_energy_cm1, ln.lower_g, t, comp.lowering_cm1)
         w = broadening.widths(ln, comp)
         phi = _profile(frequency_hz, ln, w)
-        if pairs is not None and ln.lower_energy_cm1 == 0.0:
-            far = np.abs(vacuum_nm - ln.vacuum_wavelength_nm) > pairs.splice_nm
-            phi = np.where(far, _profile(frequency_hz, ln, replace(w, resonance=0.0)), phi)
-            far_from_resonance &= far
+        if ln.lower_energy_cm1 == 0.0 and (pairs is not None or mercury_pairs is not None):
+            offset = np.abs(vacuum_nm - ln.vacuum_wavelength_nm)
+            na = offset > pairs.splice_nm if pairs is not None else np.zeros(offset.shape, dtype=bool)
+            hg = offset > mercury_pairs.splice_nm if mercury_pairs is not None else np.zeros(offset.shape, dtype=bool)
+            for drop_na, drop_hg in ((True, False), (False, True), (True, True)):
+                sel = (na == drop_na) & (hg == drop_hg)
+                if sel.any():
+                    wf = replace(w, resonance=0.0 if drop_na else w.resonance,
+                                 van_der_waals_mercury=0.0 if drop_hg else w.van_der_waals_mercury)
+                    phi = np.where(sel, _profile(frequency_hz, ln, wf), phi)
+            far_na &= na
+            far_hg &= hg
             resonance_lines += 1
         kappa += (C * C / (8.0 * np.pi * ln.frequency_hz**2)) * ln.a_ki * (ln.upper_g / ln.lower_g) * n_lower * phi
-    if pairs is not None and resonance_lines:
-        ground = comp.sodium * sodium.level_population_fraction(0.0, 2, t, comp.lowering_cm1)
-        kappa += np.where(far_from_resonance, pairs.kappa(t, float(ground), frequency_hz), 0.0)
+    if resonance_lines:
+        ground = float(comp.sodium * sodium.level_population_fraction(0.0, 2, t, comp.lowering_cm1))
+        if pairs is not None:
+            kappa += np.where(far_na, pairs.kappa(t, ground, frequency_hz), 0.0)
+        if mercury_pairs is not None:
+            kappa += np.where(far_hg, mercury_pairs.kappa(t, ground, float(comp.mercury), frequency_hz), 0.0)
     return kappa * stimulated
 
 
@@ -145,7 +162,7 @@ def side_radiance(column: ArcColumn, wavelength_nm: np.ndarray, theta_rad: float
     lam = np.asarray(wavelength_nm, dtype=float)
     nu = C / (air_to_vacuum(lam) * 1e-9)
     comps = column.shell_compositions()
-    kappa = np.array([absorption_coefficient(c, nu, lines, column.pairs) for c in comps])  # (shell, λ)
+    kappa = np.array([absorption_coefficient(c, nu, lines, column.pairs, column.mercury_pairs) for c in comps])  # (shell, λ)
     source = np.array([planck.spectral_radiance(air_to_vacuum(lam), c.temperature_k) for c in comps])
 
     nb = impact_parameters or 2 * column.shells

@@ -103,3 +103,33 @@ def test_finding_sodium_pairs_double_the_red_wing_but_do_not_close_it():
     assert variants[0].separation_nm > variants[1].separation_nm + 1.0
     sep = [m.separation_nm for m in lamps]
     assert all(min(sep) <= f.separation_nm <= max(sep) for f in variants)
+
+
+@needs_data
+def test_finding_mercury_pairs_bring_the_red_wing_among_the_lamps_but_not_the_bump():
+    """Recorded in the design doc (§4.4). The assumed arc with sodium and sodium–mercury pair
+    wings, over both dipole forms of each and both ends of the ΔC₆ range (the four corners for
+    the mercury pairs with constant-dipole sodium pairs are tested here)."""
+    k = street_hps.response().kernel
+    lamps = list(street_hps.measured_features().values())
+    names = [f"Hg pairs, {dip}, dC6 x{f}; Na pairs, constant" for dip in ("constant", "falling") for f in ("1", "2")]
+    variants = [street_hps.model_features(k, street_hps.MERCURY_VARIANTS[n]) for n in names]
+    red = sorted(m.red_wing for m in lamps)
+    for f in variants:
+        # The red wing is now among the lamps', at the faint end.
+        assert red[0] <= f.red_wing <= red[2]
+        # Its slope is the lamps' again (sodium pairs alone flattened it to about −1).
+        assert -2.2 < f.red_slope < -1.4
+        # The blue wing stays among most lamps.
+        blue = sorted(m.blue_wing for m in lamps)
+        assert blue[1] <= f.blue_wing <= blue[-3]
+        # Held out: six lamps rise 16–41 % at 668–678 nm; the model does not rise at all.
+        assert f.red_bump < 0.0
+        for band in ("498", "515", "568.8", "819"):
+            measured = [m.line_power[band] for m in lamps]
+            assert min(measured) <= f.line_power[band] <= max(measured), band
+    assert sum(m.red_bump > 0.15 for m in lamps) == 6
+    # The 616 nm line's measure is not usable with these wings: the pair continuum's structure
+    # from the avoided crossing falls on its baseline windows, and where depends on the shift.
+    p616 = [f.line_power["616"] for f in variants]
+    assert min(p616) < 0.01 and max(p616) > 0.035

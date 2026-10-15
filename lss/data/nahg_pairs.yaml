@@ -1,0 +1,126 @@
+# Sodium-mercury pairs (NaHg): the curves that set the mercury share of the D lines' far
+# wings in an HPS arc (design §4.4, rung 2, second part).
+#
+# Lower curve, X 2Sigma+ (Na 3s + Hg 6s2 1S0; the only state from two ground-state atoms):
+#   L. Thiel, "Theoretische Untersuchungen zur Wechselwirkung und Dynamik in den
+#   Stosssystemen Hg + Li, Na, K und Ar*(4s 3P2,0) + Hg, H" (Dissertation, TU
+#   Kaiserslautern, 2004; open at kluedo.ub.rptu.de/files/1519), Table D.2: the CCSD(T)
+#   curve with Hg described by the pseudopotential PP2, published as L. Thiel, H. Hotop and
+#   W. Meyer, J. Chem. Phys. 119, 9008 (2003). Hartree from the 3s + 1S0 asymptote (the
+#   table's zero at 45 a0); Re 6.52 a0, De 69 meV (thesis Table 3.13), C6 521 au (Table
+#   3.10, against 497-510 au from Stwalley & Kramer 1968). Checked against the page image
+#   (2026-10-15): the table crosses zero near 5.52 a0, as the thesis's Table 3.11 states.
+#   Beyond 30 a0 the code uses -C6/R^6 (at 30 a0: -7.1e-7 Eh, the table's -7.2e-7); inside
+#   4.5 a0 an exponential through the 4.50 and 4.75 a0 values (there the curve is above
+#   0.024 Eh, 5400 cm-1, so it weighs at most e^-2 at 4000 K).
+#
+# Upper curves, as difference potentials (transition energy against R):
+#   L. Windholz, G. Zerza, G. Pichler and B. A. Hess, "Visible-laser-induced
+#   chemiluminescence of NaHg red excimer bands", Z. Phys. D 18, 373 (1991), Fig. 8:
+#   all-electron MRD-CI with spin-orbit coupling (Hund's case c: I 1/2, I 3/2 from A 2Pi,
+#   II 1/2 from B 2Sigma+ at short range). Not tabulated, and the paper is not openly
+#   available: digitised here (2026-10-15) from a scan of the figure at 300 dpi
+#   (scripts/digitise_nahg_curves.py, given a copy of the PDF), calibrated on the frame's
+#   ticks (1 px = 17 cm-1, 0.012 a0). The drawn lines are traced and smoothed with a
+#   least-squares cubic spline (knots every 0.25 a0) through the trace and the plotted
+#   (computed) points, the points weighted 5x; residuals 6-10 cm-1 rms. The points are at
+#   R = 4, 5, 5.5, 6, 8, 8.5, 9, 9.5, 10 a0 (circles_cm1, below); up to 8 a0 the curve
+#   between them is the authors' drawing. Beyond 8 a0 the drawing has kinks at the avoided
+#   crossing (8.5 a0): near-flat stretches, and on I 1/2 a dip of a few cm-1, which the
+#   classical sum turns into spurious satellites (a first version held the dip level and
+#   put a spike beside the 616 nm line). The paper states that only II 1/2 - X 1/2 has an
+#   extremum (one minimum, here 14 413 cm-1 at 4.75 a0, against the computed point
+#   14 473 cm-1 at 4.98 a0), so beyond 8 a0 each curve is a monotone cubic (PCHIP) through
+#   the computed points, starting from the drawn line at 8 a0 with its slope. Beyond 8.5 a0 II 1/2 and I 3/2 are
+#   drawn as one line and share its points. The grids stop at 9.95 a0 (the last points are
+#   at 9.96-9.98 a0).
+#   The values are the paper's, in its own energy scale: at 10 a0 they are 600-950 cm-1
+#   below the D lines. The paper notes its curves suffer basis-set superposition error
+#   (its X well is 0.15 eV, against 0.053 eV measured) and argues the difference potential
+#   is little affected. The code shifts all three by one constant (`shift`, below).
+#
+# Shift: one constant for all three curves (one calculation, one error in the 3p energy),
+#   set from long-range physics before the satellite was compared with anything: at 9.95 a0
+#   I 3/2 (pure Pi, no avoided crossing) is put at the 3p3/2 asymptote minus Delta C6/R^6,
+#   with Delta C6 Unsold's estimate (lss.physics.hid.broadening.unsold_c6, 685 au) times
+#   `delta_c6_factor` (1 to 2: Unsold's estimate is known to run about 2x low; design §4.4).
+#   That is +478 to +323 cm-1. Beyond 9.95 a0 each curve goes as asymptote - A6/R^6 -
+#   A12/R^12, with A6 and A12 set so that value and slope are continuous there (I 3/2 and
+#   II 1/2 to 3p3/2, I 1/2 to 3p1/2): a fitted join, not dispersion coefficients. (A first
+#   version joined with C/R^6 on the value only; the slope step put spurious bumps near
+#   607-627 nm.)
+#   Prediction made with this rule, before any comparison (design §4.4): the classical
+#   satellite at the II 1/2 minimum, 14 413-14 473 cm-1 plus the shift, is at 668.5-678.3 nm
+#   (air); 668.5-678.4 nm after the change beyond 8 a0 above, which moved I 3/2 at 9.95 a0
+#   by 4 cm-1. Measured: 669 nm in absorption (Schlejen, Woerdman & Pichler, J. Mol.
+#   Spectrosc. 128, 1 (1988), as quoted by Windholz et al.).
+#
+# Transition dipoles: not given by the paper beyond one statement, that the A <- X
+#   oscillator strength falls by an order of magnitude from 500 to 200 pm (9.45 to 3.78 a0).
+#   At long range the three Omega curves share the atomic 3s-3p strength equally (Sigma
+#   1/3, Pi 2/3 split between Omega = 1/2 and 3/2): each band takes |D|^2 = d_z^2, with
+#   3 d_z^2 fixed by the D lines' A values (lss/data/na_atomic.yaml). `constant` keeps
+#   that at every R; `falling` lowers the two I bands' oscillator strength (proportional to
+#   transition energy x |D|^2) log-linearly by 10x from 9.45 to 3.78 a0 and keeps II 1/2
+#   constant, for which nothing is given. Near the 8.5 a0 avoided crossing the two Omega =
+#   1/2 curves would share their strengths differently; that is not modelled. An
+#   assumption, reported as a bracket.
+
+source: "Thiel, Hotop & Meyer JCP 119, 9008 (2003) (thesis Table D.2); Windholz, Zerza, Pichler & Hess Z. Phys. D 18, 373 (1991) Fig. 8, digitised 2026-10-15"
+asymptote_cm1:   # vacuum, from lss/data/na_atomic.yaml (NIST ASD)
+  3p1/2: 16956.17025
+  3p3/2: 16973.36619
+upper_asymptote: {"II1/2": "3p3/2", "I3/2": "3p3/2", "I1/2": "3p1/2"}
+shift:
+  reference_curve: "I3/2"
+  reference_r_a0: 9.95
+  delta_c6_factor: [1.0, 2.0]
+
+lower_X:
+  c6_au: 521.0
+  r_a0: [4.50, 4.75, 5.00, 5.25, 5.50, 5.75, 6.00, 6.25, 6.50, 6.75, 7.00, 7.25, 7.50, 7.75, 8.00, 8.50,
+         9.00, 9.50, 10.00, 11.00, 12.00, 13.00, 15.00, 20.00, 25.00, 30.00, 45.00]
+  hartree: [0.02455788, 0.01378476, 0.00695070, 0.00270636, 0.00015591, -0.00130366, -0.00207585, -0.00242532,
+            -0.00252215, -0.00247340, -0.00234561, -0.00217951, -0.00199953, -0.00181941, -0.00164651, -0.00133429,
+            -0.00107103, -0.00085393, -0.00067721, -0.00042093, -0.00025962, -0.00016068, -0.00006458, -0.00001000,
+            -0.00000241, -0.00000072, 0.00000000]
+
+difference_potentials_cm1:   # as plotted by Windholz et al. (not shifted); grids in the comments
+  II1/2:  # R = 4.00, 4.05, ... 9.95 a0; spline rms 6 cm-1 against the trace
+    - [14943, 14879, 14817, 14757, 14701, 14650, 14605, 14566, 14532, 14503, 14478, 14456]
+    - [14438, 14424, 14416, 14413, 14417, 14426, 14441, 14461, 14486, 14515, 14548, 14584]
+    - [14622, 14662, 14702, 14741, 14779, 14815, 14847, 14876, 14902, 14927, 14953, 14981]
+    - [15013, 15047, 15082, 15114, 15143, 15166, 15185, 15202, 15216, 15231, 15247, 15265]
+    - [15282, 15300, 15316, 15331, 15345, 15359, 15371, 15384, 15396, 15409, 15422, 15434]
+    - [15446, 15458, 15470, 15482, 15493, 15505, 15517, 15530, 15542, 15554, 15565, 15577]
+    - [15588, 15599, 15611, 15624, 15639, 15655, 15672, 15689, 15706, 15724, 15741, 15759]
+    - [15776, 15794, 15810, 15827, 15843, 15859, 15874, 15889, 15902, 15914, 15927, 15939]
+    - [15952, 15965, 15979, 15994, 16011, 16032, 16055, 16081, 16107, 16135, 16161, 16186]
+    - [16209, 16229, 16245, 16259, 16273, 16286, 16298, 16309, 16319, 16328, 16335, 16341]
+  I3/2:  # R = 4.00, 4.05, ... 9.95 a0; spline rms 8 cm-1 against the trace
+    - [6220, 6338, 6453, 6568, 6684, 6804, 6929, 7059, 7193, 7331, 7473, 7617]
+    - [7765, 7915, 8068, 8225, 8384, 8547, 8712, 8880, 9052, 9226, 9403, 9581]
+    - [9762, 9945, 10128, 10311, 10493, 10672, 10847, 11016, 11180, 11339, 11492, 11639]
+    - [11781, 11919, 12051, 12180, 12305, 12426, 12544, 12660, 12772, 12882, 12990, 13095]
+    - [13198, 13298, 13396, 13491, 13585, 13676, 13765, 13853, 13939, 14024, 14107, 14188]
+    - [14267, 14344, 14419, 14492, 14563, 14634, 14703, 14770, 14836, 14898, 14957, 15013]
+    - [15066, 15118, 15169, 15222, 15276, 15330, 15383, 15431, 15474, 15518, 15564, 15611]
+    - [15658, 15704, 15748, 15788, 15823, 15853, 15875, 15893, 15909, 15922, 15934, 15945]
+    - [15956, 15968, 15980, 15995, 16011, 16032, 16055, 16081, 16107, 16135, 16161, 16186]
+    - [16209, 16229, 16245, 16259, 16273, 16286, 16298, 16309, 16319, 16328, 16335, 16341]
+  I1/2:  # R = 4.10, 4.15, ... 9.95 a0; spline rms 10 cm-1 against the trace
+    - [4277, 4421, 4561, 4701, 4842, 4986, 5134, 5287, 5446, 5613, 5787, 5968]
+    - [6155, 6347, 6545, 6748, 6956, 7170, 7389, 7613, 7841, 8071, 8301, 8529]
+    - [8754, 8975, 9190, 9400, 9602, 9797, 9984, 10163, 10334, 10497, 10653, 10801]
+    - [10942, 11078, 11208, 11334, 11455, 11574, 11690, 11805, 11919, 12032, 12143, 12254]
+    - [12362, 12469, 12575, 12679, 12783, 12885, 12987, 13088, 13189, 13288, 13387, 13485]
+    - [13582, 13678, 13775, 13870, 13966, 14060, 14153, 14243, 14330, 14413, 14493, 14571]
+    - [14649, 14727, 14807, 14886, 14964, 15038, 15108, 15175, 15240, 15301, 15359, 15413]
+    - [15461, 15503, 15538, 15566, 15585, 15600, 15612, 15622, 15631, 15638, 15646, 15654]
+    - [15663, 15674, 15687, 15702, 15719, 15738, 15758, 15779, 15799, 15820, 15840, 15858]
+    - [15875, 15891, 15907, 15923, 15938, 15954, 15968, 15982, 15996, 16010]
+circles_cm1:  # the plotted (computed) points, [R a0, E cm-1] as read
+  II1/2: [[3.978, 14971], [4.977, 14473], [5.47, 14829], [5.975, 15133], [7.985, 15703], [8.49, 15871], [8.983, 16005], [9.488, 16242], [9.958, 16342]]
+  I3/2: [[3.978, 6168], [4.977, 8973], [5.494, 10827], [5.987, 12272], [7.985, 15465]]
+  I1/2: [[4.965, 7237], [5.482, 9533], [5.951, 11081], [7.985, 15090], [8.49, 15582], [8.983, 15682], [9.476, 15867], [9.982, 16018]]
+

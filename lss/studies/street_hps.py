@@ -18,7 +18,10 @@ subordinate line carries against the D lines, and how bright the far wings are.
 
 The same arc is also run with the D lines' far wings from sodium atom pairs
 (:mod:`lss.physics.hid.pairs`), for both forms of the pair transition dipole and three
-splice points, since neither is pinned down (design §4.4).
+splice points, since neither is pinned down (design §4.4); and with sodium–mercury pairs
+(:mod:`lss.physics.hid.mercury_pairs`), alone and together with sodium pairs, for both
+forms of their transition dipole and both ends of the ΔC₆ range that sets their energy
+shift.
 """
 
 from dataclasses import dataclass, replace
@@ -28,7 +31,7 @@ import numpy as np
 from scipy.optimize import least_squares
 
 from lss.accuracy import lica
-from lss.physics.hid import arc, pairs, sodium
+from lss.physics.hid import arc, mercury_pairs, pairs, sodium
 from lss.physics.hid.composition import Fill
 from lss.physics.thermal.tungsten import TungstenCoilContinuum
 from lss.spectral.instrument import Kernel, KernelFit, fit_kernel, observe
@@ -52,6 +55,19 @@ NODES_NM = np.arange(300.0, 901.0)
 #: (about 4 nm from the lines) to well outside them.
 PAIR_VARIANTS = {f"pairs, {dip} dipole, splice {sp:g} nm": replace(ASSUMED_ARC, pairs=pairs.PairWings(splice_nm=sp, dipole=dip))
                  for dip in pairs.DIPOLE_FORMS for sp in (3.0, 6.0, 12.0)}
+#: The assumed arc with sodium–mercury pair wings (splice 6 nm): both dipole forms, both ends of
+#: the ΔC₆ range; alone, and with sodium pairs (6 nm splice) for each of their dipole forms.
+#: Two more splices (3 and 12 nm) for one combination.
+MERCURY_VARIANTS = {
+    f"Hg pairs, {dip}, dC6 x{f:g}" + (f"; Na pairs, {nd}" if nd else ""): replace(
+        ASSUMED_ARC, mercury_pairs=mercury_pairs.MercuryPairWings(splice_nm=6.0, dipole=dip, delta_c6_factor=f),
+        pairs=pairs.PairWings(splice_nm=6.0, dipole=nd) if nd else None)
+    for nd in (None, *pairs.DIPOLE_FORMS) for dip in mercury_pairs.DIPOLE_FORMS for f in mercury_pairs.DELTA_C6_FACTORS}
+MERCURY_VARIANTS.update({
+    f"Hg pairs, constant, dC6 x1, splice {sp:g} nm; Na pairs, constant": replace(
+        ASSUMED_ARC, mercury_pairs=mercury_pairs.MercuryPairWings(splice_nm=sp, dipole="constant"),
+        pairs=pairs.PairWings(splice_nm=6.0, dipole="constant"))
+    for sp in (3.0, 12.0)})
 
 #: Subordinate lines: power above a straight baseline through 2 nm beside each edge.
 BANDS_NM = {"498": (495.0, 501.0), "515": (512.0, 518.0), "568.8": (565.0, 572.0),
@@ -63,6 +79,12 @@ D_BAND_NM = (575.0, 605.0)
 #: about 548 nm that the rung-1 model has no counterpart of.
 RED_WING_NM = (640.0, 700.0)
 BLUE_WING_NM = (525.0, 540.0)
+#: The red wing's slope: log power against log offset from 589.3 nm (cm⁻¹), over RED_WING_NM
+#: without 665–685 nm, where six lamps show a broad rise.
+SLOPE_HOLE_NM = (665.0, 685.0)
+#: That rise: the mean over 668–678 nm against a straight line between the means over 656–662
+#: and 690–696 nm (drawn through the windows' centres), minus one.
+BUMP_NM, BUMP_SIDES_NM = (668.0, 678.0), ((656.0, 662.0), (690.0, 696.0))
 
 
 @lru_cache(maxsize=None)
@@ -120,7 +142,7 @@ def flux_check(lo_nm: float = 450.0, hi_nm: float = 850.0, bin_nm: float = 50.0)
     return FluxCheck(float(r.x[0]), float(r.x[1]), bins, means)
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=64)
 def model_radiance(column: arc.ArcColumn = ASSUMED_ARC) -> tuple[np.ndarray, np.ndarray]:
     """(air wavelength nm, mean side-on radiance) of the arc on a grid resolving every line."""
     grid = arc.line_grid(sodium.data().lines, lo_nm=280.0, hi_nm=920.0, base_step_nm=0.05)
@@ -149,6 +171,8 @@ class Features:
     red_wing: float  # mean over RED_WING_NM, over the D band's highest sample
     blue_wing: float
     line_power: dict  # band name -> power over the D band's
+    red_slope: float = float("nan")  # d log(power) / d log(offset from 589.3 nm)
+    red_bump: float = float("nan")  # 668–678 nm over the straight line beside it, minus one
 
     @property
     def separation_nm(self) -> float:
@@ -163,9 +187,16 @@ def features(x, y) -> Features:
     def wing(lo, hi):
         return float(y[(x >= lo) & (x <= hi)].mean() / top)
 
+    w = (x >= RED_WING_NM[0]) & (x <= RED_WING_NM[1]) & ~((x > SLOPE_HOLE_NM[0]) & (x < SLOPE_HOLE_NM[1]))
+    slope = float(np.polyfit(np.log(1e7 / 589.3 - 1e7 / x[w]), np.log(y[w]), 1)[0])
+    (a0, a1), (b0, b1) = BUMP_SIDES_NM
+    left, right = y[(x >= a0) & (x <= a1)].mean(), y[(x >= b0) & (x <= b1)].mean()
+    centre = 0.5 * sum(BUMP_NM)
+    line = left + (right - left) * (centre - 0.5 * (a0 + a1)) / (0.5 * (b0 + b1) - 0.5 * (a0 + a1))
+    bump = float(y[(x >= BUMP_NM[0]) & (x <= BUMP_NM[1])].mean() / line - 1.0)
     return Features(_peak(x, y, D_BAND_NM[0], 589.5), _peak(x, y, 589.5, D_BAND_NM[1]),
                     wing(*RED_WING_NM), wing(*BLUE_WING_NM),
-                    {k: _band(x, y, lo, hi) / d_power for k, (lo, hi) in BANDS_NM.items()})
+                    {k: _band(x, y, lo, hi) / d_power for k, (lo, hi) in BANDS_NM.items()}, slope, bump)
 
 
 def model_features(kernel: Kernel, column: arc.ArcColumn = ASSUMED_ARC) -> Features:
@@ -189,8 +220,9 @@ def measured_features() -> dict[str, Features]:
 
 
 def _row(name, f: Features) -> str:
-    return (f"{name:28s}{f.blue_peak_nm:8.1f}{f.red_peak_nm:8.1f}{f.separation_nm:7.1f}"
-            f"{f.blue_wing:8.3f}{f.red_wing:8.3f}" + "".join(f"{f.line_power[k]:8.3f}" for k in BANDS_NM))
+    return (f"{name:62s}{f.blue_peak_nm:8.1f}{f.red_peak_nm:8.1f}{f.separation_nm:7.1f}"
+            f"{f.blue_wing:8.3f}{f.red_wing:8.3f}{f.red_slope:7.2f}{f.red_bump:7.2f}"
+            + "".join(f"{f.line_power[k]:8.3f}" for k in BANDS_NM))
 
 
 def format_text() -> str:
@@ -210,12 +242,16 @@ def format_text() -> str:
     out += ["", "Assumed arc (design §4.4; nothing fitted): T 4000 K on the axis, 1500 K at a 3.8 mm wall; "
                 "Na 13 kPa, Hg 70 kPa, Xe 20 kPa.",
             "Line powers are over the D lines' (575-605 nm); wings are mean over the D peak.", "",
-            f"{'':28s}{'blue pk':>8s}{'red pk':>8s}{'sep':>7s}{'525-540':>8s}{'640-700':>8s}"
+            "Slope: d log(power) / d log(offset from 589.3 nm), 640-700 nm without 665-685; "
+            "bump: 668-678 nm over the straight line from 656-662 to 690-696 nm, minus one.", "",
+            f"{'':62s}{'blue pk':>8s}{'red pk':>8s}{'sep':>7s}{'525-540':>8s}{'640-700':>8s}{'slope':>7s}{'bump':>7s}"
             + "".join(f"{k:>8s}" for k in BANDS_NM)]
     for name, k in response_variants().items():
         out.append(_row(f"model, {name}", model_features(k)))
     for name, column in PAIR_VARIANTS.items():
         out.append(_row(name.replace(" dipole, splice", ","), model_features(response().kernel, column)))
+    for name, column in MERCURY_VARIANTS.items():
+        out.append(_row(name, model_features(response().kernel, column)))
     meas = measured_features()
     for key, f in meas.items():
         out.append(_row(key, f))

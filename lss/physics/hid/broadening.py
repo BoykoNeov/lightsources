@@ -63,10 +63,15 @@ class Widths:
     doppler_sigma_hz: float  # standard deviation of the Gaussian, Hz
     natural: float
     resonance: float
-    van_der_waals: float
+    van_der_waals_mercury: float  # kept apart so mercury-pair wings can replace it (rung 2)
+    van_der_waals_xenon: float
     stark: float
     shift_van_der_waals: float  # centre shifts, rad/s; negative is to the red
     shift_stark: float
+
+    @property
+    def van_der_waals(self) -> float:
+        return self.van_der_waals_mercury + self.van_der_waals_xenon
 
     @property
     def lorentzian(self) -> float:
@@ -93,18 +98,20 @@ def widths(line: sodium.Transition, comp: Composition) -> Widths:
     t = comp.temperature_k
     ground = comp.sodium * sodium.level_population_fraction(0.0, 2, t, comp.lowering_cm1)
     stark, stark_shift = line.stark.width_and_shift_rad_s(comp.electrons, t) if line.stark else (0.0, 0.0)
-    vdw_width = vdw_shift = 0.0
+    vdw_width, vdw_shift = {}, 0.0
     for perturber, n in (("mercury", comp.mercury), ("xenon", comp.xenon)):
+        vdw_width[perturber] = 0.0
         if n <= 0:
             continue
         scale = (unsold_c6(line, perturber) / HBAR) ** 0.4 * _mean_relative_speed(perturber, t) ** 0.6 * n
-        vdw_width += LF_WIDTH * scale
+        vdw_width[perturber] = LF_WIDTH * scale
         vdw_shift -= LF_SHIFT * scale
     return Widths(
         doppler_sigma_hz=line.frequency_hz * np.sqrt(K_B * t / (sodium.MASS_KG * C * C)),
         natural=line.a_ki,
         resonance=line.self_broadening_m3_s * float(ground),
-        van_der_waals=vdw_width,
+        van_der_waals_mercury=vdw_width["mercury"],
+        van_der_waals_xenon=vdw_width["xenon"],
         stark=stark,
         shift_van_der_waals=vdw_shift,
         shift_stark=stark_shift,
