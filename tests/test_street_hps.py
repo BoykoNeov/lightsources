@@ -51,10 +51,10 @@ def test_lica_response_correction_leaves_a_halogen_lamp_smooth():
 def test_finding_the_comparisons_do_not_depend_on_the_response():
     variants = [street_hps.model_features(k) for k in street_hps.response_variants().values()]
     sep = [f.separation_nm for f in variants]
-    assert max(sep) - min(sep) < 0.3
+    assert max(sep) - min(sep) < 0.2
     for band in street_hps.BANDS_NM:
         p = [f.line_power[band] for f in variants]
-        assert max(p) / min(p) < 1.15
+        assert max(p) / min(p) < 1.10
     red = [f.red_wing for f in variants]
     assert max(red) / min(red) < 1.1
 
@@ -73,5 +73,8 @@ def test_finding_lines_and_peaks_fall_among_the_lamps_but_the_red_wing_is_too_fa
     # The far blue wing agrees with most lamps ...
     blue = sorted(f.blue_wing for f in lamps)
     assert blue[1] <= model.blue_wing <= blue[-3]
-    # ... but every lamp's red wing is at least three times the model's.
-    assert min(f.red_wing for f in lamps) > 3.0 * model.red_wing
+    # ... but every lamp's red wing is at least three times the model's,
+    assert min(f.red_wing for f in lamps) > 3.3 * model.red_wing
+    # even the lamp whose peaks are closer than the model's (so not simply less sodium in the model).
+    narrow = [f for f in lamps if f.separation_nm < model.separation_nm]
+    assert narrow and all(f.red_wing > 3.0 * model.red_wing and f.blue_wing < model.blue_wing for f in narrow)
