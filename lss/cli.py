@@ -189,6 +189,21 @@ def _cmd_streethps(args) -> int:
     return 0
 
 
+def _cmd_streethpsfit(args) -> int:
+    from lss.accuracy import lica
+    from lss.studies import street_hps_fit
+
+    try:
+        lica.fetch_all()
+    except (OSError, ValueError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    if not all(street_hps_fit.table_path(v).exists() for v in street_hps_fit.VARIANTS):
+        print("building the arc tables on first use (minutes; cached afterwards)", file=sys.stderr)
+    print(street_hps_fit.format_text())
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="lss", description="Light source simulator")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -251,6 +266,9 @@ def main(argv=None) -> int:
     p = sub.add_parser("streethps", help="nine measured HPS street lamps (downloaded on first use) "
                                          "against the rung-1 sodium arc, through the instrument's response")
     p.set_defaults(func=_cmd_streethps)
+    p = sub.add_parser("streethpsfit", help="each HPS street lamp's arc temperature and sodium pressure, "
+                                            "fitted to its blue peak and line powers; the red wing held out")
+    p.set_defaults(func=_cmd_streethpsfit)
 
     args = parser.parse_args(argv)
     for stream in (sys.stdout, sys.stderr):

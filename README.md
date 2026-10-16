@@ -35,6 +35,9 @@ lss leddrive                          # a measured LED at 150-500 mA (downloaded
 lss streethps                         # nine measured HPS street lamps (LICA-UCM, downloaded on first
                                       # use) against the sodium arc, through the spectrograph's response,
                                       # with and without sodium- and sodium-mercury-pair far wings
+lss streethpsfit                      # each of them with its own arc temperature and sodium pressure,
+                                      # fitted to its blue peak and three lines (tables built on first
+                                      # use, minutes); the red wing held out
 ```
 
 ## Tests
