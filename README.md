@@ -36,8 +36,8 @@ lss streethps                         # nine measured HPS street lamps (LICA-UCM
                                       # use) against the sodium arc, through the spectrograph's response,
                                       # with and without sodium- and sodium-mercury-pair far wings
 lss streethpsfit                      # each of them with its own arc temperature and sodium pressure,
-                                      # fitted to its blue peak and three lines (tables built on first
-                                      # use, minutes); the red wing held out
+                                      # fitted to its blue peak and three lines (six tables built on
+                                      # first use, about half an hour on 16 cores); the red wing held out
 ```
 
 ## Tests

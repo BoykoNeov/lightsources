@@ -199,7 +199,7 @@ def _cmd_streethpsfit(args) -> int:
         print(f"error: {e}", file=sys.stderr)
         return 2
     if not all(street_hps_fit.table_path(v).exists() for v in street_hps_fit.VARIANTS):
-        print("building the arc tables on first use (minutes; cached afterwards)", file=sys.stderr)
+        print("building the six arc tables on first use (about half an hour on 16 cores; cached afterwards)", file=sys.stderr)
     print(street_hps_fit.format_text())
     return 0
 

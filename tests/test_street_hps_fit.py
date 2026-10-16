@@ -1,5 +1,6 @@
 """Each HPS street lamp's arc temperature and sodium pressure, fitted (design §4.4). Skipped
-until the LICA data are downloaded; the first run builds the arc tables (minutes, cached)."""
+until the LICA data are downloaded; the first run builds the six arc tables (about half an hour
+on 16 cores, cached)."""
 
 import numpy as np
 import pytest
