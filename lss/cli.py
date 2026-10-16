@@ -204,6 +204,22 @@ def _cmd_streethpsfit(args) -> int:
     return 0
 
 
+def _cmd_streethpshg(args) -> int:
+    from lss.accuracy import lica
+    from lss.studies import street_hps_mercury
+
+    try:
+        lica.fetch_all()
+    except (OSError, ValueError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    if not street_hps_mercury.table_path().exists():
+        print("building the arc table with mercury on first use (about 40 minutes on 16 cores; cached afterwards)",
+              file=sys.stderr)
+    print(street_hps_mercury.format_text())
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="lss", description="Light source simulator")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -269,6 +285,9 @@ def main(argv=None) -> int:
     p = sub.add_parser("streethpsfit", help="each HPS street lamp's arc temperature and sodium pressure, "
                                             "fitted to its blue peak and line powers; the red wing held out")
     p.set_defaults(func=_cmd_streethpsfit)
+    p = sub.add_parser("streethpshg", help="each HPS street lamp's mercury read off its own peaks (de Groot & "
+                                           "van Vliet eq. 5.7), the arc refitted with it; the red wing held out")
+    p.set_defaults(func=_cmd_streethpshg)
 
     args = parser.parse_args(argv)
     for stream in (sys.stdout, sys.stderr):
