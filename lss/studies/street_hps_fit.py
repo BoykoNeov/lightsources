@@ -64,13 +64,14 @@ TABLE_VERSION = 2
 GRID_T_K = np.arange(3400.0, 4801.0, 200.0)
 GRID_NA_PA = np.geomspace(5e3, 45e3, 23)
 
-CENTRAL = replace(street_hps.ASSUMED_ARC, pairs=pairs.PairWings(splice_nm=6.0, dipole="constant"),
-                  mercury_pairs=mercury_pairs.MercuryPairWings(splice_nm=6.0, dipole="constant", delta_c6_factor=1.0))
+CENTRAL = replace(street_hps.ASSUMED_ARC, pairs=pairs.PairWings(join_nm=street_hps.JOINS_NM[1], dipole="constant"),
+                  mercury_pairs=mercury_pairs.MercuryPairWings(join_nm=street_hps.JOINS_NM[1], dipole="constant",
+                                                               delta_c6_factor=1.0))
 
 
-def _with_splice(column: arc.ArcColumn, splice_nm: float) -> arc.ArcColumn:
-    return replace(column, pairs=replace(column.pairs, splice_nm=splice_nm),
-                   mercury_pairs=replace(column.mercury_pairs, splice_nm=splice_nm))
+def with_join(column: arc.ArcColumn, join_nm: float) -> arc.ArcColumn:
+    return replace(column, pairs=replace(column.pairs, join_nm=join_nm),
+                   mercury_pairs=replace(column.mercury_pairs, join_nm=join_nm))
 
 
 #: The central arc, and one change from it per open choice of design §4.4.
@@ -79,8 +80,8 @@ VARIANTS = {
     "Hg pairs dC6 x2": replace(CENTRAL, mercury_pairs=replace(CENTRAL.mercury_pairs, delta_c6_factor=2.0)),
     "Hg pairs falling dipole": replace(CENTRAL, mercury_pairs=replace(CENTRAL.mercury_pairs, dipole="falling")),
     "Na pairs long-range dipole": replace(CENTRAL, pairs=replace(CENTRAL.pairs, dipole="long-range")),
-    "splice 3 nm": _with_splice(CENTRAL, 3.0),
-    "splice 12 nm": _with_splice(CENTRAL, 12.0),
+    "join 0.4 nm": with_join(CENTRAL, street_hps.JOINS_NM[0]),
+    "join 1.6 nm": with_join(CENTRAL, street_hps.JOINS_NM[2]),
 }
 
 #: Fitted targets: name -> σ. Line powers are compared as logarithms (σ is a fraction).

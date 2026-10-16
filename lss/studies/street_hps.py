@@ -18,7 +18,8 @@ subordinate line carries against the D lines, and how bright the far wings are.
 
 The same arc is also run with the D lines' far wings from sodium atom pairs
 (:mod:`lss.physics.hid.pairs`), for both forms of the pair transition dipole and three
-splice points, since neither is pinned down (design §4.4); and with sodium–mercury pairs
+places for the hand-over from the impact wing (centred 0.4, 0.8 or 1.6 nm from the lines),
+since neither is pinned down (design §4.4); and with sodium–mercury pairs
 (:mod:`lss.physics.hid.mercury_pairs`), alone and together with sodium pairs, for both
 forms of their transition dipole and both ends of the ΔC₆ range that sets their energy
 shift.
@@ -51,23 +52,25 @@ LPS_DOUBLETS_NM = {"589 (D)": (588.9950, 589.5924), "568.8": (568.2633, 568.8205
 ASSUMED_ARC = arc.ArcColumn(radius_m=3.8e-3, axis_temperature_k=4000.0, wall_temperature_k=1500.0,
                             fill=Fill(sodium_pa=13e3, mercury_pa=70e3, xenon_pa=20e3), shells=60)
 NODES_NM = np.arange(300.0, 901.0)
-#: The assumed arc with sodium-pair wings: both dipole forms, splices from near the peaks
-#: (about 4 nm from the lines) to well outside them.
-PAIR_VARIANTS = {f"pairs, {dip} dipole, splice {sp:g} nm": replace(ASSUMED_ARC, pairs=pairs.PairWings(splice_nm=sp, dipole=dip))
-                 for dip in pairs.DIPOLE_FORMS for sp in (3.0, 6.0, 12.0)}
-#: The assumed arc with sodium–mercury pair wings (splice 6 nm): both dipole forms, both ends of
-#: the ΔC₆ range; alone, and with sodium pairs (6 nm splice) for each of their dipole forms.
-#: Two more splices (3 and 12 nm) for one combination.
+#: Where the impact wing hands over to the pairs: the centre of the hand-over, nm from each
+#: line (it runs from half to twice that), and half and twice it.
+JOINS_NM = (0.4, 0.8, 1.6)
+#: The assumed arc with sodium-pair wings: both dipole forms, each hand-over.
+PAIR_VARIANTS = {f"pairs, {dip} dipole, join {j:g} nm": replace(ASSUMED_ARC, pairs=pairs.PairWings(join_nm=j, dipole=dip))
+                 for dip in pairs.DIPOLE_FORMS for j in JOINS_NM}
+#: The assumed arc with sodium–mercury pair wings (the central hand-over): both dipole forms,
+#: both ends of the ΔC₆ range; alone, and with sodium pairs for each of their dipole forms.
+#: The other two hand-overs (both kinds of pair moved) for one combination.
 MERCURY_VARIANTS = {
     f"Hg pairs, {dip}, dC6 x{f:g}" + (f"; Na pairs, {nd}" if nd else ""): replace(
-        ASSUMED_ARC, mercury_pairs=mercury_pairs.MercuryPairWings(splice_nm=6.0, dipole=dip, delta_c6_factor=f),
-        pairs=pairs.PairWings(splice_nm=6.0, dipole=nd) if nd else None)
+        ASSUMED_ARC, mercury_pairs=mercury_pairs.MercuryPairWings(dipole=dip, delta_c6_factor=f),
+        pairs=pairs.PairWings(dipole=nd) if nd else None)
     for nd in (None, *pairs.DIPOLE_FORMS) for dip in mercury_pairs.DIPOLE_FORMS for f in mercury_pairs.DELTA_C6_FACTORS}
 MERCURY_VARIANTS.update({
-    f"Hg pairs, constant, dC6 x1, splice {sp:g} nm; Na pairs, constant": replace(
-        ASSUMED_ARC, mercury_pairs=mercury_pairs.MercuryPairWings(splice_nm=sp, dipole="constant"),
-        pairs=pairs.PairWings(splice_nm=6.0, dipole="constant"))
-    for sp in (3.0, 12.0)})
+    f"Hg pairs, constant, dC6 x1, join {j:g} nm; Na pairs, constant": replace(
+        ASSUMED_ARC, mercury_pairs=mercury_pairs.MercuryPairWings(join_nm=j, dipole="constant"),
+        pairs=pairs.PairWings(join_nm=j, dipole="constant"))
+    for j in (JOINS_NM[0], JOINS_NM[2])})
 
 #: Subordinate lines: power above a straight baseline through 2 nm beside each edge.
 BANDS_NM = {"498": (495.0, 501.0), "515": (512.0, 518.0), "568.8": (565.0, 572.0),
@@ -249,7 +252,7 @@ def format_text() -> str:
     for name, k in response_variants().items():
         out.append(_row(f"model, {name}", model_features(k)))
     for name, column in PAIR_VARIANTS.items():
-        out.append(_row(name.replace(" dipole, splice", ","), model_features(response().kernel, column)))
+        out.append(_row(name.replace(" dipole, join", ","), model_features(response().kernel, column)))
     for name, column in MERCURY_VARIANTS.items():
         out.append(_row(name, model_features(response().kernel, column)))
     meas = measured_features()

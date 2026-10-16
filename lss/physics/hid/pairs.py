@@ -33,6 +33,7 @@ from importlib import resources
 import numpy as np
 import yaml
 
+from lss.physics.hid import sodium
 from lss.spectral.units import C, H, K_B
 
 BOHR_M = 5.29177210903e-11  # CODATA 2018
@@ -172,23 +173,33 @@ def _table(temperature_k: float, dipole: str) -> np.ndarray:
 
 @dataclass(frozen=True)
 class PairWings:
-    """Replace the resonance share of the D lines' far wings with the pair absorption.
+    """Hand the resonance share of the D lines' wings over to the pair absorption.
 
-    Within ``splice_nm`` of a D line the line keeps its full impact profile; beyond it
-    the profile loses its resonance width (Hg, Xe and Stark widths stay) and the pair
-    absorption takes over.
+    Each D line's resonance share goes over to its own part of the pair absorption with
+    distance from the line, by :func:`lss.physics.hid.arc.join_weight`: none inside
+    ``join_nm``/2, all beyond 2·``join_nm`` (the Hg, Xe and Stark widths stay).
+
+    The curves have no fine structure (one 3p asymptote). Each line's part is its share of
+    the D lines' strength (D1 ⅓, D2 ⅔) with the table moved onto its own upper level, so
+    near the lines each wing sits on its own line, and far out the two parts together sit
+    on the 3p centroid, 11.5 cm⁻¹ above 3p₁/₂.
     """
 
-    splice_nm: float = 5.0
+    join_nm: float = 0.8
     dipole: str = "long-range"
 
     def __post_init__(self):
-        if self.splice_nm <= 0 or self.dipole not in DIPOLE_FORMS:
-            raise ValueError("splice must be positive and the dipole form known")
+        if self.join_nm <= 0 or self.dipole not in DIPOLE_FORMS:
+            raise ValueError("join must be positive and the dipole form known")
 
-    def kappa(self, temperature_k: float, ground_m3: float, frequency_hz: np.ndarray) -> np.ndarray:
-        """Pair absorption coefficient, m⁻¹, before the stimulated-emission factor."""
+    def kappa(self, temperature_k: float, ground_m3: float, frequency_hz: np.ndarray, line=None) -> np.ndarray:
+        """Pair absorption coefficient, m⁻¹, before the stimulated-emission factor: ``line``'s
+        part (a resonance :class:`~lss.physics.hid.sodium.Transition`), or both lines' (None)."""
         centres = 0.5 * (TABLE_EDGES_CM1[1:] + TABLE_EDGES_CM1[:-1])
-        per_pair = np.interp(np.asarray(frequency_hz) / (100.0 * C), centres, _table(float(temperature_k), self.dipole),
-                             left=0.0, right=0.0)
-        return per_pair * ground_m3**2
+        table = _table(float(temperature_k), self.dipole)
+        nu = np.asarray(frequency_hz) / (100.0 * C)
+        out = np.zeros(nu.shape)
+        for ln in [line] if line is not None else sodium.resonance_lines():
+            shift = ln.upper_energy_cm1 - ln.lower_energy_cm1 - data().asymptote_cm1
+            out += sodium.resonance_shares()[ln.name] * np.interp(nu - shift, centres, table, left=0.0, right=0.0)
+        return out * ground_m3**2

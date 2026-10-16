@@ -196,31 +196,44 @@ TABLE_EDGES_CM1 = np.arange(8000.0, 30000.0 + 1.0, 2.0)
 
 
 @lru_cache(maxsize=4096)
-def _table(temperature_k: float, dipole: str, delta_c6_factor: float) -> np.ndarray:
-    return sum(reduced_absorption(temperature_k, TABLE_EDGES_CM1, dipole, delta_c6_factor).values())
+def _table(temperature_k: float, dipole: str, delta_c6_factor: float) -> dict[str, np.ndarray]:
+    return reduced_absorption(temperature_k, TABLE_EDGES_CM1, dipole, delta_c6_factor)
 
 
 @dataclass(frozen=True)
 class MercuryPairWings:
-    """Replace the mercury share of the D lines' far wings with the Na–Hg pair absorption.
+    """Hand the mercury share of the D lines' wings over to the Na–Hg pair absorption.
 
-    Within ``splice_nm`` of a D line the line keeps its full impact profile; beyond it the
-    profile loses its mercury van der Waals width (the resonance, xenon and Stark widths
-    stay unless sodium pairs replace the resonance share too) and the pair absorption
-    takes over.
+    Each D line's mercury van der Waals share goes over to the bands on its own upper level
+    (D1: I ½; D2: I 3/2 and II ½; ⅓ and ⅔ of the strength, as the lines) with distance from
+    the line, by :func:`lss.physics.hid.arc.join_weight`: none inside ``join_nm``/2, all
+    beyond 2·``join_nm`` (the resonance, xenon and Stark widths stay unless sodium pairs
+    take the resonance share). The impact wing is the wrong form beyond about the
+    Weisskopf detuning (0.36–0.47 nm at 2500–4000 K with Unsöld's C₆), outside which the
+    quasi-static wing exceeds it as √(Δω/ω_W); the default hand-over is centred at about
+    twice that.
     """
 
-    splice_nm: float = 5.0
+    join_nm: float = 0.8
     dipole: str = "constant"
     delta_c6_factor: float = 1.0
 
     def __post_init__(self):
-        if self.splice_nm <= 0 or self.dipole not in DIPOLE_FORMS or self.delta_c6_factor <= 0:
-            raise ValueError("splice and ΔC₆ factor must be positive and the dipole form known")
+        if self.join_nm <= 0 or self.dipole not in DIPOLE_FORMS or self.delta_c6_factor <= 0:
+            raise ValueError("join and ΔC₆ factor must be positive and the dipole form known")
 
-    def kappa(self, temperature_k: float, ground_m3: float, mercury_m3: float, frequency_hz: np.ndarray) -> np.ndarray:
-        """Pair absorption coefficient, m⁻¹, before the stimulated-emission factor."""
+    def kappa(self, temperature_k: float, ground_m3: float, mercury_m3: float, frequency_hz: np.ndarray,
+              line=None) -> np.ndarray:
+        """Pair absorption coefficient, m⁻¹, before the stimulated-emission factor: the bands
+        on ``line``'s upper level (a resonance :class:`~lss.physics.hid.sodium.Transition`),
+        or all three (None)."""
+        d = data()
+        tables = _table(float(temperature_k), self.dipole, float(self.delta_c6_factor))
+        bands = [b for b in BANDS if line is None
+                 or abs(d.asymptote_cm1[b] - (line.upper_energy_cm1 - line.lower_energy_cm1)) < 0.01]
+        if not bands:
+            raise ValueError(f"no Na–Hg band ends on {line.name}'s upper level")
         centres = 0.5 * (TABLE_EDGES_CM1[1:] + TABLE_EDGES_CM1[:-1])
-        table = _table(float(temperature_k), self.dipole, float(self.delta_c6_factor))
-        per_pair = np.interp(np.asarray(frequency_hz) / (100.0 * C), centres, table, left=0.0, right=0.0)
+        per_pair = np.interp(np.asarray(frequency_hz) / (100.0 * C), centres, sum(tables[b] for b in bands),
+                             left=0.0, right=0.0)
         return per_pair * ground_m3 * mercury_m3

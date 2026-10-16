@@ -126,11 +126,11 @@ def test_finding_the_two_dipole_forms_bracket_the_bound_pairs_wing():
 
 
 def test_pairs_replace_only_the_resonance_share_of_the_far_wing():
-    """Within the splice the lines keep their impact profile; beyond it each resonance line
-    loses only its resonance width, and the pair absorption is added."""
+    """Inside half the join the lines keep their impact profile; beyond twice it each
+    resonance line has lost only its resonance width, and the pair absorption is added."""
     t = 3000.0
     comp = composition(t, Fill(sodium_pa=13e3, mercury_pa=70e3, xenon_pa=20e3))
-    wings = pairs.PairWings(splice_nm=5.0)
+    wings = pairs.PairWings(join_nm=6.0)
     nu_near = C / (air_to_vacuum(np.array([587.0, 591.6])) * 1e-9)
     assert arc.absorption_coefficient(comp, nu_near, pairs=wings) == pytest.approx(
         arc.absorption_coefficient(comp, nu_near), rel=1e-12)
@@ -151,26 +151,74 @@ def test_pairs_replace_only_the_resonance_share_of_the_far_wing():
     assert np.all(got > 1.5 * arc.absorption_coefficient(comp, nu))  # the pairs exceed the impact wing there
 
 
-def test_each_line_s_lost_wing_is_replaced_where_it_is_lost():
-    """Between the two D lines' splices one line is past its splice and the other not: the
-    far line's wing goes and its share of the pair absorption (D1 ⅓, D2 ⅔) replaces it.
-    (Adding the pairs only where both lines were far left a 0.6 nm hole at each splice.)"""
+def test_the_hand_over_weight():
+    off = np.geomspace(0.01, 100.0, 20_001)
+    w = arc.join_weight(off, 0.8)
+    assert np.all(w[off <= 0.4] == 0.0) and np.all(w[off >= 1.6] == 1.0)
+    assert np.all(np.diff(w) >= 0.0) and np.abs(np.diff(w)).max() < 1e-3  # smooth and rising
+    assert float(arc.join_weight(-1.0, 0.8)) == float(arc.join_weight(1.0, 0.8))  # both sides alike
+    assert float(arc.join_weight(0.8, 0.8)) == pytest.approx(0.5)  # half way at the centre
+
+
+def test_each_line_hands_over_by_its_own_weight():
+    """1.1 nm red of D1 (1.7 nm from D2), join 0.8 nm: D1 part way, D2 fully handed over; the
+    profiles mix bilinearly and each line adds its own part of each kind of pair."""
     t = 3500.0
     comp = composition(t, Fill(sodium_pa=12e3, mercury_pa=240e3, xenon_pa=20e3))
-    na, hg = pairs.PairWings(splice_nm=6.0), mp.MercuryPairWings(splice_nm=6.0)
-    d1, d2 = sodium.data().line("D1"), sodium.data().line("D2")
-    shares = arc.resonance_shares()
+    na, hg = pairs.PairWings(join_nm=0.8, dipole="constant"), mp.MercuryPairWings(join_nm=0.8)
+    shares = sodium.resonance_shares()
     assert shares["D1"] == pytest.approx(1 / 3, rel=1e-3) and shares["D1"] + shares["D2"] == pytest.approx(1.0)
-    # 5.9 nm red of D1 (6.5 nm from D2), and 5.9 nm blue of D2 (6.5 nm from D1), vacuum.
-    for near, far, lam in ((d1, d2, d1.vacuum_wavelength_nm + 5.9), (d2, d1, d2.vacuum_wavelength_nm - 5.9)):
-        nu = np.array([C / (lam * 1e-9)])
-        ground = comp.sodium * sodium.level_population_fraction(0.0, 2, t, comp.lowering_cm1)
-        others = [ln for ln in sodium.data().lines if ln.lower_energy_cm1 > 0 or ln is near]
-        stimulated = -np.expm1(-H * nu / (K_B * t))
-        w = replace(broadening.widths(far, comp), resonance=0.0, van_der_waals_mercury=0.0)
-        sigma, gamma, shift = broadening.voigt_parameters(w)
-        phi = voigt_profile(nu - (far.frequency_hz + shift), sigma, gamma)
-        expected = (arc.absorption_coefficient(comp, nu, others)
-                    + C * C / (8 * np.pi * far.frequency_hz**2) * far.a_ki * (far.upper_g / far.lower_g) * ground * phi * stimulated
-                    + shares[far.name] * (na.kappa(t, ground, nu) + hg.kappa(t, ground, comp.mercury, nu)) * stimulated)
-        assert arc.absorption_coefficient(comp, nu, pairs=na, mercury_pairs=hg) == pytest.approx(expected, rel=1e-10)
+    d1 = sodium.data().line("D1")
+    nu = np.array([C / ((d1.vacuum_wavelength_nm + 1.1) * 1e-9)])
+    ground = comp.sodium * sodium.level_population_fraction(0.0, 2, t, comp.lowering_cm1)
+    stimulated = -np.expm1(-H * nu / (K_B * t))
+    expected = arc.absorption_coefficient(comp, nu, [ln for ln in sodium.data().lines if ln.lower_energy_cm1 > 0])
+    for ln in sodium.resonance_lines():
+        w = float(arc.join_weight(C / nu[0] * 1e9 - ln.vacuum_wavelength_nm, 0.8))
+        assert (0.0 < w < 1.0) if ln is d1 else (w == 1.0)
+        full = broadening.widths(ln, comp)
+
+        def phi(**drop):
+            sigma, gamma, shift = broadening.voigt_parameters(replace(full, **drop))
+            return voigt_profile(nu - (ln.frequency_hz + shift), sigma, gamma)
+
+        mixed = ((1 - w) ** 2 * phi() + w * (1 - w) * (phi(resonance=0.0) + phi(van_der_waals_mercury=0.0))
+                 + w * w * phi(resonance=0.0, van_der_waals_mercury=0.0))
+        expected += (C * C / (8 * np.pi * ln.frequency_hz**2) * ln.a_ki * (ln.upper_g / ln.lower_g) * ground * mixed
+                     + w * (na.kappa(t, ground, nu, ln) + hg.kappa(t, ground, comp.mercury, nu, ln))) * stimulated
+    assert arc.absorption_coefficient(comp, nu, pairs=na, mercury_pairs=hg) == pytest.approx(expected, rel=1e-10)
+
+
+@pytest.mark.parametrize("t", [1600.0, 2500.0, 3500.0, 4500.0])
+def test_the_wing_falls_steadily_through_the_hand_over(t):
+    """κ falls monotonically from 0.3 to 2.5 nm on both sides of the D lines, so the
+    self-reversed line can have no false maximum there. (A cut at 6 nm stepped κ up about
+    3.3 times on the red side, which made a second red maximum.)"""
+    comp = composition(t, Fill(sodium_pa=12e3, mercury_pa=240e3, xenon_pa=20e3))
+    na, hg = pairs.PairWings(dipole="constant"), mp.MercuryPairWings()
+    off = np.geomspace(0.3, 2.5, 2000)
+    for base, sign in ((sodium.data().line("D1").vacuum_wavelength_nm, 1),
+                       (sodium.data().line("D2").vacuum_wavelength_nm, -1)):
+        k = arc.absorption_coefficient(comp, C / ((base + sign * off) * 1e-9), pairs=na, mercury_pairs=hg)
+        assert np.all(np.diff(k) < 0.0)
+
+
+def test_each_line_s_pairs_sit_on_its_own_upper_level():
+    """The curves have one 3p asymptote; each line takes its share of the table at its own
+    upper level. Near the lines the pairs then stay within 1.4-2.1 times the resonance
+    impact wing on both sides (with the table on 3p₁/₂ alone: 6 times red of D1 and 0.14
+    times blue of D2, at 0.2 nm)."""
+    t = 3500.0
+    comp = composition(t, Fill(sodium_pa=12e3, mercury_pa=240e3, xenon_pa=20e3))
+    wings = pairs.PairWings(dipole="constant")
+    ground = comp.sodium * sodium.level_population_fraction(0.0, 2, t, comp.lowering_cm1)
+    for base, sign in ((sodium.data().line("D1").vacuum_wavelength_nm, 1),
+                       (sodium.data().line("D2").vacuum_wavelength_nm, -1)):
+        for off in (0.4, 0.8, 1.6, 3.0):
+            nu = np.array([C / ((base + sign * off) * 1e-9)])
+            impact = 0.0
+            for ln in sodium.resonance_lines():
+                w = broadening.widths(ln, comp)
+                pref = C * C / (8 * np.pi * ln.frequency_hz**2) * ln.a_ki * (ln.upper_g / ln.lower_g) * ground
+                impact += pref * (arc._profile(nu, ln, w) - arc._profile(nu, ln, replace(w, resonance=0.0)))[0]
+            assert 1.4 < wings.kappa(t, ground, nu)[0] / impact < 2.1, (sign, off)

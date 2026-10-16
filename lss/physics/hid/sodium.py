@@ -170,6 +170,20 @@ def data() -> SodiumData:
     )
 
 
+def resonance_lines() -> list[Transition]:
+    """The lines from the ground state (the D lines)."""
+    return [ln for ln in data().lines if ln.lower_energy_cm1 == 0.0]
+
+
+@lru_cache(maxsize=1)
+def resonance_shares() -> dict[str, float]:
+    """Each resonance line's share of their total strength, ∫σ dν ∝ λ²·A_ki·g_k/g_i
+    (D1 ⅓, D2 ⅔): the share of the pair absorption that stands in for its wing."""
+    strength = {ln.name: ln.a_ki * ln.upper_g / ln.lower_g / ln.frequency_hz**2 for ln in resonance_lines()}
+    total = sum(strength.values())
+    return {k: v / total for k, v in strength.items()}
+
+
 def partition_function(temperature_k, lowering_cm1: float = 0.0):
     """U(T) = Σ gᵢ exp(−Eᵢ/kT) over the bound levels below the lowered ionisation limit.
 

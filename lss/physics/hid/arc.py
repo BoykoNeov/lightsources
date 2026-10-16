@@ -19,14 +19,15 @@ self-reversed line: broad emission from the core, its centre absorbed by the man
 The temperature falls from the axis to the wall as T(r) = T_w + (T_ax − T_w)(1 − (r/R)^p),
 prescribed (parabolic for p = 2) until Stage C solves it.
 
-With ``pairs`` set, the D lines' far wings come from sodium atom pairs
-(:mod:`lss.physics.hid.pairs`) instead of the resonance share of their impact profile; with
-``mercury_pairs``, from sodium–mercury pairs (:mod:`lss.physics.hid.mercury_pairs`) instead
-of the mercury van der Waals share.
+With ``pairs`` set, the D lines' wings go over from the resonance share of their impact
+profile to sodium atom pairs (:mod:`lss.physics.hid.pairs`) with distance from the line;
+with ``mercury_pairs``, from the mercury van der Waals share to sodium–mercury pairs
+(:mod:`lss.physics.hid.mercury_pairs`). The hand-over is gradual (:func:`join_weight`):
+the impact wing and the quasi-static wing do not meet at any one distance, so a cut
+leaves a step in κ, which the self-reversed line shows as a false maximum.
 """
 
 from dataclasses import dataclass, replace
-from functools import lru_cache
 
 import numpy as np
 from scipy.special import voigt_profile
@@ -86,14 +87,13 @@ def _profile(frequency_hz, ln, w: broadening.Widths) -> np.ndarray:
     return voigt_profile(frequency_hz - (ln.frequency_hz + shift), sigma, gamma)
 
 
-@lru_cache(maxsize=1)
-def resonance_shares() -> dict[str, float]:
-    """Each resonance line's share of the resonance lines' total strength, ∫σ dν ∝
-    λ²·A_ki·g_k/g_i (D1 ⅓, D2 ⅔): the share of the pair absorption that stands in for its wing."""
-    res = [ln for ln in sodium.data().lines if ln.lower_energy_cm1 == 0.0]
-    strength = {ln.name: ln.a_ki * ln.upper_g / ln.lower_g / ln.frequency_hz**2 for ln in res}
-    total = sum(strength.values())
-    return {k: v / total for k, v in strength.items()}
+def join_weight(offset_nm, join_nm: float) -> np.ndarray:
+    """How much of a line's wing is handed to the pair absorption at ``offset_nm`` from it:
+    0 inside ``join_nm``/2, 1 beyond 2·``join_nm``, between them a smooth step (3x² − 2x³)
+    in log(offset), so κ and its slope stay continuous."""
+    x = np.log(np.maximum(np.abs(np.asarray(offset_nm, dtype=float)), 1e-300) / (0.5 * join_nm)) / np.log(4.0)
+    x = np.clip(x, 0.0, 1.0)
+    return x * x * (3.0 - 2.0 * x)
 
 
 def absorption_coefficient(comp: Composition, frequency_hz: np.ndarray, lines=None,
@@ -101,45 +101,39 @@ def absorption_coefficient(comp: Composition, frequency_hz: np.ndarray, lines=No
                            mercury_pairs: hg_pairs.MercuryPairWings | None = None) -> np.ndarray:
     """κ_ν in m⁻¹ at the given (vacuum) frequencies, summed over ``lines`` (default: all).
 
-    With ``pairs``, each resonance line (lower level 3s) loses its resonance width beyond
-    ``pairs.splice_nm`` from its centre, and there the line's share of the sodium-pair
-    absorption (its share of the resonance lines' strength, :func:`resonance_shares`) is
-    added, so what a line loses is replaced where it is lost. ``mercury_pairs`` does the
-    same with the mercury van der Waals width and the sodium–mercury pair absorption.
+    With ``pairs``, each resonance line (lower level 3s) hands its resonance share over to
+    its own part of the sodium-pair absorption by the weight w = :func:`join_weight` of its
+    distance: (1 − w) of the impact profile with the resonance width, w of it without, and
+    w of the line's pairs. ``mercury_pairs`` does the same with the mercury van der Waals
+    width and the sodium–mercury pairs; with both, the four profiles mix bilinearly.
     """
     lines = sodium.data().lines if lines is None else lines
     t = comp.temperature_k
     stimulated = -np.expm1(-H * frequency_hz / (K_B * t))
     vacuum_nm = C / frequency_hz * 1e9
     kappa = np.zeros_like(frequency_hz)
-    share_na = np.zeros(frequency_hz.shape)
-    share_hg = np.zeros(frequency_hz.shape)
-    shares = resonance_shares()
-    resonance_lines = 0
+    ground = float(comp.sodium * sodium.level_population_fraction(0.0, 2, t, comp.lowering_cm1))
     for ln in lines:
         n_lower = comp.sodium * sodium.level_population_fraction(ln.lower_energy_cm1, ln.lower_g, t, comp.lowering_cm1)
         w = broadening.widths(ln, comp)
         phi = _profile(frequency_hz, ln, w)
         if ln.lower_energy_cm1 == 0.0 and (pairs is not None or mercury_pairs is not None):
-            offset = np.abs(vacuum_nm - ln.vacuum_wavelength_nm)
-            na = offset > pairs.splice_nm if pairs is not None else np.zeros(offset.shape, dtype=bool)
-            hg = offset > mercury_pairs.splice_nm if mercury_pairs is not None else np.zeros(offset.shape, dtype=bool)
-            for drop_na, drop_hg in ((True, False), (False, True), (True, True)):
-                sel = (na == drop_na) & (hg == drop_hg)
-                if sel.any():
+            offset = vacuum_nm - ln.vacuum_wavelength_nm
+            wn = join_weight(offset, pairs.join_nm) if pairs is not None else np.zeros(offset.shape)
+            wh = join_weight(offset, mercury_pairs.join_nm) if mercury_pairs is not None else np.zeros(offset.shape)
+            mixed = (1.0 - wn) * (1.0 - wh) * phi
+            for drop_na, drop_hg, weight in ((True, False, wn * (1.0 - wh)), (False, True, (1.0 - wn) * wh),
+                                             (True, True, wn * wh)):
+                if weight.any():
                     wf = replace(w, resonance=0.0 if drop_na else w.resonance,
                                  van_der_waals_mercury=0.0 if drop_hg else w.van_der_waals_mercury)
-                    phi = np.where(sel, _profile(frequency_hz, ln, wf), phi)
-            share_na += shares[ln.name] * na
-            share_hg += shares[ln.name] * hg
-            resonance_lines += 1
+                    mixed = mixed + weight * _profile(frequency_hz, ln, wf)
+            phi = mixed
+            if pairs is not None and wn.any():
+                kappa += wn * pairs.kappa(t, ground, frequency_hz, ln)
+            if mercury_pairs is not None and wh.any():
+                kappa += wh * mercury_pairs.kappa(t, ground, float(comp.mercury), frequency_hz, ln)
         kappa += (C * C / (8.0 * np.pi * ln.frequency_hz**2)) * ln.a_ki * (ln.upper_g / ln.lower_g) * n_lower * phi
-    if resonance_lines:
-        ground = float(comp.sodium * sodium.level_population_fraction(0.0, 2, t, comp.lowering_cm1))
-        if pairs is not None:
-            kappa += share_na * pairs.kappa(t, ground, frequency_hz)
-        if mercury_pairs is not None:
-            kappa += share_hg * mercury_pairs.kappa(t, ground, float(comp.mercury), frequency_hz)
     return kappa * stimulated
 
 

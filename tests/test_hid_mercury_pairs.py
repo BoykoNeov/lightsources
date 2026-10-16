@@ -121,12 +121,37 @@ def test_widths_keep_mercury_and_xenon_apart():
     assert w.van_der_waals_mercury > 2.0 * w.van_der_waals_xenon  # 70 kPa Hg against 20 kPa Xe
 
 
+def test_the_table_holds_the_analytic_wing_near_the_lines():
+    """Where the impact wing hands over (from about 0.3 nm), the 2 cm⁻¹ table, read as the
+    arc reads it, keeps the analytic C₆ wing within 2 % (0.5 % from 0.5 nm)."""
+    asym, c6_cm1, t = 16973.36619, 685.0 * mp.HARTREE_CM1, 3500.0
+    r = np.geomspace(4.0, 400.0, 100_000)
+    table = mp.quasistatic(t, mp.TABLE_EDGES_CM1, r, asym - c6_cm1 / r**6, np.zeros_like(r), 6.0)
+    centres = 0.5 * (mp.TABLE_EDGES_CM1[1:] + mp.TABLE_EDGES_CM1[:-1])
+    for off_nm, tol in ((0.3, 0.02), (0.5, 0.005), (1.0, 0.005), (3.0, 0.005)):
+        nu_cm1 = 1e7 / (1e7 / asym + off_nm)
+        delta = asym - nu_cm1
+        rr = (c6_cm1 / delta) ** (1 / 6)
+        s = 8 * np.pi**3 * nu_cm1 * 100 * C / (3 * H * C) * 6.0 * (mp.ELEMENTARY_CHARGE_C * mp.BOHR_M) ** 2 / (4 * np.pi * mp.EPSILON_0)
+        expected = 4 * np.pi * (rr * mp.BOHR_M) ** 2 * rr / (6.0 * delta) * mp.BOHR_M / (100.0 * C) * s
+        assert np.interp(nu_cm1, centres, table) == pytest.approx(expected, rel=tol), off_nm
+
+
+def test_each_line_s_bands_sit_on_its_own_upper_level():
+    """D1 hands its wing to I ½ (3p₁/₂), D2 to I 3/2 and II ½ (3p₃/₂); together, all three."""
+    wings, t, nu = mp.MercuryPairWings(), 3000.0, C / (np.array([600.0, 650.0]) * 1e-9)
+    by_line = [wings.kappa(t, 1e23, 1e24, nu, ln) for ln in (sodium.data().line("D1"), sodium.data().line("D2"))]
+    assert by_line[0] + by_line[1] == pytest.approx(wings.kappa(t, 1e23, 1e24, nu), rel=1e-12)
+    assert np.all(by_line[0] > 0) and np.all(by_line[1] > 0)  # far out not in the lines' ratio: the curves differ
+
+
 def test_mercury_pairs_replace_only_the_mercury_share_of_the_far_wing():
-    """Within the splice the lines keep their impact profile; beyond it each resonance line
-    loses only its mercury width, and the pair absorption is added (red side only)."""
+    """Inside half the join the lines keep their impact profile; beyond twice it each
+    resonance line has lost only its mercury width, and the pair absorption is added (red
+    side only)."""
     t = 3000.0
     comp = composition(t, HPS_FILL)
-    wings = mp.MercuryPairWings(splice_nm=5.0)
+    wings = mp.MercuryPairWings(join_nm=6.0)
     nu_near = C / (air_to_vacuum(np.array([587.0, 591.6])) * 1e-9)
     assert arc.absorption_coefficient(comp, nu_near, mercury_pairs=wings) == pytest.approx(
         arc.absorption_coefficient(comp, nu_near), rel=1e-12)
