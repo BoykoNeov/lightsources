@@ -83,12 +83,13 @@ def test_finding_lines_and_peaks_fall_among_the_lamps_but_the_red_wing_is_too_fa
 @needs_data
 def test_finding_sodium_pairs_double_the_red_wing_but_do_not_close_it():
     """Recorded in the design doc (§4.4). The assumed arc with sodium-pair far wings, over
-    both dipole forms and splices from 3 to 12 nm (the ends of each range are tested here)."""
+    both dipole forms and hand-overs centred 0.4 to 1.6 nm from the lines (the ends of each
+    range are tested here)."""
     k = street_hps.response().kernel
     rung1 = street_hps.model_features(k)
     lamps = list(street_hps.measured_features().values())
-    names = ("pairs, long-range dipole, splice 3 nm", "pairs, long-range dipole, splice 12 nm",
-             "pairs, constant dipole, splice 6 nm")
+    names = ("pairs, long-range dipole, join 0.4 nm", "pairs, long-range dipole, join 1.6 nm",
+             "pairs, constant dipole, join 0.8 nm")
     variants = [street_hps.model_features(k, street_hps.PAIR_VARIANTS[n]) for n in names]
     for f in variants:
         assert 1.9 < f.red_wing / rung1.red_wing < 2.5  # the red wing doubles ...
@@ -99,8 +100,9 @@ def test_finding_sodium_pairs_double_the_red_wing_but_do_not_close_it():
         for band in street_hps.BANDS_NM:
             measured = [m.line_power[band] for m in lamps]
             assert min(measured) <= f.line_power[band] <= max(measured), band
-    # The peak spacing depends on the splice: near the peaks it widens.
-    assert variants[0].separation_nm > variants[1].separation_nm + 1.0
+    # Where the wings hand over no longer moves the peaks (a cut at 3 nm widened the spacing
+    # by about 3 nm against one at 12 nm).
+    assert abs(variants[0].separation_nm - variants[1].separation_nm) < 0.2
     sep = [m.separation_nm for m in lamps]
     assert all(min(sep) <= f.separation_nm <= max(sep) for f in variants)
 

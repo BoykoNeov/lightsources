@@ -35,16 +35,15 @@ together, and eq. 5.7 reads the spacing); the red wing's level is. So the level 
 geometric mean of lamp/model over the nine) and the scatter about it are reported apart,
 and a control fits every lamp at one shared ratio.
 
-Found in the run, and checked after it (not set beforehand):
+Found in the first run, and checked after it (not set beforehand):
 
-- At the lamps' mercury the model's red side has two maxima, either side of where the pair
-  wings are spliced on. The outer one follows the splice (about 598 nm with 6 nm, 604 nm with
-  12 nm; with 3 nm the two merge at 596 nm), so it is the join, which more mercury makes
-  stronger. The lamps have one red peak. The model's peak spacing jumps between the two and
-  is not reported.
-- The extra light raises the D band's red half above the lamps' share (by up to 19 %), which
-  lowers the line powers over the whole band and so raises the fitted temperature. As a check,
-  the fit is also run with the line powers over the band's blue half (below 590 nm).
+- At the lamps' mercury the model's red side had two maxima, either side of where the pair
+  wings were spliced on; the outer one followed the splice, so it was the join. The lamps
+  have one red peak. The hand-over from the impact wing to the pair wings is now gradual
+  (design §4.4), and the model has one red maximum; its spacing is reported again.
+- The extra light raised the D band's red half above the lamps' share (by up to 19 %), which
+  lowered the line powers over the whole band and so raised the fitted temperature. As a
+  check, the fit is also run with the line powers over the band's blue half (below 590 nm).
 """
 
 from dataclasses import dataclass, replace
@@ -344,15 +343,17 @@ def format_text() -> str:
             "The level is the test; the scatter is not (eq. 5.7 reads mercury from the spacing, which goes with the red wing).",
             f"  arc fit at 70 kPa: {level_70():.2f} [{scatter_70():.2f}]   own mercury: {level('central'):.2f} "
             f"[{scatter('central'):.2f}]   shared ratio: {level('common'):.2f} [{scatter('common'):.2f}]", "",
-            "The model's red side at the central ratio: its maxima (nm) and the D band's share above 590 nm, model / lamp."]
+            "The model's red side at the central ratio: its maxima (nm), the peak spacing (nm) and the D band's share",
+            "above 590 nm, model / lamp. The spacing is an input here (eq. 5.7 reads it), so it is not a test."]
     for lamp in rs:
         m = lica.load(lamp)
         mx = ", ".join(f"{v:.0f}" for v in run[lamp]["central"]["red maxima"])
         lx = ", ".join(f"{v:.0f}" for v in red_maxima_nm(m.wavelengths_nm, m.values))
-        out.append(f"{lamp:28s} model {mx:14s} lamp {lx:10s} share {run[lamp]['central']['red share']:.3f} / "
+        out.append(f"{lamp:28s} model {mx:14s} lamp {lx:10s} spacing {run[lamp]['central']['separation']:5.1f} / "
+                   f"{base[lamp]['central'].measured['separation']:5.1f}   share {run[lamp]['central']['red share']:.3f} / "
                    f"{red_share(m.wavelengths_nm, m.values):.3f}")
     bh, brun = blue_half_fits(), blue_half_direct()
-    out += ["(the outer red maximum follows the 6 nm splice: it is the join; the model's spacing is therefore not shown)", "",
+    out += ["",
             "Check added after the run: line powers over the D band's blue half (below 590 nm), not the whole band.",
             f"{'lamp':28s}{'T: 70 kPa':>10s}{'own Hg':>8s}{'shared':>8s}{'(whole band)':>14s}{'Na kPa':>8s}"
             f"{'lamp/model red':>16s}{'shared':>8s}"]

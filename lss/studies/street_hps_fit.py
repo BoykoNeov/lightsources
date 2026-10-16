@@ -13,16 +13,17 @@ What is fitted, and what is held out, was set before any fit was run:
   which move with temperature (σ 10 % each). 819 nm is shown with and without: the
   instrument check fits it worst. 616 nm is left out (its baseline windows hold the
   pair absorption's peaks, design §4.4).
-- *Not the peak spacing:* the red peak's place in the model depends on where the pair
-  wings are spliced on (3, 6 or 12 nm from the lines move it by several nm); the blue
-  peak's does not.
+- *Not the peak spacing:* when this was set, the red peak's place in the model depended on
+  where the pair wings were spliced on (3, 6 or 12 nm from the lines moved it by several
+  nm); the blue peak's did not. The hand-over is now gradual and its place no longer
+  matters (design §4.4), but the spacing stays held out as set.
 - *Held out:* the peak spacing, the red wing's level and slope, the 668–678 nm rise and
   the blue wing. The fit exists to ask whether the red wing's shortfall is the assumed
   arc's conditions; a fit that saw the red wing could not answer that.
 
 Every physics variant left open in design §4.4 is a separate table: a central one
-(sodium and mercury pairs, constant dipoles, Unsöld's ΔC₆, 6 nm splice) and one table
-per change from it. A fitted value is reported as its range across them.
+(sodium and mercury pairs, constant dipoles, Unsöld's ΔC₆, hand-over centred 0.8 nm from
+the lines) and one table per change from it (the hand-over at 0.4 and 1.6 nm among them). A fitted value is reported as its range across them.
 
 Measured values, for reading the fits (not used as bounds), from J. J. de Groot and
 J. A. J. M. van Vliet, *The High-Pressure Sodium Lamp* (Philips Technical Library,

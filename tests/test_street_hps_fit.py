@@ -25,8 +25,8 @@ def test_the_table_reads_like_a_direct_run_and_a_fit_recovers_it(t_k, na_pa):
     surf = sf.surface("central")
     read = surf(t_k, na_pa)
     want = sf._vector(direct)
-    # Within 0.1 nm here; up to 0.3 nm at 21-24 kPa, where the blue peak crosses the 6 nm splice
-    # (583 nm) and jumps, which a smooth table cannot follow. Hence the check of every fitted point.
+    # Within 0.1 nm. (With the old cut, up to 0.3 nm at 21-24 kPa, where a hole in κ at the cut
+    # made the blue peak jump; every fitted point is checked as well.)
     assert abs(read["blue peak"] - want["blue peak"]) < 0.1
     for k in sf.FIT_LINES:
         assert abs(read[k] - want[k]) < 0.02, k  # logarithms: 2 %
@@ -84,9 +84,13 @@ def test_finding_temperatures_near_the_measured_range_pressures_inside_the_grid(
             assert f.chi2_per_target < 1.0, (v, lamp)  # the three lines agree on one temperature
     central = fits["central"]
     t = [f.temperature_k for f in central.values()]
-    assert 3900 < min(t) and max(t) < 4500  # the book: 4100-4300 K in standard 400 W lamps
+    assert 3900 < min(t) and max(t) < 4550  # the book: 4100-4300 K in standard 400 W lamps
     p = [f.sodium_pa for f in central.values()]
-    assert 7e3 < min(p) and max(p) < 26e3
+    assert 6.5e3 < min(p) and max(p) < 25e3
+
+
+SHORT_SPACING = ("hps-1732k-toledo", "hps-1819k-riba-roja-plaza", "hps-1869k-riba-roja",
+                 "hps-1895k-ager", "hps-1920k-alix")
 
 
 @needs_data
@@ -94,14 +98,14 @@ def test_finding_the_model_keeps_the_books_rule_the_lamps_spread_wider():
     run, fits = sf.direct(), sf.fits()["central"]
     ratio = {lamp: f.sodium_pa / 1e3 * np.sqrt(sf.CENTRAL.radius_m * 1e3) / run["central"][lamp]["separation"]
              for lamp, f in fits.items()}
-    assert all(2.0 < q < 3.1 for q in ratio.values())  # the book: 2.7 ± 0.5
-    # The book's rule from each lamp's own spacing gives more sodium than the fit for five lamps.
-    above = [lamp for lamp, f in fits.items() if sf.book_rule_pa(f.measured["separation"]) > 1.25 * f.sodium_pa]
-    assert len(above) == 5
-
-
-SHORT_SPACING = ("hps-1732k-toledo", "hps-1819k-riba-roja-plaza", "hps-1869k-riba-roja",
-                 "hps-1895k-ager", "hps-1920k-alix")
+    # The book: 2.7 ± 0.5 spectroscopically, 1.9 ± 0.5 from metal-bath experiments. With the
+    # smooth hand-over the model sits at the first's low end (with the 6 nm cut, 2.1-3.0).
+    assert all(1.85 < q < 2.35 for q in ratio.values())
+    # The book's rule from each lamp's own spacing gives more sodium than the fit: 1.5-1.9 times
+    # for the five lamps whose peaks are further apart than the model's, 1.1-1.35 for the rest.
+    q = {lamp: sf.book_rule_pa(f.measured["separation"]) / f.sodium_pa for lamp, f in fits.items()}
+    assert sorted(lamp for lamp in q if q[lamp] > 1.45) == sorted(SHORT_SPACING)
+    assert all(1.1 < v < 1.35 for lamp, v in q.items() if lamp not in SHORT_SPACING)
 
 
 @needs_data
@@ -111,7 +115,7 @@ def test_finding_fitting_each_arc_does_not_close_the_red_wing():
     red = {lamp: [meas[lamp].red_wing / np.exp(run[v][lamp]["red wing"]) for v in sf.VARIANTS] for lamp in meas}
     short = [lamp for lamp, q in red.items() if min(q) > 1.2]
     assert len(short) == 7  # brighter than the model in every table
-    assert all(max(red[lamp]) < 1.1 for lamp in meas if lamp not in short)  # the other two: the model as bright or brighter
+    assert all(max(red[lamp]) < 1.15 for lamp in meas if lamp not in short)  # the other two: about as bright as the model
     # Five lamps' peaks are further apart than any table puts them at the fitted point; all five
     # are among the lamps whose red wing the model misses, by 1.7 times or more in every table.
     spacing = [lamp for lamp in meas
@@ -123,9 +127,9 @@ def test_finding_fitting_each_arc_does_not_close_the_red_wing():
 
 
 @needs_data
-def test_finding_four_lamps_fall_steeper_one_flatter_than_every_table():
+def test_finding_four_lamps_fall_steeper_two_flatter_than_every_table():
     run, meas = sf.direct(), street_hps.measured_features()
     steeper = [l for l in meas if meas[l].red_slope < min(run[v][l]["red slope"] for v in sf.VARIANTS)]
     flatter = [l for l in meas if meas[l].red_slope > max(run[v][l]["red slope"] for v in sf.VARIANTS)]
     assert steeper == ["hps-1732k-toledo", "hps-1819k-riba-roja-plaza", "hps-1895k-ager", "hps-1920k-alix"]
-    assert flatter == ["hps-2255k-paraninfo"]
+    assert flatter == ["hps-2038k-riba-roja-plaza", "hps-2255k-paraninfo"]  # 2038 K by 0.01 only

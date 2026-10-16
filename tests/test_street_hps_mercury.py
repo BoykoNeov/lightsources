@@ -71,34 +71,40 @@ def test_with_the_lamps_own_mercury_the_red_wing_comes_to_the_lamps_level():
 
 
 @needs_data
-def test_the_lamp_at_2038_k_overshoots_across_its_whole_band():
+def test_the_lamp_at_2038_k_no_longer_overshoots():
+    # With the 6 nm cut it overshot across its whole band (0.36-0.93); now its band brackets 1.
     lamp = "hps-2038k-riba-roja-plaza"
     assert not hg.ratios()[lamp].valid  # below 10: outside the book's claim
-    assert max(hg.red_ratio(lamp, e) for e in hg.ENDS) < 1.0
+    band = [hg.red_ratio(lamp, e) for e in hg.ENDS]
+    assert min(band) < 1.0 < max(band) and abs(np.log(hg.red_ratio(lamp, "central"))) < 0.1
 
 
 @needs_data
-def test_the_models_second_red_maximum_is_the_splice():
-    # Toledo at its fitted point and own mercury: the outer red maximum follows the splice.
+def test_the_model_has_one_red_maximum_wherever_the_join_sits():
+    # Toledo at its fitted point and own mercury. With a 6 nm cut there were two, the outer
+    # one following the cut (3 nm: one at 596; 6 nm: 593 and 597; 12 nm: 593 and 604).
     lamp = "hps-1732k-toledo"
     f, r = hg.fits()[lamp]["central"], hg.ratio_at(lamp, "central")
     kernel = street_hps.response().kernel
-    mx = {s: hg.red_maxima_nm(street_hps.NODES_NM, sf.observed(
-        hg.at(sf._with_splice(sf.CENTRAL, s), f.temperature_k, f.sodium_pa, r), kernel)) for s in (3.0, 6.0, 12.0)}
-    assert len(mx[3.0]) == 1 and 595 <= mx[3.0][0] <= 597
-    assert len(mx[6.0]) == 2 and 592 <= mx[6.0][0] <= 594 and 597 <= mx[6.0][1] <= 599
-    assert len(mx[12.0]) == 2 and mx[12.0][1] > 602
+    spectra = {j: sf.observed(hg.at(sf.with_join(sf.CENTRAL, j), f.temperature_k, f.sodium_pa, r), kernel)
+               for j in street_hps.JOINS_NM}
+    mx = {j: hg.red_maxima_nm(street_hps.NODES_NM, y) for j, y in spectra.items()}
+    assert all(len(v) == 1 for v in mx.values()) and len({v[0] for v in mx.values()}) == 1
+    far = np.abs(street_hps.NODES_NM - 589.3) > 3.0
+    ref = spectra[0.8] / spectra[0.8].max()
+    for j in (0.4, 1.6):
+        assert np.abs(spectra[j] / spectra[j].max() - ref)[far].max() < 0.01
     m = lica.load(lamp)
     assert len(hg.red_maxima_nm(m.wavelengths_nm, m.values)) == 1
 
 
 @needs_data
-def test_most_of_the_temperature_rise_is_the_red_side_not_the_mercury():
+def test_the_temperature_rise_was_mostly_the_false_peak():
     base, bh = hg.fits(), hg.blue_half_fits()
     whole = [base[l]["central"].temperature_k - sf.fits()["central"][l].temperature_k for l in base]
     blue = [bh[l]["central"].temperature_k - bh[l]["70 kPa"].temperature_k for l in bh]
-    assert max(whole) > 250.0
-    assert max(abs(d) for d in blue) < 100.0
+    assert max(whole) < 150.0  # up to 282 K with the 6 nm cut and its false peak
+    assert max(abs(d) for d in blue) < 20.0  # up to 74 K with the cut
 
 
 @needs_data
