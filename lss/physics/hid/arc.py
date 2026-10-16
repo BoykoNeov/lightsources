@@ -26,6 +26,7 @@ of the mercury van der Waals share.
 """
 
 from dataclasses import dataclass, replace
+from functools import lru_cache
 
 import numpy as np
 from scipy.special import voigt_profile
@@ -85,23 +86,35 @@ def _profile(frequency_hz, ln, w: broadening.Widths) -> np.ndarray:
     return voigt_profile(frequency_hz - (ln.frequency_hz + shift), sigma, gamma)
 
 
+@lru_cache(maxsize=1)
+def resonance_shares() -> dict[str, float]:
+    """Each resonance line's share of the resonance lines' total strength, ∫σ dν ∝
+    λ²·A_ki·g_k/g_i (D1 ⅓, D2 ⅔): the share of the pair absorption that stands in for its wing."""
+    res = [ln for ln in sodium.data().lines if ln.lower_energy_cm1 == 0.0]
+    strength = {ln.name: ln.a_ki * ln.upper_g / ln.lower_g / ln.frequency_hz**2 for ln in res}
+    total = sum(strength.values())
+    return {k: v / total for k, v in strength.items()}
+
+
 def absorption_coefficient(comp: Composition, frequency_hz: np.ndarray, lines=None,
                            pairs: na_pairs.PairWings | None = None,
                            mercury_pairs: hg_pairs.MercuryPairWings | None = None) -> np.ndarray:
     """κ_ν in m⁻¹ at the given (vacuum) frequencies, summed over ``lines`` (default: all).
 
     With ``pairs``, each resonance line (lower level 3s) loses its resonance width beyond
-    ``pairs.splice_nm`` from its centre, and the sodium-pair absorption is added wherever
-    every resonance line in ``lines`` is that far away. ``mercury_pairs`` does the same
-    with the mercury van der Waals width and the sodium–mercury pair absorption.
+    ``pairs.splice_nm`` from its centre, and there the line's share of the sodium-pair
+    absorption (its share of the resonance lines' strength, :func:`resonance_shares`) is
+    added, so what a line loses is replaced where it is lost. ``mercury_pairs`` does the
+    same with the mercury van der Waals width and the sodium–mercury pair absorption.
     """
     lines = sodium.data().lines if lines is None else lines
     t = comp.temperature_k
     stimulated = -np.expm1(-H * frequency_hz / (K_B * t))
     vacuum_nm = C / frequency_hz * 1e9
     kappa = np.zeros_like(frequency_hz)
-    far_na = np.ones(frequency_hz.shape, dtype=bool)
-    far_hg = np.ones(frequency_hz.shape, dtype=bool)
+    share_na = np.zeros(frequency_hz.shape)
+    share_hg = np.zeros(frequency_hz.shape)
+    shares = resonance_shares()
     resonance_lines = 0
     for ln in lines:
         n_lower = comp.sodium * sodium.level_population_fraction(ln.lower_energy_cm1, ln.lower_g, t, comp.lowering_cm1)
@@ -117,16 +130,16 @@ def absorption_coefficient(comp: Composition, frequency_hz: np.ndarray, lines=No
                     wf = replace(w, resonance=0.0 if drop_na else w.resonance,
                                  van_der_waals_mercury=0.0 if drop_hg else w.van_der_waals_mercury)
                     phi = np.where(sel, _profile(frequency_hz, ln, wf), phi)
-            far_na &= na
-            far_hg &= hg
+            share_na += shares[ln.name] * na
+            share_hg += shares[ln.name] * hg
             resonance_lines += 1
         kappa += (C * C / (8.0 * np.pi * ln.frequency_hz**2)) * ln.a_ki * (ln.upper_g / ln.lower_g) * n_lower * phi
     if resonance_lines:
         ground = float(comp.sodium * sodium.level_population_fraction(0.0, 2, t, comp.lowering_cm1))
         if pairs is not None:
-            kappa += np.where(far_na, pairs.kappa(t, ground, frequency_hz), 0.0)
+            kappa += share_na * pairs.kappa(t, ground, frequency_hz)
         if mercury_pairs is not None:
-            kappa += np.where(far_hg, mercury_pairs.kappa(t, ground, float(comp.mercury), frequency_hz), 0.0)
+            kappa += share_hg * mercury_pairs.kappa(t, ground, float(comp.mercury), frequency_hz)
     return kappa * stimulated
 
 

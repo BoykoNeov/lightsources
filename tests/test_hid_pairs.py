@@ -9,7 +9,7 @@ import pytest
 
 from scipy.special import voigt_profile
 
-from lss.physics.hid import arc, broadening, pairs, sodium
+from lss.physics.hid import arc, broadening, mercury_pairs as mp, pairs, sodium
 from lss.physics.hid.composition import Fill, composition
 from lss.spectral.units import C, H, K_B, air_to_vacuum
 
@@ -149,3 +149,28 @@ def test_pairs_replace_only_the_resonance_share_of_the_far_wing():
     got = arc.absorption_coefficient(comp, nu, pairs=wings)
     assert got == pytest.approx(expected, rel=1e-10)
     assert np.all(got > 1.5 * arc.absorption_coefficient(comp, nu))  # the pairs exceed the impact wing there
+
+
+def test_each_line_s_lost_wing_is_replaced_where_it_is_lost():
+    """Between the two D lines' splices one line is past its splice and the other not: the
+    far line's wing goes and its share of the pair absorption (D1 ⅓, D2 ⅔) replaces it.
+    (Adding the pairs only where both lines were far left a 0.6 nm hole at each splice.)"""
+    t = 3500.0
+    comp = composition(t, Fill(sodium_pa=12e3, mercury_pa=240e3, xenon_pa=20e3))
+    na, hg = pairs.PairWings(splice_nm=6.0), mp.MercuryPairWings(splice_nm=6.0)
+    d1, d2 = sodium.data().line("D1"), sodium.data().line("D2")
+    shares = arc.resonance_shares()
+    assert shares["D1"] == pytest.approx(1 / 3, rel=1e-3) and shares["D1"] + shares["D2"] == pytest.approx(1.0)
+    # 5.9 nm red of D1 (6.5 nm from D2), and 5.9 nm blue of D2 (6.5 nm from D1), vacuum.
+    for near, far, lam in ((d1, d2, d1.vacuum_wavelength_nm + 5.9), (d2, d1, d2.vacuum_wavelength_nm - 5.9)):
+        nu = np.array([C / (lam * 1e-9)])
+        ground = comp.sodium * sodium.level_population_fraction(0.0, 2, t, comp.lowering_cm1)
+        others = [ln for ln in sodium.data().lines if ln.lower_energy_cm1 > 0 or ln is near]
+        stimulated = -np.expm1(-H * nu / (K_B * t))
+        w = replace(broadening.widths(far, comp), resonance=0.0, van_der_waals_mercury=0.0)
+        sigma, gamma, shift = broadening.voigt_parameters(w)
+        phi = voigt_profile(nu - (far.frequency_hz + shift), sigma, gamma)
+        expected = (arc.absorption_coefficient(comp, nu, others)
+                    + C * C / (8 * np.pi * far.frequency_hz**2) * far.a_ki * (far.upper_g / far.lower_g) * ground * phi * stimulated
+                    + shares[far.name] * (na.kappa(t, ground, nu) + hg.kappa(t, ground, comp.mercury, nu)) * stimulated)
+        assert arc.absorption_coefficient(comp, nu, pairs=na, mercury_pairs=hg) == pytest.approx(expected, rel=1e-10)

@@ -60,7 +60,7 @@ from lss.spectral.instrument import Kernel, observe
 from lss.studies import street_hps
 
 #: Bump when the arc model changes, so cached tables are rebuilt.
-TABLE_VERSION = 1
+TABLE_VERSION = 2
 GRID_T_K = np.arange(3400.0, 4801.0, 200.0)
 GRID_NA_PA = np.geomspace(5e3, 45e3, 23)
 
