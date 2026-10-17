@@ -16,7 +16,7 @@ HPS_FILL = Fill(sodium_pa=13e3, mercury_pa=200e3, xenon_pa=20e3)
 
 #: de Groot & van Vliet, The High-Pressure Sodium Lamp (1986), Fig. 5.9b: k/([Na][Xe]),
 #: 1e-47 m⁵, read column by column from a 400 dpi render of the page (runs assigned to the
-#: three curves by hand, about ±0.02). Calculated (Schlejen & Woerdman 1985, from Laskowski
+#: three curves by hand, about ±0.02; scripts/digitise_fig59b.py holds the readings). Calculated (Schlejen & Woerdman 1985, from Laskowski
 #: et al.'s 1981 curves) at 2000 and 4000 K; derived from Na–Hg–Xe discharges (Jongerius &
 #: Ras 1985) at 3000 K. Mean over 640–700 and 640–670 nm (the calculated curves end at about
 #: 678 nm, 2000 K, and 688 nm, 4000 K), and the integral over 540–577 nm (1e-47 m⁵·nm; the
@@ -108,7 +108,10 @@ def test_finding_the_mark_set_against_fig_5_9b_is_mostly_missed():
     differ by 1.8 times on the red side, so no model could meet all of it. The model: the
     blue integral matches the discharge-derived one (0.99) and is 0.67 of the calculated;
     the red wing is 0.65 of the derived (3000 K), 1.86 and 1.33 of the calculated (2000,
-    4000 K); the satellite 5.4 nm short of the derived. Met: one of six intensity checks."""
+    4000 K); the satellite 5.4 nm short of the derived. Of the six intensity checks the mark
+    set (two windows, three references), five were scored (the 2000 K blue branch cannot be
+    told from the 4000 K one) and one was met; the blue window was taken to 577 nm, not 580,
+    where the calculated curve ends."""
     red = {t: window_mean(*model(float(t)), 640, 700) / FIG59B_RED_640_700[t] for t in (2000, 3000, 4000)}
     assert red[2000] == pytest.approx(1.86, abs=0.05)
     assert red[3000] == pytest.approx(0.65, abs=0.03)

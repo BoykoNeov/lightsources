@@ -9,7 +9,7 @@ import pytest
 
 from scipy.special import voigt_profile
 
-from lss.physics.hid import arc, broadening, mercury_pairs as mp, pairs, sodium
+from lss.physics.hid import arc, broadening, mercury_pairs as mp, pairs, sodium, xenon_pairs as xp
 from lss.physics.hid.composition import Fill, composition
 from lss.spectral.units import C, H, K_B, air_to_vacuum
 
@@ -200,6 +200,11 @@ def test_the_wing_falls_steadily_through_the_hand_over(t):
     for base, sign in ((sodium.data().line("D1").vacuum_wavelength_nm, 1),
                        (sodium.data().line("D2").vacuum_wavelength_nm, -1)):
         k = arc.absorption_coefficient(comp, C / ((base + sign * off) * 1e-9), pairs=na, mercury_pairs=hg)
+        assert np.all(np.diff(k) < 0.0)
+        # With xenon pairs too (B − X has a shallow minimum 41 cm⁻¹ red of the line, inside the
+        # hand-over, where the classical sum piles up).
+        k = arc.absorption_coefficient(comp, C / ((base + sign * off) * 1e-9), pairs=na, mercury_pairs=hg,
+                                       xenon_pairs=xp.XenonPairWings())
         assert np.all(np.diff(k) < 0.0)
 
 

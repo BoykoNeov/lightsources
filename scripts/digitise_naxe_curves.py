@@ -4,10 +4,12 @@ Giglio & Gervais, J. Chem. Phys. 138, 014314 (2013), Figs. 2 and 7 (design §4.4
 The paper puts its computed values in a supplement; the article's PDF draws its figures as
 vector paths, and each computed point as a small marker. So the markers are read directly:
 Fig. 2 (page 3), X ²Σ⁺, red filled markers (Na, CCSD(T)); Fig. 7 (page 7), A ²Π, red
-filled markers (CCSD(T)), and B ²Σ⁺, red open markers (CASPT2). The axes are calibrated by
-a straight-line fit to the tick labels' centres (residuals 0.005 a₀, 0.02 cm⁻¹ in Fig. 2
-and 0.5 cm⁻¹ in Fig. 7). The markers sit 0.002–0.008 a₀ short of a 0.1 a₀ grid, so R is
-rounded to it.
+filled markers (CCSD(T)), and B ²Σ⁺, red open markers (CASPT2). The axes are calibrated on
+the frames' tick marks: each tick label is matched to its nearest tick and a straight line
+fitted through the ticks' positions. (The labels' own centres sit up to 0.6 pt off their
+ticks, which read every A and B point 7.4 cm⁻¹ low.) Read so, X's well is −93.0 cm⁻¹ at
+9.5 a₀ and A's −1094.3 cm⁻¹ at 6.1 a₀, the values the paper states. The markers sit
+0.002–0.008 a₀ short of a 0.1 a₀ grid, so R is rounded to it.
 
 The paper is not openly available, so the PDF is not downloaded here: pass the path to a
 copy. Tool-only dependency, not needed by the package: PyMuPDF (``pip install pymupdf``).
