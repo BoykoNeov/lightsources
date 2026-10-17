@@ -170,3 +170,58 @@ def test_mercury_pairs_replace_only_the_mercury_share_of_the_far_wing():
     assert got == pytest.approx(expected, rel=1e-10)
     assert got[0] < arc.absorption_coefficient(comp, nu)[0]  # blue: the mercury width goes, nothing replaces it
     assert got[1] > 2.0 * arc.absorption_coefficient(comp, nu)[1]  # red: the pairs far exceed the impact wing
+
+
+def test_dispersion_tail_joins_smoothly_and_ends_on_unsolds_c6():
+    """``tail="dispersion"``: beyond 9.95 a0 I½ is the asymptote − ΔC6/R^6 (Unsöld's times the
+    factor) − an exponentially fading excess; value and slope continuous at the grid's end,
+    rising monotonically to the line, Unsöld's tail alone far out. Inside the grid, and the
+    other two bands everywhere, nothing changes."""
+    d = mp.data()
+    for factor in mp.DELTA_C6_FACTORS:
+        r0 = d.grids_a0["I1/2"][-1]
+        eps = 1e-4
+        just_in = mp.difference_potential_cm1("I1/2", r0, factor, "dispersion")
+        just_out = mp.difference_potential_cm1("I1/2", r0 + eps, factor, "dispersion")
+        assert just_out == pytest.approx(just_in, abs=0.1)
+        grid_slope = (d.plotted_cm1["I1/2"][-1] - d.plotted_cm1["I1/2"][-2]) / 0.05
+        tail_slope = (mp.difference_potential_cm1("I1/2", r0 + 2 * eps, factor, "dispersion") - just_out) / eps
+        assert tail_slope == pytest.approx(grid_slope, rel=0.01)
+        r = np.linspace(r0 + 0.01, 60.0, 20000)
+        dv = mp.difference_potential_cm1("I1/2", r, factor, "dispersion")
+        assert np.all(np.diff(dv) > 0)
+        c6 = factor * mp.delta_c6_unsold_au() * mp.HARTREE_CM1
+        assert d.asymptote_cm1["I1/2"] - mp.difference_potential_cm1("I1/2", 80.0, factor, "dispersion") \
+            == pytest.approx(c6 / 80.0**6, rel=0.01)
+        inside = np.linspace(4.2, 9.9, 200)
+        np.testing.assert_array_equal(mp.difference_potential_cm1("I1/2", inside, factor, "dispersion"),
+                                      mp.difference_potential_cm1("I1/2", inside, factor))
+        for band in ("II1/2", "I3/2"):
+            rr = np.linspace(4.2, 40.0, 500)
+            np.testing.assert_array_equal(mp.difference_potential_cm1(band, rr, factor, "dispersion"),
+                                          mp.difference_potential_cm1(band, rr, factor))
+    with pytest.raises(ValueError):
+        mp.difference_potential_cm1("I1/2", 12.0, 1.0, "power")
+    with pytest.raises(ValueError):
+        mp.MercuryPairWings(tail="power")
+
+
+def test_finding_the_tail_cuts_both_ways():
+    """Computed before any lamp run (design §4.4, "The I½ tail"): red of D1, all three bands,
+    dispersion over fitted tail. With Unsöld's ΔC6 the wing is weaker near the line (×0.75 at
+    1 nm, ×0.93 at 6 nm) and unchanged by 15 nm; with twice it, stronger (×1.2 at 1–3 nm)."""
+    edges = mp.TABLE_EDGES_CM1
+    centres = 0.5 * (edges[1:] + edges[:-1])
+    lam1 = 1e7 / mp.data().asymptote_cm1["I1/2"]
+
+    def ratio(factor, nm):
+        a = mp.reduced_absorption(4000.0, edges, delta_c6_factor=factor)
+        b = mp.reduced_absorption(4000.0, edges, delta_c6_factor=factor, tail="dispersion")
+        sel = np.abs(centres - 1e7 / (lam1 + nm)) < 0.5e7 / (lam1 + nm) ** 2
+        return sum(b[k][sel].mean() for k in mp.BANDS) / sum(a[k][sel].mean() for k in mp.BANDS)
+
+    assert ratio(1.0, 1.0) == pytest.approx(0.75, abs=0.03)
+    assert ratio(1.0, 6.0) == pytest.approx(0.93, abs=0.02)
+    assert ratio(1.0, 15.0) == pytest.approx(1.0, abs=0.015)
+    assert ratio(2.0, 2.0) == pytest.approx(1.22, abs=0.03)
+    assert ratio(2.0, 30.0) == pytest.approx(1.0, abs=0.01)

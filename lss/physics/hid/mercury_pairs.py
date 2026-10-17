@@ -20,7 +20,8 @@ Data (``lss/data/nahg_pairs.yaml``): the X curve from Thiel, Hotop & Meyer's CCS
 calculation (open in Thiel's thesis); the difference potentials digitised from Windholz,
 Zerza, Pichler & Hess's Fig. 8 (Z. Phys. D 18, 373 (1991)), shifted by one constant so
 that at 9.95 a₀ I 3/2 sits at the 3p₃/₂ asymptote minus ΔC₆/R⁶ (Unsöld's ΔC₆ times
-``delta_c6_factor``, 1 to 2); beyond 9.95 a₀ each curve joins its asymptote smoothly. II ½ − X ½ has a minimum near 4.75 a₀; there the classical
+``delta_c6_factor``, 1 to 2); beyond 9.95 a₀ each curve joins its asymptote smoothly
+(``tail``: fitted, or for I ½ Unsöld's ΔC₆ with the excess fading, a bracket). II ½ − X ½ has a minimum near 4.75 a₀; there the classical
 sum piles up into the red satellite, which a quantum calculation would round off and
 fringe (the measured S1–S4 undulations at 640–669 nm are not reproduced by this limit).
 
@@ -46,6 +47,8 @@ DIPOLE_FORMS = ("constant", "falling")
 #: The A ← X oscillator strength falls by 10× from 500 to 200 pm (Windholz et al., p. 375).
 FALL_R_A0 = (200e-12 / BOHR_M, 500e-12 / BOHR_M)
 DELTA_C6_FACTORS = (1.0, 2.0)
+#: How each curve joins its asymptote beyond the digitised grid (:func:`difference_potential_cm1`).
+TAILS = ("fitted", "dispersion")
 
 
 @dataclass(frozen=True)
@@ -116,21 +119,38 @@ def shift_cm1(delta_c6_factor: float = 1.0) -> float:
     return d.asymptote_cm1[band] - tail - plotted
 
 
-def difference_potential_cm1(band: str, r_a0, delta_c6_factor: float = 1.0) -> np.ndarray:
+def difference_potential_cm1(band: str, r_a0, delta_c6_factor: float = 1.0, tail: str = "fitted") -> np.ndarray:
     """Transition energy at separation R, vacuum cm⁻¹: the shifted digitised curve on its grid;
-    beyond it asymptote − A₆/R⁶ − A₁₂/R¹², with A₆ and A₁₂ set so that the value and the slope
-    are continuous at the grid's end (a slope step would make a step in the classical
-    spectrum); NaN inside the grid (no data there)."""
+    beyond it a join to the asymptote with the value and the slope continuous at the grid's
+    end (a slope step would make a step in the classical spectrum); NaN inside the grid (no
+    data there).
+
+    ``fitted``: asymptote − A₆/R⁶ − A₁₂/R¹², A₆ and A₁₂ set by the value and slope (for I ½
+    that makes A₆ 2.5–3 times Unsöld's ΔC₆). ``dispersion``, I ½ only: asymptote −
+    ΔC₆/R⁶ − E₀ e^{−β(R−R₀)}, ΔC₆ Unsöld's times ``delta_c6_factor`` (the isotropic value
+    3p₁/₂ has once the fine structure recouples, beyond about 16 a₀), the calculation's
+    binding beyond it fading exponentially, E₀ and β set by the value and slope. The other
+    two bands' fitted A₆ is 0.72–1.36 of Unsöld's already, and they keep it."""
+    if tail not in TAILS:
+        raise ValueError(f"tail must be one of {TAILS}")
     d = data()
     r = np.asarray(r_a0, dtype=float)
     grid, values = d.grids_a0[band], d.plotted_cm1[band] + shift_cm1(delta_c6_factor)
     r0, gap = grid[-1], d.asymptote_cm1[band] - values[-1]
     slope = (values[-1] - values[-2]) / (grid[-1] - grid[-2])
-    a6 = (12.0 * gap - slope * r0) * r0**6 / 6.0
-    a12 = (slope * r0 - 6.0 * gap) * r0**12 / 6.0
-    tail = d.asymptote_cm1[band] - a6 / r**6 - a12 / r**12
+    if tail == "dispersion" and band == "I1/2":
+        c6 = delta_c6_factor * delta_c6_unsold_au() * HARTREE_CM1
+        excess = gap - c6 / r0**6
+        beta = (slope - 6.0 * c6 / r0**7) / excess
+        if excess <= 0 or beta <= 0:
+            raise ValueError("the dispersion tail needs the curve bound beyond ΔC₆/R⁶ and falling faster")
+        outer = d.asymptote_cm1[band] - c6 / r**6 - excess * np.exp(-beta * (r - r0))
+    else:
+        a6 = (12.0 * gap - slope * r0) * r0**6 / 6.0
+        a12 = (slope * r0 - 6.0 * gap) * r0**12 / 6.0
+        outer = d.asymptote_cm1[band] - a6 / r**6 - a12 / r**12
     inside = np.interp(r, grid, values)
-    return np.where(r < grid[0], np.nan, np.where(r > r0, tail, inside))
+    return np.where(r < grid[0], np.nan, np.where(r > r0, outer, inside))
 
 
 @lru_cache(maxsize=1)
@@ -146,7 +166,8 @@ def dipole_squared_au() -> float:
     return total / 3.0 / (ELEMENTARY_CHARGE_C * BOHR_M) ** 2
 
 
-def dipole_factor(band: str, r_a0, form: str = "constant", delta_c6_factor: float = 1.0) -> np.ndarray:
+def dipole_factor(band: str, r_a0, form: str = "constant", delta_c6_factor: float = 1.0,
+                  tail: str = "fitted") -> np.ndarray:
     """|D(R)|² / d_z². ``falling``: the I bands' oscillator strength (∝ ΔV·|D|²) falls 10×
     log-linearly from 9.45 to 3.78 a₀ and is held below; II ½ stays constant."""
     if form not in DIPOLE_FORMS:
@@ -156,8 +177,8 @@ def dipole_factor(band: str, r_a0, form: str = "constant", delta_c6_factor: floa
         return np.ones_like(r)
     lo, hi = FALL_R_A0
     strength = 10.0 ** ((np.clip(r, lo, hi) - hi) / (hi - lo))
-    dv = difference_potential_cm1(band, r, delta_c6_factor)
-    dv_hi = difference_potential_cm1(band, hi, delta_c6_factor)
+    dv = difference_potential_cm1(band, r, delta_c6_factor, tail)
+    dv_hi = difference_potential_cm1(band, hi, delta_c6_factor, tail)
     return np.where(r >= hi, 1.0, strength * dv_hi / dv)
 
 
@@ -179,15 +200,15 @@ def quasistatic(temperature_k: float, wavenumber_edges_cm1, r_a0, transition_cm1
 
 def reduced_absorption(temperature_k: float, wavenumber_edges_cm1, dipole: str = "constant",
                        delta_c6_factor: float = 1.0, r_max_a0: float = 400.0,
-                       points: int = 100_000) -> dict[str, np.ndarray]:
+                       points: int = 100_000, tail: str = "fitted") -> dict[str, np.ndarray]:
     """k / (n_Na n_Hg) per band, m⁵, averaged over each wavenumber bin (vacuum cm⁻¹ edges)."""
     d = data()
     out = {}
     for band in BANDS:
         r = np.geomspace(d.grids_a0[band][0], r_max_a0, points)
         out[band] = quasistatic(temperature_k, wavenumber_edges_cm1, r,
-                                difference_potential_cm1(band, r, delta_c6_factor), lower_potential_cm1(r),
-                                dipole_squared_au() * dipole_factor(band, r, dipole, delta_c6_factor))
+                                difference_potential_cm1(band, r, delta_c6_factor, tail), lower_potential_cm1(r),
+                                dipole_squared_au() * dipole_factor(band, r, dipole, delta_c6_factor, tail))
     return out
 
 
@@ -196,8 +217,8 @@ TABLE_EDGES_CM1 = np.arange(8000.0, 30000.0 + 1.0, 2.0)
 
 
 @lru_cache(maxsize=4096)
-def _table(temperature_k: float, dipole: str, delta_c6_factor: float) -> dict[str, np.ndarray]:
-    return reduced_absorption(temperature_k, TABLE_EDGES_CM1, dipole, delta_c6_factor)
+def _table(temperature_k: float, dipole: str, delta_c6_factor: float, tail: str) -> dict[str, np.ndarray]:
+    return reduced_absorption(temperature_k, TABLE_EDGES_CM1, dipole, delta_c6_factor, tail=tail)
 
 
 @dataclass(frozen=True)
@@ -211,16 +232,19 @@ class MercuryPairWings:
     take the resonance share). The impact wing is the wrong form beyond about the
     Weisskopf detuning (0.36–0.47 nm at 2500–4000 K with Unsöld's C₆), outside which the
     quasi-static wing exceeds it as √(Δω/ω_W); the default hand-over is centred at about
-    twice that.
+    twice that. ``tail``: how the curves join their asymptotes beyond the digitised grid
+    (:func:`difference_potential_cm1`); it sets I ½ out to 15–20 nm red of D1.
     """
 
     join_nm: float = 0.8
     dipole: str = "constant"
     delta_c6_factor: float = 1.0
+    tail: str = "fitted"
 
     def __post_init__(self):
-        if self.join_nm <= 0 or self.dipole not in DIPOLE_FORMS or self.delta_c6_factor <= 0:
-            raise ValueError("join and ΔC₆ factor must be positive and the dipole form known")
+        if (self.join_nm <= 0 or self.dipole not in DIPOLE_FORMS or self.delta_c6_factor <= 0
+                or self.tail not in TAILS):
+            raise ValueError("join and ΔC₆ factor must be positive and the dipole form and tail known")
 
     def kappa(self, temperature_k: float, ground_m3: float, mercury_m3: float, frequency_hz: np.ndarray,
               line=None) -> np.ndarray:
@@ -228,7 +252,7 @@ class MercuryPairWings:
         on ``line``'s upper level (a resonance :class:`~lss.physics.hid.sodium.Transition`),
         or all three (None)."""
         d = data()
-        tables = _table(float(temperature_k), self.dipole, float(self.delta_c6_factor))
+        tables = _table(float(temperature_k), self.dipole, float(self.delta_c6_factor), self.tail)
         bands = [b for b in BANDS if line is None
                  or abs(d.asymptote_cm1[b] - (line.upper_energy_cm1 - line.lower_energy_cm1)) < 0.01]
         if not bands:

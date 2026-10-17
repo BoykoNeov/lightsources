@@ -48,6 +48,8 @@
 #   A12/R^12, with A6 and A12 set so that value and slope are continuous there (I 3/2 and
 #   II 1/2 to 3p3/2, I 1/2 to 3p1/2): a fitted join, not dispersion coefficients, smooth
 #   because a slope step would make a step in the classical spectrum.
+#   For I 1/2 that join has A6 2.5-3.1 times Unsold's; the code's `tail="dispersion"`
+#   alternative (Unsold's dC6 plus the excess fading exponentially) brackets it (design §4.4).
 #   Prediction made with this rule, before any comparison (design §4.4): the classical
 #   satellite at the II 1/2 minimum, 14 413-14 473 cm-1 plus the shift, is at 668.5-678.3 nm
 #   (air), without the digitising error; 668.7-678.4 nm after the change beyond 8 a0 above,

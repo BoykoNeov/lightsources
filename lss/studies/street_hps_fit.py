@@ -107,9 +107,10 @@ def _observed(job):
 
 
 def column_key(column: arc.ArcColumn) -> str:
-    """The column as the table caches name it: its repr, without a field added later at its
-    default (xenon pairs off), so spectra that did not change keep their cached tables."""
-    return repr(column).replace(", xenon_pairs=None", "")
+    """The column as the table caches name it: its repr, without fields added later at their
+    defaults (xenon pairs off, the Na–Hg curves' fitted tail), so spectra that did not change
+    keep their cached tables."""
+    return repr(column).replace(", xenon_pairs=None", "").replace(", tail='fitted'", "")
 
 
 def _key(column: arc.ArcColumn, kernel: Kernel) -> str:
