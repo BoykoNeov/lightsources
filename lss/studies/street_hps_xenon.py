@@ -31,6 +31,9 @@ from lss.physics.hid import xenon_pairs
 from lss.studies import street_hps, street_hps_fit as sf, street_hps_mercury as sm
 
 XENON_KPA = (10.0, 20.0, 30.0)
+#: A check added after the runs: high-xenon lamps (the book's Table 3.5: 160 kPa in operation),
+#: with temperature, sodium and mercury still held at the starting-gas fits.
+HIGH_XENON_KPA = (100.0, 160.0)
 GREEN_NM = (554.0, 566.0)
 
 
@@ -70,10 +73,10 @@ def _run(job):
 
 
 @lru_cache(maxsize=None)
-def runs(workers: int = 16) -> dict[tuple, dict]:
+def runs(pressures_kpa: tuple = XENON_KPA, workers: int = 16) -> dict[tuple, dict]:
     """(lamp, xenon kPa, pairs) -> every feature of a direct run, plus the green window and
     eq. 5.7 read off the model's spectrum."""
-    jobs = [(lamp, xe, p) for lamp in lica.HPS for xe in XENON_KPA for p in (False, True)]
+    jobs = [(lamp, xe, p) for lamp in lica.HPS for xe in pressures_kpa for p in (False, True)]
     with Pool(workers) as pool:
         rows = pool.map(_run, jobs)
     return dict(zip(jobs, rows))
@@ -91,7 +94,7 @@ def measured() -> dict[str, dict]:
 
 def eq57_change(lamp: str, xenon_kpa: float) -> float:
     """eq. 5.7 on the model with xenon pairs over without, minus one, at matched fill."""
-    r = runs()
+    r = runs(HIGH_XENON_KPA if xenon_kpa in HIGH_XENON_KPA else XENON_KPA)
     return r[(lamp, xenon_kpa, True)]["eq57"] / r[(lamp, xenon_kpa, False)]["eq57"] - 1.0
 
 
@@ -127,4 +130,14 @@ def format_text() -> str:
                    f"rise {rng(lambda b, a: b['red bump'] - a['red bump'])}, "
                    f"525-540 x(1{rng(lambda b, a: np.exp(b['blue wing'] - a['blue wing']) - 1)}), "
                    f"554-566 x(1{rng(lambda b, a: b['green'] / a['green'] - 1)})")
+    hi, m = runs(HIGH_XENON_KPA), measured()
+    out += ["", "Check added after the runs: high-xenon lamps (160 kPa in operation, the book's Table 3.5), with",
+            "temperature, sodium and mercury still held. Lamp/model with xenon pairs, range over the nine:"]
+    for xe in (20.0,) + HIGH_XENON_KPA:
+        rr = r if xe in XENON_KPA else hi
+        g = [m[l]["green"] / rr[(l, xe, True)]["green"] for l in lica.HPS]
+        red = [m[l]["red wing"] - rr[(l, xe, True)]["red wing"] for l in lica.HPS]
+        ch = [eq57_change(l, xe) for l in lica.HPS]
+        out.append(f"  {xe:5.0f} kPa: 554-566 nm {min(g):.2f}-{max(g):.2f}; red level {np.exp(np.mean(red)):.3f}; "
+                   f"eq. 5.7 on the model {min(ch):+.0%} to {max(ch):+.0%}")
     return "\n".join(out)

@@ -55,3 +55,20 @@ def test_finding_xenon_pairs_light_the_green_but_leave_the_red_alone():
         assert -0.05 < np.exp(b["blue wing"] - a["blue wing"]) - 1.0 < 0.0, lamp
         assert 0.10 < b["green"] / a["green"] - 1.0 < 0.36, lamp
         assert 1.3 < m[lamp]["green"] / b["green"] < 3.4, lamp
+
+
+@needs_data
+def test_finding_high_xenon_would_close_the_green_and_take_a_share_of_the_mercury():
+    """Added after the runs: at 160 kPa (a high-xenon lamp), temperature, sodium and mercury
+    held, the 554-566 nm window comes to 0.6-1.25 of the lamps' (1.4-3.3 at 20 kPa); eq. 5.7 on
+    the model moves by 14-39 %, so in such a lamp that much of eq. 5.7's mercury would be
+    xenon; and still nothing for the red slope or the 668-678 nm rise."""
+    hi, m = xe.runs(xe.HIGH_XENON_KPA), xe.measured()
+    g = [m[l]["green"] / hi[(l, 160.0, True)]["green"] for l in lica.HPS]
+    assert 0.6 < min(g) and max(g) < 1.3
+    ch = [xe.eq57_change(l, 160.0) for l in lica.HPS]
+    assert 0.13 < min(ch) and max(ch) < 0.40
+    for l in ("hps-1732k-toledo", "hps-1819k-riba-roja-plaza", "hps-1869k-riba-roja",
+              "hps-1895k-ager", "hps-1920k-alix", "hps-2005k-fisicas"):
+        assert hi[(l, 160.0, True)]["red slope"] > m[l]["red slope"] + 0.1, l
+        assert abs(hi[(l, 160.0, True)]["red bump"]) < 0.03, l
