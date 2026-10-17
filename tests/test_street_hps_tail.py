@@ -26,7 +26,8 @@ def test_the_default_tail_keeps_the_cached_tables():
 def test_finding_the_tail_is_a_bounded_uncertainty_on_the_mercury():
     """Set before running: eq. 5.7 on the model, dispersion over fitted tail, under 15 % for
     every lamp. With Unsöld's ΔC6 it reads 2–8 % less mercury (predicted 5–15 %: smaller than
-    predicted), with twice it 6–15 % more (predicted 5–20 %); the largest, 1920 K, 14.9 %."""
+    predicted), with twice it 6–15 % more (predicted 5–20 %); the largest, 1920 K, 14.9 %:
+    a margin of 0.1 point, so a small change in the numerics can flip this record of the verdict."""
     ch1 = [st.eq57_change(l, 1.0) for l in lica.HPS]
     ch2 = [st.eq57_change(l, 2.0) for l in lica.HPS]
     assert -0.09 < min(ch1) and max(ch1) < -0.015
