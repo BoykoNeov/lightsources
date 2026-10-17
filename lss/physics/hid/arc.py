@@ -22,8 +22,9 @@ prescribed (parabolic for p = 2) until Stage C solves it.
 With ``pairs`` set, the D lines' wings go over from the resonance share of their impact
 profile to sodium atom pairs (:mod:`lss.physics.hid.pairs`) with distance from the line;
 with ``mercury_pairs``, from the mercury van der Waals share to sodium–mercury pairs
-(:mod:`lss.physics.hid.mercury_pairs`). The hand-over is gradual (:func:`join_weight`):
-the impact wing and the quasi-static wing do not meet at any one distance, so a cut
+(:mod:`lss.physics.hid.mercury_pairs`); with ``xenon_pairs``, from the xenon share to
+sodium–xenon pairs (:mod:`lss.physics.hid.xenon_pairs`). The hand-over is gradual
+(:func:`join_weight`): the impact wing and the quasi-static wing do not meet at any one distance, so a cut
 leaves a step in κ, which the self-reversed line shows as a false maximum.
 """
 
@@ -34,6 +35,7 @@ import numpy as np
 from scipy.special import voigt_profile
 
 from lss.physics.hid import broadening, mercury_pairs as hg_pairs, pairs as na_pairs, sodium
+from lss.physics.hid import xenon_pairs as xe_pairs
 from lss.physics.hid.composition import Composition, Fill, composition
 from lss.physics.thermal import planck
 from lss.spectral.units import C, H, K_B, air_to_vacuum
@@ -49,6 +51,7 @@ class ArcColumn:
     shells: int = 60
     pairs: na_pairs.PairWings | None = None
     mercury_pairs: hg_pairs.MercuryPairWings | None = None
+    xenon_pairs: xe_pairs.XenonPairWings | None = None
 
     def __post_init__(self):
         if self.radius_m <= 0 or self.shells < 1 or self.profile_exponent <= 0:
@@ -99,14 +102,16 @@ def join_weight(offset_nm, join_nm: float) -> np.ndarray:
 
 def absorption_coefficient(comp: Composition, frequency_hz: np.ndarray, lines=None,
                            pairs: na_pairs.PairWings | None = None,
-                           mercury_pairs: hg_pairs.MercuryPairWings | None = None) -> np.ndarray:
+                           mercury_pairs: hg_pairs.MercuryPairWings | None = None,
+                           xenon_pairs: xe_pairs.XenonPairWings | None = None) -> np.ndarray:
     """κ_ν in m⁻¹ at the given (vacuum) frequencies, summed over ``lines`` (default: all).
 
     With ``pairs``, each resonance line (lower level 3s) hands its resonance share over to
     its own part of the sodium-pair absorption by the weight w = :func:`join_weight` of its
     distance: (1 − w) of the impact profile with the resonance width, w of it without, and
     w of the line's pairs. ``mercury_pairs`` does the same with the mercury van der Waals
-    width and the sodium–mercury pairs. With several, the profiles mix multilinearly: each
+    width and the sodium–mercury pairs, ``xenon_pairs`` with the xenon van der Waals width and
+    the sodium–xenon pairs. With several, the profiles mix multilinearly: each
     combination of dropped widths is weighted by the product of w for those dropped and
     1 − w for those kept.
     """
@@ -122,6 +127,9 @@ def absorption_coefficient(comp: Composition, frequency_hz: np.ndarray, lines=No
     if mercury_pairs is not None:
         handovers.append(("van_der_waals_mercury", mercury_pairs.join_nm,
                           lambda ln: mercury_pairs.kappa(t, ground, float(comp.mercury), frequency_hz, ln)))
+    if xenon_pairs is not None:
+        handovers.append(("van_der_waals_xenon", xenon_pairs.join_nm,
+                          lambda ln: xenon_pairs.kappa(t, ground, float(comp.xenon), frequency_hz, ln)))
     for ln in lines:
         n_lower = comp.sodium * sodium.level_population_fraction(ln.lower_energy_cm1, ln.lower_g, t, comp.lowering_cm1)
         w = broadening.widths(ln, comp)
@@ -177,7 +185,8 @@ def side_radiance(column: ArcColumn, wavelength_nm: np.ndarray, theta_rad: float
     lam = np.asarray(wavelength_nm, dtype=float)
     nu = C / (air_to_vacuum(lam) * 1e-9)
     comps = column.shell_compositions()
-    kappa = np.array([absorption_coefficient(c, nu, lines, column.pairs, column.mercury_pairs) for c in comps])  # (shell, λ)
+    kappa = np.array([absorption_coefficient(c, nu, lines, column.pairs, column.mercury_pairs,
+                                              column.xenon_pairs) for c in comps])  # (shell, λ)
     source = np.array([planck.spectral_radiance(air_to_vacuum(lam), c.temperature_k) for c in comps])
 
     nb = impact_parameters or 2 * column.shells

@@ -1,0 +1,50 @@
+# Sodium-xenon pairs (NaXe): the curves that set the xenon share of the D lines' far wings
+# in an HPS arc (design §4.4, rung 2, third part).
+#
+# Source: E. Galbis, J. Douady, E. Jacquet, E. Giglio and B. Gervais, "Potential energy
+#   curves and spin-orbit coupling of light alkali-heavy rare gas molecules", J. Chem.
+#   Phys. 138, 014314 (2013). All-electron, BSSE-corrected, scalar-relativistic (DKH):
+#   X 2Sigma+ and A 2Pi by CCSD(T), B 2Sigma+ by CASPT2 (the authors call B less accurate
+#   than X and A). Spin-free curves, so the upper asymptote is the 3p centroid. Their
+#   checks against NaXe spectroscopy: X Re 9.48 a0, De 93.0 cm-1 (measured 100-117); A
+#   Re 6.11 a0, De 1094 cm-1 (measured 1120-1215); they estimate De 4-10 % too shallow.
+#   The computed values are in the paper's supplement, not used here: read instead
+#   (2026-10-17) from the markers of the article's vector figures, Fig. 2 (X) and Fig. 7
+#   (A, B), by scripts/digitise_naxe_curves.py given a copy of the PDF, calibrated on the
+#   frames' tick marks (the tick labels' centres sit up to 0.6 pt off, 9 cm-1 in Fig. 7).
+#   R rounded to the 0.1 a0 grid the markers sit on (0.002-0.008 a0 short of it). Read so:
+#   X min -93.0 cm-1 at 9.5 a0 (stated: De 93.0 cm-1, Re 9.48 a0); A min -1094.3 cm-1 at
+#   6.1 a0 (stated 1094 cm-1, 6.11 a0).
+#
+# What the figures do not show, and what stands in:
+#   - X inside 8.0 a0: the figure stops at +50 cm-1, but the far red wing comes from
+#     6-7 a0, where X is several hundred to a few thousand cm-1. A Tang-Toennies form,
+#     A exp(-bR) - sum_n f_2n(bR) C_2n / R^2n (n = 3, 4, 5), with C6 461 au (Mitroy & Zhang,
+#     Phys. Rev. A 75, 032706 (2007), as the paper's Table III quotes), C8 30 300 au and
+#     C10 = (49/40) C8^2/C6 (Thakkar's rule), C8 set so that C8/R^2 + C10/R^4 at 20 a0 is
+#     the paper's 91 au (Table III); A and b fitted to all the X points (rms about 3 cm-1).
+#     An extrapolation, not a calculation: `wall` variants refit with C8 25 000 and 50 000
+#     au (rms 4.4 and 2.0 cm-1), which move X at 6 a0 by about +-20 %. Between 8.0 and 9.0
+#     a0 the form hands over to the points smoothly; beyond 16 a0, -C6/R^6 - C8/R^8 -
+#     C10/R^10.
+#   - A inside 5.0 a0 and B inside 5.5 a0: an exponential continuing the curve's value and
+#     slope at its first point. There X is above 4000 cm-1 (weight e^-1.4 at 4000 K or
+#     less), and the transitions fall beyond 760 nm (A) or near the line (B).
+#   - A and B beyond 16 a0: asymptote - A6/R^6 - A8/R^8, A6 and A8 set so value and slope
+#     are continuous at 16 a0 (a fitted join, not dispersion coefficients).
+#
+# Transition dipoles: not given by the paper. At long range the 3s-3p strength splits
+#   Sigma 1/3, Pi 2/3: X->B takes |D|^2 = d_z^2 and X->A 2 d_z^2, with 3 d_z^2 fixed by
+#   the D lines' A values (as for NaHg). Held at every R: an assumption.
+#
+# Between the points: a monotone cubic (PCHIP) through each curve's points, so the
+#   difference potential has no extrema the points do not have (a spurious one would make
+#   a spurious satellite in the classical sum).
+
+source: "Galbis, Douady, Jacquet, Giglio & Gervais, J. Chem. Phys. 138, 014314 (2013), Figs. 2 and 7, read from the vector markers 2026-10-17"
+dispersion_X_au: {c6: 461.0, c8: 30300.0}
+wall_c8_au: {central: 30300.0, soft: 50000.0, hard: 25000.0}
+points_cm1:  # [R a0, E cm-1 from the Na(3s or 3p) + Xe asymptote]
+  X: [[8.0, -8.6], [8.5, -63.4], [9.0, -87.5], [9.1, -89.8], [9.2, -91.4], [9.3, -92.4], [9.4, -92.9], [9.5, -93.0], [9.6, -92.6], [9.7, -91.9], [9.8, -90.8], [9.9, -89.5], [10.0, -88.0], [10.2, -84.4], [10.4, -80.3], [10.6, -75.9], [10.8, -71.3], [11.0, -66.6], [11.5, -55.3], [12.0, -45.1], [12.5, -36.4], [13.0, -29.2], [13.5, -23.4], [14.0, -18.7], [14.5, -15.0], [15.0, -12.1], [15.5, -9.8], [16.0, -8.0]]
+  A: [[5.0, 1004.3], [5.4, -497.1], [5.5, -690.5], [5.6, -835.7], [5.7, -940.6], [5.8, -1013.6], [5.9, -1060.2], [6.0, -1085.0], [6.1, -1094.3], [6.2, -1088.9], [6.3, -1074.2], [6.4, -1050.9], [6.5, -1022.1], [7.0, -836.5], [7.5, -648.5], [8.0, -493.2], [8.5, -373.6], [9.0, -285.0], [9.5, -218.2], [10.0, -168.5], [10.2, -151.4], [10.4, -137.5], [10.6, -124.3], [10.8, -112.6], [11.0, -101.7], [11.5, -80.0], [12.0, -62.9], [12.5, -50.5], [13.0, -39.6], [13.5, -31.8], [14.0, -25.6], [14.5, -21.0], [15.0, -16.3], [15.5, -14.0], [16.0, -11.6]]
+  B: [[5.5, 2497.2], [6.0, 2023.8], [6.5, 1754.4], [7.0, 1459.7], [7.5, 1146.8], [8.0, 853.3], [8.5, 601.0], [9.0, 397.8], [9.2, 330.0], [9.4, 269.4], [9.6, 215.9], [9.8, 168.8], [10.0, 127.6], [10.2, 92.0], [10.4, 61.1], [10.6, 34.5], [10.8, 12.3], [11.0, -6.3], [11.2, -21.7], [11.4, -34.0], [11.6, -43.9], [11.8, -51.8], [12.0, -57.4], [12.2, -61.7], [12.4, -64.5], [12.6, -66.1], [12.8, -66.9], [13.0, -66.5], [13.2, -65.7], [13.4, -64.5], [13.6, -62.9], [13.8, -61.0], [14.0, -58.6], [14.5, -52.2], [15.0, -45.9], [15.5, -39.6], [16.0, -33.6]]
