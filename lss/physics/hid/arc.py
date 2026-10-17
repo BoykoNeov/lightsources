@@ -28,6 +28,7 @@ leaves a step in κ, which the self-reversed line shows as a false maximum.
 """
 
 from dataclasses import dataclass, replace
+import itertools
 
 import numpy as np
 from scipy.special import voigt_profile
@@ -105,7 +106,9 @@ def absorption_coefficient(comp: Composition, frequency_hz: np.ndarray, lines=No
     its own part of the sodium-pair absorption by the weight w = :func:`join_weight` of its
     distance: (1 − w) of the impact profile with the resonance width, w of it without, and
     w of the line's pairs. ``mercury_pairs`` does the same with the mercury van der Waals
-    width and the sodium–mercury pairs; with both, the four profiles mix bilinearly.
+    width and the sodium–mercury pairs. With several, the profiles mix multilinearly: each
+    combination of dropped widths is weighted by the product of w for those dropped and
+    1 − w for those kept.
     """
     lines = sodium.data().lines if lines is None else lines
     t = comp.temperature_k
@@ -113,26 +116,31 @@ def absorption_coefficient(comp: Composition, frequency_hz: np.ndarray, lines=No
     vacuum_nm = C / frequency_hz * 1e9
     kappa = np.zeros_like(frequency_hz)
     ground = float(comp.sodium * sodium.level_population_fraction(0.0, 2, t, comp.lowering_cm1))
+    handovers = []  # (impact width handed over, its join, the pair κ of a resonance line)
+    if pairs is not None:
+        handovers.append(("resonance", pairs.join_nm, lambda ln: pairs.kappa(t, ground, frequency_hz, ln)))
+    if mercury_pairs is not None:
+        handovers.append(("van_der_waals_mercury", mercury_pairs.join_nm,
+                          lambda ln: mercury_pairs.kappa(t, ground, float(comp.mercury), frequency_hz, ln)))
     for ln in lines:
         n_lower = comp.sodium * sodium.level_population_fraction(ln.lower_energy_cm1, ln.lower_g, t, comp.lowering_cm1)
         w = broadening.widths(ln, comp)
         phi = _profile(frequency_hz, ln, w)
-        if ln.lower_energy_cm1 == 0.0 and (pairs is not None or mercury_pairs is not None):
+        if ln.lower_energy_cm1 == 0.0 and handovers:
             offset = vacuum_nm - ln.vacuum_wavelength_nm
-            wn = join_weight(offset, pairs.join_nm) if pairs is not None else np.zeros(offset.shape)
-            wh = join_weight(offset, mercury_pairs.join_nm) if mercury_pairs is not None else np.zeros(offset.shape)
-            mixed = (1.0 - wn) * (1.0 - wh) * phi
-            for drop_na, drop_hg, weight in ((True, False, wn * (1.0 - wh)), (False, True, (1.0 - wn) * wh),
-                                             (True, True, wn * wh)):
-                if weight.any():
-                    wf = replace(w, resonance=0.0 if drop_na else w.resonance,
-                                 van_der_waals_mercury=0.0 if drop_hg else w.van_der_waals_mercury)
+            weights = [join_weight(offset, join) for _, join, _ in handovers]
+            mixed = np.zeros_like(phi)
+            for drops in itertools.product((False, True), repeat=len(handovers)):
+                weight = np.prod([wt if d else 1.0 - wt for wt, d in zip(weights, drops)], axis=0)
+                if not any(drops):
+                    mixed = mixed + weight * phi
+                elif weight.any():
+                    wf = replace(w, **{field: 0.0 for (field, _, _), d in zip(handovers, drops) if d})
                     mixed = mixed + weight * _profile(frequency_hz, ln, wf)
             phi = mixed
-            if pairs is not None and wn.any():
-                kappa += wn * pairs.kappa(t, ground, frequency_hz, ln)
-            if mercury_pairs is not None and wh.any():
-                kappa += wh * mercury_pairs.kappa(t, ground, float(comp.mercury), frequency_hz, ln)
+            for (_, _, pair_kappa), wt in zip(handovers, weights):
+                if wt.any():
+                    kappa += wt * pair_kappa(ln)
         kappa += (C * C / (8.0 * np.pi * ln.frequency_hz**2)) * ln.a_ki * (ln.upper_g / ln.lower_g) * n_lower * phi
     return kappa * stimulated
 
