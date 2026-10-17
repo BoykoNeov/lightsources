@@ -106,8 +106,14 @@ def _observed(job):
     return observed(*job)
 
 
+def column_key(column: arc.ArcColumn) -> str:
+    """The column as the table caches name it: its repr, without a field added later at its
+    default (xenon pairs off), so spectra that did not change keep their cached tables."""
+    return repr(column).replace(", xenon_pairs=None", "")
+
+
 def _key(column: arc.ArcColumn, kernel: Kernel) -> str:
-    text = json.dumps([TABLE_VERSION, repr(column), repr(kernel), GRID_T_K.tolist(), GRID_NA_PA.tolist()])
+    text = json.dumps([TABLE_VERSION, column_key(column), repr(kernel), GRID_T_K.tolist(), GRID_NA_PA.tolist()])
     return hashlib.sha256(text.encode()).hexdigest()[:16]
 
 

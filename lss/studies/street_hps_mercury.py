@@ -91,7 +91,7 @@ def _observed(job):
 
 
 def _key(column: arc.ArcColumn, kernel: Kernel) -> str:
-    text = json.dumps([sf.TABLE_VERSION, "mercury ratio", repr(column), repr(kernel), sf.GRID_T_K.tolist(),
+    text = json.dumps([sf.TABLE_VERSION, "mercury ratio", sf.column_key(column), repr(kernel), sf.GRID_T_K.tolist(),
                        sf.GRID_NA_PA.tolist(), GRID_RATIO.tolist()])
     return hashlib.sha256(text.encode()).hexdigest()[:16]
 
