@@ -1,14 +1,19 @@
 """A study as a Mitsuba scene (design §8.1, §8.4). Needs Mitsuba with a variant selected
 (``lss.render.env.setup``).
 
-Every lamp is an emitter with a flat spectrum on its sphere; which lamp emits is
-switched in place (``set_emitting``), so one loaded scene serves every lighting map.
-Mitsuba merges equal textures, and a merged radiance would then be missing from
-``mi.traverse``, so lamp k starts at radiance 1 + 10⁻⁶·k. A lamp's sphere is black:
-it absorbs returning light (one fixed boundary, §2).
+Every lamp is an emitter with a flat spectrum on its sphere or disc; which lamp, and
+which of a disc's angle bands, emits is switched in place (``set_emitting``), so one
+loaded scene serves every lighting map. Mitsuba merges equal textures, and a merged
+radiance would then be missing from ``mi.traverse``, so sphere k starts at radiance
+1 + 10⁻⁶·k. A lamp's sphere or disc is black: it absorbs returning light (one fixed
+boundary, §2). A disc emits from its front only (``lss.render.emitters``).
 """
 
+import math
+
 import numpy as np
+
+from lss.lamp.profile import polar_band
 
 from lss.scene.geometry import Shape
 from lss.scene.materials import Material
@@ -75,15 +80,37 @@ def emitter_key(lamp_id: str) -> str:
     return f"lamp_{lamp_id}"
 
 
+BLACK = {"type": "diffuse", "reflectance": {"type": "uniform", "value": 0.0}}
+
+
+def disc_frame(centre, normal, radius: float) -> np.ndarray:
+    """4×4 matrix taking Mitsuba's unit disk (radius 1, normal +z) to this disc."""
+    n = np.asarray(normal, float)
+    n = n / np.linalg.norm(n)
+    a = np.array([1.0, 0.0, 0.0]) if abs(n[0]) < 0.9 else np.array([0.0, 1.0, 0.0])
+    u = np.cross(a, n)
+    u /= np.linalg.norm(u)
+    v = np.cross(n, u)  # right-handed: u × v = n
+    m = np.eye(4)
+    m[:3, 0], m[:3, 1], m[:3, 2], m[:3, 3] = u * radius, v * radius, n, centre
+    return m
+
+
 def lamp_shapes(study: Study) -> dict:
-    """One black emitting sphere per lamp. Its isotropic zones share one shape, so they
-    share one lighting map, re-coloured with their summed spectrum."""
+    """One black emitting sphere or disc per lamp. Zones of one shape share a lighting
+    map, re-coloured with their summed spectrum; a disc's bands each have their own."""
+    import mitsuba as mi
+
     out = {}
     for k, p in enumerate(study.lamps):
-        out[emitter_key(p.id)] = {
-            "type": "sphere", "center": list(p.centre), "radius": p.radius,
-            "bsdf": {"type": "diffuse", "reflectance": {"type": "uniform", "value": 0.0}},
-            "emitter": {"type": "area", "radiance": {"type": "uniform", "value": 1.0 + 1e-6 * k}}}
+        if p.kind == "sphere":
+            out[emitter_key(p.id)] = {
+                "type": "sphere", "center": list(p.centre), "radius": p.radius, "bsdf": BLACK,
+                "emitter": {"type": "area", "radiance": {"type": "uniform", "value": 1.0 + 1e-6 * k}}}
+        else:
+            out[emitter_key(p.id)] = {
+                "type": "disk", "to_world": mi.ScalarTransform4f(disc_frame(p.centre, p.normal, p.radius).tolist()),
+                "bsdf": BLACK, "emitter": {"type": "polardisc"}}
     return out
 
 
@@ -102,9 +129,24 @@ def scene_dict(study: Study) -> dict:
     return d
 
 
-def set_emitting(params, keys: list[str], on: str) -> None:
-    """Emitter ``on`` at radiance 1, every other one off (radiance and sampling weight 0)."""
-    for k in keys:
-        params[f"{k}.emitter.radiance.value"] = 1.0 if k == on else 0.0
-        params[f"{k}.emitter.sampling_weight"] = 1.0 if k == on else 0.0
+def band_cosines(shape: str) -> tuple[float, float]:
+    """(mu_lo, mu_hi) of a zone's band: directions with mu_lo < cos θ ≤ mu_hi."""
+    lo, hi = polar_band(shape)
+    return (0.0 if hi >= 90.0 else math.cos(math.radians(hi))), math.cos(math.radians(lo))
+
+
+def set_emitting(params, study: Study, lamp_id: str, shape: str) -> None:
+    """Lamp ``lamp_id`` emits radiance 1 in zone ``shape``; every other lamp is off
+    (radiance and sampling weight 0)."""
+    for p in study.lamps:
+        k, on = emitter_key(p.id), p.id == lamp_id
+        if p.kind == "sphere":
+            if on and shape != "isotropic":
+                raise ValueError(f"{p.id}: a sphere has no zone {shape!r}")
+            params[f"{k}.emitter.radiance.value"] = 1.0 if on else 0.0
+        else:
+            params[f"{k}.emitter.value"] = 1.0 if on else 0.0
+            if on:
+                params[f"{k}.emitter.mu_lo"], params[f"{k}.emitter.mu_hi"] = band_cosines(shape)
+        params[f"{k}.emitter.sampling_weight"] = 1.0 if on else 0.0
     params.update()

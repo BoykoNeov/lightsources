@@ -7,9 +7,26 @@ its phosphor layer); the renderer gives these shapes their geometry, and adds
 the rest (bands in impact parameter and angle, bands along a filament).
 """
 
+import re
 from dataclasses import dataclass, field
 
 from lss.spectral.spectrum import Spectrum
+
+_POLAR = re.compile(r"polar (\d+(?:\.\d+)?)-(\d+(?:\.\d+)?) deg")
+
+
+def polar_band(shape: str) -> tuple[float, float] | None:
+    """A shape's band of polar angle in degrees: ``isotropic`` is 0–90°, ``polar <lo>-<hi> deg``
+    its own band; None for any other shape."""
+    if shape == "isotropic":
+        return (0.0, 90.0)
+    m = _POLAR.fullmatch(shape)
+    if m is None:
+        return None
+    lo, hi = float(m.group(1)), float(m.group(2))
+    if not 0.0 <= lo < hi <= 90.0:
+        raise ValueError(f"angle band {shape!r} is not inside 0-90 deg")
+    return lo, hi
 
 #: Components a profile may already contain, so they are never applied twice.
 COMPONENTS = frozenset({"phosphor", "envelope", "reflector", "luminaire"})

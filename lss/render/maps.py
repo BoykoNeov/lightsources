@@ -1,21 +1,25 @@
-"""Lighting maps (design §9.1, §9.3, §8.4): one per lamp, rendered with that lamp alone
-emitting a flat unit spectrum.
+"""Lighting maps (design §9.1, §9.3, §8.4, §8.5): one per lamp and zone shape, rendered
+with that lamp alone emitting a flat unit spectrum in that zone.
 
 A map is the running mean of independent passes, kept per pixel and render bin as the
-mean radiance per unit lamp radiance (per nm, ``mitsuba_scene.read_film``), with
+mean radiance per unit zone radiance (per nm, ``mitsuba_scene.read_film``), with
 Welford's M2 over the pass means for the noise. Maps are stored outside the repository,
-in ``cache_dir()/maps/<study geometry hash>/``, as ``<lamp>.mean.npy``, ``<lamp>.m2.npy``
-and ``<lamp>.json``; the hash leaves out the lamps' spectra and fluxes, so a physics
-edit re-colours the stored maps without a render.
+in ``cache_dir()/maps/<study geometry hash>/``, as ``<map id>.mean.npy``, ``.m2.npy`` and
+``.json``, the map id being ``<lamp>@<zone>`` (``lamp@isotropic``, ``lamp@polar-0-30``).
+The hash leaves out the lamps' spectra and fluxes, so a physics edit re-colours the
+stored maps without a render; it also leaves out a disc's band edges, since one band's
+map does not depend on the others (the emitter is black), so a band is rendered once
+whatever layout it appears in.
 
 For each map the render also reports the luminance-weighted relative standard error of
-the map re-coloured under the study's own spectrum (Σ se(Y) / Σ Y over the image, from
-each pass's re-coloured luminance), since a flat-spectrum noise flatters a line lamp (§8.3).
-That number belongs to the spectrum it was measured under (``MapInfo.noise_lamp``); maps
-reused for another lamp do not carry its noise.
+the map re-coloured under its zone's own spectrum in the study (Σ se(Y) / Σ Y over the
+image, from each pass's re-coloured luminance), since a flat-spectrum noise flatters a
+line lamp (§8.3). That number belongs to the spectrum it was measured under
+(``MapInfo.noise_lamp``); maps reused for another lamp do not carry its noise.
 """
 
 import json
+import re
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -24,9 +28,8 @@ import numpy as np
 
 from lss.download import cache_dir
 from lss.render import recolour
-from lss.render.lamps import PlacedLamp
+from lss.render.lamps import PlacedLamp, map_zones
 from lss.scene.study import Study
-from lss.spectral.grids import analysis_grid
 from lss.spectral.spectrum import BinnedSpectrum
 
 
@@ -41,6 +44,11 @@ class MapInfo:
     #: The spectrum that noise was measured under ("<lamp> level <n>"). Maps are reused
     #: for any lamp; under another spectrum their noise is not known (§8.3).
     noise_lamp: str = ""
+    zone: str = "isotropic"  # the zone shape the map was rendered for
+
+    @property
+    def map_id(self) -> str:
+        return map_id(self.lamp_id, self.zone)
 
 
 @dataclass
@@ -71,15 +79,15 @@ class Welford:
         return np.sqrt(self.m2 / (self.n * (self.n - 1))) if self.n > 1 else np.full_like(self.mean, np.inf)
 
 
-def summed(placed: PlacedLamp) -> BinnedSpectrum:
-    """The lamp's zones summed (they share one map: one shape on one sphere)."""
-    g = analysis_grid()
-    vals = sum(z.radiance.values for z in placed.zones)
-    return BinnedSpectrum(g, vals, 0.0, 0.0, placed.zones[0].radiance.quantity)
+def map_id(lamp_id: str, shape: str) -> str:
+    """File-safe id of a lamp's map for one zone shape: ``lamp@polar-0-30``."""
+    slug = re.sub(r"[^0-9A-Za-z.]+", "-", shape.replace(" deg", "")).strip("-")
+    return f"{lamp_id}@{slug}"
 
 
-def noise_label(placed: PlacedLamp) -> str:
-    return f"{placed.placement.lamp} level {placed.level}"
+def noise_label(placed: PlacedLamp, shape: str = "isotropic") -> str:
+    base = f"{placed.placement.lamp} level {placed.level}"
+    return base if shape == "isotropic" else f"{base}, {shape}"
 
 
 def luminance_noise(se_y: np.ndarray, y: np.ndarray) -> float:
@@ -94,26 +102,37 @@ def folder(study: Study) -> Path:
 def save(study: Study, m: LightingMap) -> Path:
     d = folder(study)
     d.mkdir(parents=True, exist_ok=True)
-    np.save(d / f"{m.info.lamp_id}.mean.npy", m.mean.astype(np.float32))
-    np.save(d / f"{m.info.lamp_id}.m2.npy", m.m2.astype(np.float32))
-    (d / f"{m.info.lamp_id}.json").write_text(json.dumps(asdict(m.info), indent=1), encoding="utf-8")
+    mid = m.info.map_id
+    np.save(d / f"{mid}.mean.npy", m.mean.astype(np.float32))
+    np.save(d / f"{mid}.m2.npy", m.m2.astype(np.float32))
+    (d / f"{mid}.json").write_text(json.dumps(asdict(m.info), indent=1), encoding="utf-8")
     return d
 
 
-def load(study: Study, lamp_id: str) -> LightingMap | None:
+def load(study: Study, lamp_id: str, shape: str = "isotropic") -> LightingMap | None:
     d = folder(study)
-    meta = d / f"{lamp_id}.json"
+    mid = map_id(lamp_id, shape)
+    meta = d / f"{mid}.json"
+    if not meta.exists() and shape == "isotropic":  # stored before maps were per zone
+        mid = lamp_id
+        meta = d / f"{mid}.json"
     if not meta.exists():
         return None
     info = MapInfo(**json.loads(meta.read_text(encoding="utf-8")))
-    mean = np.load(d / f"{lamp_id}.mean.npy", mmap_mode="r")
-    m2 = np.load(d / f"{lamp_id}.m2.npy", mmap_mode="r")
+    mean = np.load(d / f"{mid}.mean.npy", mmap_mode="r")
+    m2 = np.load(d / f"{mid}.m2.npy", mmap_mode="r")
     return LightingMap(info, mean, m2)
 
 
+def jobs(placed: list[PlacedLamp]) -> list[tuple[PlacedLamp, str, BinnedSpectrum]]:
+    """Every map a study needs: (lamp, zone shape, the zone's radiance)."""
+    return [(pl, shape, r) for pl in placed for shape, r in map_zones(pl)]
+
+
 def render(study: Study, placed: list[PlacedLamp], spp_per_pass: int, passes: int, variant: str,
-           scene=None, progress=None) -> list[LightingMap]:
-    """Render every lamp's map in one loaded scene, switching the emitting lamp in place."""
+           scene=None, progress=None, only=None) -> list[LightingMap]:
+    """Render every lamp's maps (one per zone shape) in one loaded scene, switching the
+    emitting lamp and zone in place. ``only``: a subset of ``jobs(placed)`` to render."""
     import mitsuba as mi
 
     from lss.render import mitsuba_scene as ms
@@ -123,20 +142,21 @@ def render(study: Study, placed: list[PlacedLamp], spp_per_pass: int, passes: in
     grid = study.grid
     sc = scene if scene is not None else mi.load_dict(ms.scene_dict(study))
     params = mi.traverse(sc)
-    keys = [ms.emitter_key(p.id) for p in study.lamps]
     out = []
-    for p, pl in zip(study.lamps, placed, strict=True):
-        ms.set_emitting(params, keys, ms.emitter_key(p.id))
-        wy = recolour.luminance_weights(summed(pl), grid)
+    for pl, shape, radiance in (jobs(placed) if only is None else only):
+        lamp_id = pl.placement.id
+        ms.set_emitting(params, study, lamp_id, shape)
+        wy = recolour.luminance_weights(radiance, grid)
         acc, acc_y = Welford(), Welford()
         t0 = time.perf_counter()
+        label = map_id(lamp_id, shape)
         for i in range(passes):
             m = ms.read_film(mi.render(sc, spp=spp_per_pass, seed=i), grid)
             acc.add(m)
             acc_y.add(m @ wy)
             if progress:
-                progress(p.id, i + 1, passes)
-        info = MapInfo(p.id, passes, spp_per_pass, variant, round(time.perf_counter() - t0, 3),
-                       luminance_noise(acc_y.standard_error(), acc_y.mean), noise_label(pl))
+                progress(label, i + 1, passes)
+        info = MapInfo(lamp_id, passes, spp_per_pass, variant, round(time.perf_counter() - t0, 3),
+                       luminance_noise(acc_y.standard_error(), acc_y.mean), noise_label(pl, shape), shape)
         out.append(LightingMap(info, acc.mean, acc.m2))
     return out

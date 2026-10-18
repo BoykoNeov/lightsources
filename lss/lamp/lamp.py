@@ -37,12 +37,14 @@ class Lamp:
     #: they stay library values, unlike a value the lamp sets in its own description.
     library_overrides: dict[str, Parameter] = field(default_factory=dict)
 
-    def generate(self, level: int) -> EmissionProfile:
+    def generate(self, level: int, angle_bands: int | None = None) -> EmissionProfile:
+        """The level's emission profile; ``angle_bands`` asks a generator with emission-angle
+        bands for that many equal ones (the renderer's zone-count knob, design §8.5)."""
         from lss.lamp.generators import run
 
         if level not in self.models:
             raise KeyError(f"{self.id} has no level {level}; available: {sorted(self.models)}")
-        return run(self, self.models[level])
+        return run(self, self.models[level], angle_bands)
 
     def reads_from_library(self, name: str, spec: ModelSpec | None = None) -> bool:
         """True if ``name`` resolves to the shared phosphor library, not to this lamp."""

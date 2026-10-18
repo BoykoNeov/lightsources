@@ -213,10 +213,10 @@ def _unit(lamp, spec, name, unit, used):
 DIE_REFLECTANCE = 1.0
 
 
-def _led_layer(lamp, spec, used, warming_k: float | None = None, yields=(1.0, 1.0)):
+def _led_layer(lamp, spec, used, warming_k: float | None = None, yields=(1.0, 1.0), zones_deg=None):
     """The die's blue through the garnet and nitride layer (Level 2); for Level 3, with the die
     and the phosphors ``warming_k`` above Level 2's anchor and the phosphors' yields relative
-    to it."""
+    to it. ``zones_deg`` replaces the layer's default angle bands (the zone-count knob, §8.5)."""
     from lss.physics.led import layer
 
     def val(name, unit):
@@ -238,16 +238,17 @@ def _led_layer(lamp, spec, used, warming_k: float | None = None, yields=(1.0, 1.
                                    val("nitride.absorption_edge", "nm"), val("nitride.edge_width", "cm-1"))
     phosphors_ = [layer.Phosphor(g_abs, g_em, val("garnet_optical_depth", "1"), yields[0]),
                   layer.Phosphor(n_abs, n_em, val("nitride_optical_depth", "1"), yields[1])]
-    out = layer.transfer(pump, phosphors_, die_reflectance=DIE_REFLECTANCE)
+    out = layer.transfer(pump, phosphors_, die_reflectance=DIE_REFLECTANCE,
+                         zones_deg=layer.ZONES_DEG if zones_deg is None else zones_deg)
     return tuple(
         Zone(Spectrum.of(TabulatedContinuum(layer.GRID_NM, out.power_per_nm(i)), name=f"LED layer {lo:g}-{hi:g} deg"),
              shape=f"polar {lo:g}-{hi:g} deg", name=f"emission {lo:g}-{hi:g} deg")
         for i, (lo, hi) in enumerate(out.zones_deg))
 
 
-def _led_phosphor_layer(lamp, spec) -> EmissionProfile:
+def _led_phosphor_layer(lamp, spec, zones_deg=None) -> EmissionProfile:
     used = {}
-    zones = _led_layer(lamp, spec, used)
+    zones = _led_layer(lamp, spec, used, zones_deg=zones_deg)
     return EmissionProfile(
         zones=zones,
         power=None,  # relative: no drive current, and the quantum yields are taken as 1
@@ -263,7 +264,7 @@ def _led_phosphor_layer(lamp, spec) -> EmissionProfile:
     )
 
 
-def _led_thermal(lamp, spec) -> EmissionProfile:
+def _led_thermal(lamp, spec, zones_deg=None) -> EmissionProfile:
     from lss.physics.led import thermal
 
     used = {}
@@ -277,7 +278,7 @@ def _led_thermal(lamp, spec) -> EmissionProfile:
     anchor = val("phosphor_temperature", "K")  # Level 2 was fitted here
     yields = tuple(thermal.relative_yield(t_j, anchor, val(f"{p}.quench_retained_423k", "1"),
                                           val(f"{p}.quench_activation_energy", "eV")) for p in ("garnet", "nitride"))
-    zones = _led_layer(lamp, spec, used, warming_k=t_j - anchor, yields=yields)
+    zones = _led_layer(lamp, spec, used, warming_k=t_j - anchor, yields=yields, zones_deg=zones_deg)
     return EmissionProfile(
         zones=zones,
         power=None,  # relative: the die's own efficiency and droop dim every part alike and are left out
@@ -366,9 +367,24 @@ GENERATORS = {"reference": _reference, "planck": _planck, "tungsten": _tungsten,
               "fluorescent_triband": _fluorescent_triband, "soot": _soot}
 
 
-def run(lamp, spec) -> EmissionProfile:
+#: Generators that give emission-angle bands and take other band edges (``zones_deg``).
+ANGLE_ZONED = frozenset({"led_phosphor_layer", "led_thermal"})
+
+
+def equal_bands(n: int) -> tuple[tuple[float, float], ...]:
+    """n equal bands of polar angle over 0–90°."""
+    if n < 1:
+        raise ValueError("at least one angle band")
+    return tuple((90.0 * i / n, 90.0 * (i + 1) / n) for i in range(n))
+
+
+def run(lamp, spec, angle_bands: int | None = None) -> EmissionProfile:
     try:
         gen = GENERATORS[spec.generator]
     except KeyError:
         raise KeyError(f"unknown generator {spec.generator!r}; known: {sorted(GENERATORS)}") from None
-    return gen(lamp, spec)
+    if angle_bands is None:
+        return gen(lamp, spec)
+    if spec.generator not in ANGLE_ZONED:
+        raise ValueError(f"{lamp.id} level {spec.level} ({spec.generator}) has no angle bands to set")
+    return gen(lamp, spec, zones_deg=equal_bands(angle_bands))

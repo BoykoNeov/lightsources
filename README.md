@@ -53,9 +53,11 @@ Rendering (needs the `render` extra):
 
 ```
 lss render lab --png lab.png          # the reference lab's lighting maps, re-coloured under its lamp
+lss render lab_led --png lab_led.png  # the same lab under LED-B3 Level 2, one map per emission-angle band
 ```
 
-A study (`lss/data/studies/*.yaml`) places each lamp as a sphere and gives its luminous
+A study (`lss/data/studies/*.yaml`) places each lamp as a sphere, or as a disc that emits
+from its front (which also takes an LED's emission-angle bands), and gives its luminous
 flux. Every lamp is scaled to that flux, so a render's brightness is the study's setting,
 not the lamp's own output: compare colours across renders, not brightness. Maps are
 stored under `$LSS_CACHE/maps/`; a lamp-physics edit re-colours them without a render.
@@ -68,5 +70,5 @@ On Windows, from a POSIX shell, at below-normal priority:
 cmd //v:on //c "start /belownormal /b /wait .venv\Scripts\python -m pytest & exit !errorlevel!"
 ```
 
-The renderer tests (furnace, inverse square, re-colouring, the direct calculation) are
-left out of the default run; add `-m render` to run them (they skip without Mitsuba).
+The renderer tests (furnace, inverse square, re-colouring, the direct calculation, the
+disc's angle bands, and the bin-width and band-count convergence checks) are left out of the default run; add `-m render` to run them (they skip without Mitsuba).

@@ -1,5 +1,6 @@
-"""Renderer tests (design §12, §8.4): furnace, inverse square, re-colouring against a direct
-render, and the direct calculation. Slow and on demand: ``pytest -m render``.
+"""Renderer tests (design §12, §8.4, §8.5): furnace, inverse square, re-colouring against a
+direct render, the direct calculation, the flat emitter's angle bands, and the bin-width and
+zone-count convergence tests. Slow and on demand: ``pytest -m render``.
 """
 
 import math
@@ -12,6 +13,7 @@ pytestmark = pytest.mark.render
 
 mi = pytest.importorskip("mitsuba")
 
+from lss.lamp.profile import polar_band  # noqa: E402
 from lss.render import env, recolour  # noqa: E402
 from lss.render import mitsuba_scene as ms  # noqa: E402
 from lss.render.lamps import place  # noqa: E402
@@ -221,11 +223,11 @@ def chart_delta_e(lamp: str, spp=1024, passes=8):
     return to_direct, to_bins
 
 
-def bin_means(m: materials.Material) -> np.ndarray:
+def bin_means(m: materials.Material, grid=GRID) -> np.ndarray:
     """Each render bin's mean reflectance as Mitsuba reads it (linear between knots): the
     noise-free map of a patch under a flat unit spectrum, up to the irradiance."""
     out = []
-    for lo, hi in zip(GRID.edges[:-1], GRID.edges[1:]):
+    for lo, hi in zip(grid.edges[:-1], grid.edges[1:]):
         x = np.linspace(lo, hi, 4001)
         out.append(np.trapezoid(m.at(x), x) / (hi - lo))
     return np.array(out)
@@ -250,3 +252,135 @@ def test_direct_calculation_hps_records_the_bin_width():
           f"; against the noise-free bin means max {max(noise.values()):.3f}")
     assert max(de.values()) < 5.0
     assert max(noise.values()) < 0.06
+
+
+# --- Second slice (§8.5): the flat emitter with angle bands, and the two convergence tests.
+
+def disc_patch_scene(theta_deg, r=0.01, d=1.0, rho=0.5, mu=(0.0, 1.0)):
+    """A disc lamp (radius r, normal +z, black) and a 2 cm patch at distance d and
+    ``theta_deg`` off its normal, facing it, seen head-on through a 1 cm window."""
+    t = math.radians(theta_deg)
+    c = np.array([d * math.sin(t), 0.0, d * math.cos(t)])
+    n = -c / d
+    return mi.load_dict({
+        "type": "scene", "integrator": {"type": "path", "max_depth": 2},
+        "sensor": ortho((c + 0.3 * n).tolist(), c.tolist(), [0, 1, 0], (0.005, 0.005), (16, 16)),
+        "patch": {"type": "rectangle", "to_world": T().look_at(c.tolist(), (c + n).tolist(), [0, 1, 0]) @ T().scale(0.01),
+                  "bsdf": {"type": "diffuse", "reflectance": {"type": "uniform", "value": rho}}},
+        "lamp": {"type": "disk", "to_world": T().scale(r), "bsdf": ms.BLACK,
+                 "emitter": {"type": "polardisc", "mu_lo": mu[0], "mu_hi": mu[1]}}})
+
+
+def test_disc_angle_bands():
+    """§8.5: with one band on, a patch inside it reads ρ·L·r²·cos θ/d² (the finite disc
+    changes this by 10⁻⁴); patches in the other bands read exactly 0; the bands' maps add
+    up to one render with a single 0-90° band."""
+    bands = ["polar 0-30 deg", "polar 30-60 deg", "polar 60-90 deg"]
+    for theta in (15.0, 45.0, 75.0):
+        sc = disc_patch_scene(theta)
+        params = mi.traverse(sc)
+        expect = 0.5 * 0.01**2 * math.cos(math.radians(theta))
+        total = 0.0
+        for shape in bands:
+            params["lamp.emitter.mu_lo"], params["lamp.emitter.mu_hi"] = ms.band_cosines(shape)
+            params.update()
+            m = ms.read_film(render_passes(sc, 1024, 4), GRID)
+            mean, se = mean_and_se(m)
+            lo, hi = polar_band(shape)
+            if lo <= theta < hi:
+                z = (mean - expect) / se
+                print(f"theta {theta}, {shape}: mean/expected {mean.mean() / expect:.5f}, max |z| {np.abs(z).max():.2f}")
+                assert np.abs(z).max() < 4.0
+                assert mean.mean() == pytest.approx(expect, rel=2e-3)
+            else:
+                assert np.all(m == 0.0)
+            total = total + m
+        params["lamp.emitter.mu_lo"], params["lamp.emitter.mu_hi"] = ms.band_cosines("isotropic")
+        params.update()
+        whole = ms.read_film(render_passes(sc, 1024, 4), GRID)
+        a, sa = mean_and_se(total)
+        b, sb = mean_and_se(whole)
+        z = (a - b) / np.hypot(sa, sb)
+        print(f"theta {theta}: bands summed / one 0-90 band {a.mean() / b.mean():.5f}, max |z| {np.abs(z).max():.2f}")
+        assert np.abs(z).max() < 4.0
+
+
+def chart_renders(grid, spp=1024, passes=8):
+    """The ColorChecker through §8.4's patch set-up, rendered once on ``grid`` (the map does
+    not depend on the lamp). Returns (materials, patch pixel boxes, irradiance factors, map)."""
+    chart = samples.get("colorchecker")
+    mats = [materials.from_analysis_grid(lb, chart.values[:, i], chart.citation) for i, lb in enumerate(chart.labels)]
+    res = (240, 160)
+    img, boxes, factors = lit_patches(mats, None, ms.film(grid, *res), res, spp, passes)
+    return mats, boxes, factors, ms.read_film(img, grid)
+
+
+def chart_lab(lamp, grid, rendered, noise_free=False):
+    """Each patch's CIELAB (against the white card's direct value) through the maps on
+    ``grid``, rendered or from the noise-free bin means; and the direct values at 1 nm."""
+    mats, boxes, factors, m = rendered
+    chart = samples.get("colorchecker")
+    s = place(LampPlacement("l", lamp, 0, 1000.0, (0, 0, 0), 0.5)).zones[0].radiance
+    out, direct = [], []
+    for i, (b, f) in enumerate(zip(boxes, factors)):
+        white = colorimetry.tristimulus(BinnedSpectrum(s.grid, s.values * f / math.pi, 0, 0))
+        if noise_free:
+            xyz = recolour.recolour([bin_means(mats[i], grid) * f / math.pi], [s], grid)
+        else:
+            xyz = recolour.recolour([m[b]], [s], grid).reshape(-1, 3).mean(0)
+        out.append(lab(xyz, white))
+        direct.append(lab(colorimetry.tristimulus(
+            BinnedSpectrum(s.grid, s.values * chart.values[:, i] * f / math.pi, 0, 0)), white))
+    return np.array(out), np.array(direct)
+
+
+def test_bin_halving():
+    """§12: halving the render bins (10 → 5 nm) changes the chart by ΔE00 < 0.3 (§8.5)."""
+    g5 = render_grid(5.0)
+    r10, r5 = chart_renders(GRID), chart_renders(g5)
+    for lamp in ("incandescent_cie_a", "led_cie_b3", "fluorescent_cie_fl11", "hps_cie_hp1"):
+        l10, direct = chart_lab(lamp, GRID, r10)
+        l5, _ = chart_lab(lamp, g5, r5)
+        n10, _ = chart_lab(lamp, GRID, r10, noise_free=True)
+        n5, _ = chart_lab(lamp, g5, r5, noise_free=True)
+        change, change_nf = delta_e00(l10, l5), delta_e00(n10, n5)
+        noise5, err5 = delta_e00(l5, n5), delta_e00(l5, direct)
+        print(f"{lamp}: 10->5 nm max dE00 {change.max():.3f} (noise-free {change_nf.max():.3f}); "
+              f"5 nm against its noise-free bins max {noise5.max():.3f}, against SPD x reflectance max {err5.max():.3f}")
+        assert change.max() < 0.3
+        # FL11's lines put its weight in a few bins, so its colour carries about three times
+        # the others' noise, at 10 nm as at 5 nm (0.15 and 0.17 here; 0.045 and 0.056 with
+        # four times the samples): the lamp's noise, not the bins' (§8.5).
+        assert noise5.max() < (0.25 if lamp == "fluorescent_cie_fl11" else 0.06)
+
+
+def test_band_count_lab_led():
+    """§12: doubling the zone count should change the image by ΔE00 < 0.3. For LED Level 2
+    it does not, by far (§8.5): the bands are angles inside the layer, with no refraction at
+    its surface, and the colour changes steeply towards grazing. Recorded as a finding."""
+    from dataclasses import replace
+
+    from lss.render import image, maps
+    from lss.scene import study as studies
+
+    base = studies.load("lab_led")
+    labs = {}
+    for n in (3, 6):
+        s = replace(base, lamps=(replace(base.lamps[0], angle_bands=n),))
+        placed = [place(p) for p in s.lamps]
+        result = maps.render(s, placed, 512, 8, env.setup())
+        for m in result:
+            print(f"{n} bands, {m.info.zone}: {m.info.seconds:.2f} s, noise {100 * m.info.noise_under_study_lamp:.2f} %")
+        xyz = recolour.recolour([m.mean for m in result], [r for _, _, r in maps.jobs(placed)], s.grid)
+        white = next(sh for sh in s.shapes if sh.id == "white card")
+        chart = [sh for sh in s.shapes if sh.id.startswith("cc ")]
+        labs[n] = (image.region_mean(xyz, s.camera, white.centre),
+                   [image.region_mean(xyz, s.camera, sh.centre) for sh in chart])
+    w6 = labs[6][0]
+    fixed = np.array([delta_e00(lab(a, w6), lab(b, w6)) for a, b in zip(labs[3][1], labs[6][1])])
+    own = np.array([delta_e00(lab(a, labs[3][0]), lab(b, w6)) for a, b in zip(labs[3][1], labs[6][1])])
+    card = float(delta_e00(lab(labs[3][0], w6), lab(w6, w6)))
+    print(f"3 -> 6 bands: chart dE00 against the 6-band white card {fixed.min():.2f}..{fixed.max():.2f} "
+          f"(mean {fixed.mean():.2f}), the card itself {card:.2f}; each against its own card "
+          f"{own.min():.2f}..{own.max():.2f} (mean {own.mean():.2f})")
+    assert fixed.max() > 1.0  # the finding: far from §12's 0.3

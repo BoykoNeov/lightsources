@@ -48,5 +48,8 @@ def setup(variant: str | None = None) -> str:
             continue
         if v == CPU:
             dr.set_thread_count(min(CPU_THREADS, os.cpu_count() or CPU_THREADS))
+        from lss.render import emitters
+
+        emitters.register()
         return v
     raise RendererUnavailable("no Mitsuba variant runs here: " + "; ".join(errors))

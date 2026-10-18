@@ -284,24 +284,29 @@ def _cmd_render(args) -> int:
     for pl in placed:
         print(pl.note)
     variant = env.setup(args.variant)
-    stored = [None if args.force else maps.load(study, p.id) for p in study.lamps]
-    if all(m is not None and m.info.passes * m.info.spp_per_pass >= args.spp * args.passes for m in stored):
-        result = stored
-        print(f"maps from {maps.folder(study)}")
-    else:
-        result = maps.render(study, placed, args.spp, args.passes, variant,
-                             progress=lambda lamp, i, n: print(f"\r{lamp}: pass {i}/{n}", end="", file=sys.stderr))
+    jobs = maps.jobs(placed)
+    result = [None if args.force else maps.load(study, pl.placement.id, shape) for pl, shape, _ in jobs]
+    todo = [k for k, m in enumerate(result)
+            if m is None or m.info.passes * m.info.spp_per_pass < args.spp * args.passes]
+    if todo:
+        fresh = maps.render(study, placed, args.spp, args.passes, variant, only=[jobs[k] for k in todo],
+                            progress=lambda m, i, n: print(f"\r{m}: pass {i}/{n}", end="", file=sys.stderr))
         print(file=sys.stderr)
+        for k, m in zip(todo, fresh, strict=True):
+            result[k] = m
         for m in result:
             maps.save(study, m)
         print(f"maps written to {maps.folder(study)}")
-    for m, pl in zip(result, placed, strict=True):
+    else:
+        print(f"maps from {maps.folder(study)}")
+    for m, (pl, shape, _) in zip(result, jobs, strict=True):
         i = m.info
+        label = maps.noise_label(pl, shape)
         noise = f"noise {100 * i.noise_under_study_lamp:.2f} % under {i.noise_lamp or 'an unrecorded lamp'}"
-        if i.noise_lamp != maps.noise_label(pl):
-            noise = f"noise under {maps.noise_label(pl)} not measured ({noise}, when rendered; --force to measure)"
-        print(f"{i.lamp_id}: {i.passes} x {i.spp_per_pass} spp on {i.variant}, {i.seconds:g} s; {noise}")
-    xyz = recolour.recolour([m.mean for m in result], [maps.summed(pl) for pl in placed], study.grid)
+        if i.noise_lamp != label:
+            noise = f"noise under {label} not measured ({noise}, when rendered; --force to measure)"
+        print(f"{i.map_id}: {i.passes} x {i.spp_per_pass} spp on {i.variant}, {i.seconds:g} s; {noise}")
+    xyz = recolour.recolour([m.mean for m in result], [r for _, _, r in jobs], study.grid)
     white = next(s for s in study.shapes if s.id == "white card")
     white_xyz = image.region_mean(xyz, study.camera, white.centre)
     if args.png:
