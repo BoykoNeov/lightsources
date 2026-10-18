@@ -1,0 +1,54 @@
+# Optical constants of flame soot, for the soot cloud of flames (design §4.5, L2).
+#
+# A soot particle (10-50 nm) is far smaller than the wavelength, so it absorbs in the
+# Rayleigh limit: kappa = 6 pi E(m) f_v / lambda, with E(m) = -Im[(m^2 - 1)/(m^2 + 2)]
+# for the complex index m = n - ik and f_v the soot volume fraction. Only E(m)'s change
+# with wavelength shapes a flame's spectrum; its level and f_v enter as one optical depth.
+#
+# The exponent alpha in kappa ~ lambda^-alpha and the temperature trade off almost exactly
+# over the visible (about 18 K per 0.1 of alpha at 2000 K), so alpha is never fitted. Three
+# sets bracket it; their spread is reported as the temperature's uncertainty.
+
+data_version: soot_optics 2026-10-18
+
+sets:
+  chang1990:
+    kind: dispersion  # n and k as cubic polynomials in ln(lambda / um)
+    citation: >-
+      H. Chang and T. T. Charalampopoulos, "Determination of the wavelength dependence of
+      refractive indices of flame soot", Proc. R. Soc. Lond. A 430, 577-591 (1990),
+      doi:10.1098/rspa.1990.0107, eqs. 19a and 19b (read from the paper, 2026-10-18)
+    soot: premixed propane-oxygen flame, fuel equivalence ratio 1.8, 6-10 mm above the burner
+    # n = sum n_i (ln lambda)^i, k likewise, lambda in um.
+    n: [1.811, 0.1263, 0.027, 0.0417]
+    k: [0.5821, 0.1213, 0.2309, -0.01]
+    range_nm: [400, 30000]  # the range the authors give for eqs. 19
+    uncertainty: >-
+      eqs. 19 agree with the Kramers-Kronig values within 5 % (n) and 6 % (k) on average
+      at 8 mm; combined rms uncertainty 11-16 % in n and 4-15 % in k (their Table 5)
+    # Checked against their Table 3 (8 mm): mean differences 1.4 % (n) and 3.7 % (k), worst
+    # 5.4 % (n, 0.40 um) and 7.8 % (k, 1.00 um). Their Table 4, the per-entry differences,
+    # cannot be reproduced from Tables 3 and eqs. 19 as printed (at 1 um eq. 19a is 1.811
+    # exactly against 1.82, 0.5 %, where Table 4 says 2.0 %); the transcription matches the
+    # page images, so the paper's tables disagree with each other there.
+    # E(m) is 0.261 at 450 nm and 0.218 at 850 nm: alpha about 1.28 over 450-850 nm.
+
+  flat:
+    kind: constant_e  # E(m) the same at every wavelength: kappa ~ 1/lambda, alpha = 1
+    citation: >-
+      Rayleigh absorption with a wavelength-independent index (e.g. Bohren & Huffman,
+      Absorption and Scattering of Light by Small Particles, 1983, ch. 5): the assumption
+      usual for mature soot in two-colour pyrometry. A bound, not a measurement.
+    range_nm: [400, 30000]  # held to Chang's range so the sets compare like with like
+    uncertainty: a limiting case
+
+  hottel_broughton:
+    kind: power_law  # kappa ~ lambda^-alpha
+    alpha: 1.39
+    citation: >-
+      H. C. Hottel and F. P. Broughton, "Determination of true temperature and total
+      radiation from luminous gas flames", Ind. Eng. Chem. Anal. Ed. 4, 166 (1932); the
+      original was not seen, the exponent is as later papers quote it for the visible
+    # Given for the visible; carried to 850 nm, the end of the lighter study's window.
+    range_nm: [400, 850]
+    uncertainty: empirical, fitted to luminous flames; no uncertainty quoted

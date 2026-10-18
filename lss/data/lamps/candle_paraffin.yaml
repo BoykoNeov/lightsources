@@ -1,0 +1,31 @@
+id: candle_paraffin
+name: Wax candle flame (soot glow; unscored until a measured candle is in hand)
+family: flame
+# No open, measured candle spectrum was found (design §15). Luizova et al. (1990) measured
+# one in absolute units; until it is read, this preset is not scored, and both numbers
+# below are placeholders with reasons, not fits.
+reference: null
+
+physical:
+  soot_temperature:
+    value: 1810
+    unit: K
+    empirical: true
+    reason: >-
+      Luizova, Smirnov, Khakhaev & Chugin, High Temp. 28, 674 (1990), abstract: 1810 +- 50 K
+      for the flame's emitting region (2.5 cm2). The paper is not yet read, so whether this
+      is a soot temperature or a colour temperature is not known; a colour temperature would
+      put the soot about 200 K cooler (design §4.5)
+    bounds: [1500, 2200]
+  soot_optical_depth:
+    # At 550 nm. With only a relative spectrum this cannot be fixed; Luizova's absolute
+    # intensity and emitting area would fix it. For LICA's lighter, 0.1 to 1 instead of the
+    # thin limit moves the temperature its spectrum implies by about +9 to +79 K (lss flame).
+    value: 0.1
+    unit: "1"
+    empirical: true
+    reason: placeholder until a measured absolute candle spectrum is read; not fitted
+    bounds: [0.001, 5.0]
+
+models:
+  2: {generator: soot}  # Chang & Charalampopoulos's soot optics (lss/data/soot_optics.yaml)

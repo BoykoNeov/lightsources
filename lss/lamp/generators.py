@@ -26,6 +26,9 @@ Each generator produces bare emission plus whatever it already folds in
 * ``fluorescent_triband`` — fluorescent Level 1: the visible Hg lines in measured
   ratios plus the rare-earth tri-phosphor blend, with shapes from the shared phosphor
   library and this lamp's own mix.
+* ``soot`` — flame Level 2: a uniform layer of soot at one temperature, absorbing in the
+  Rayleigh limit with Chang & Charalampopoulos's measured index, seen through its optical
+  depth (thin: bluer than a grey body at the same temperature; thick: a black body).
 """
 
 from lss.lamp import phosphors
@@ -332,10 +335,35 @@ def _fluorescent_triband(lamp, spec) -> EmissionProfile:
     )
 
 
+def _soot(lamp, spec) -> EmissionProfile:
+    from lss.physics.flame import soot
+
+    used = {"soot_temperature": lamp.parameter("soot_temperature", spec),
+            "soot_optical_depth": lamp.parameter("soot_optical_depth", spec)}
+    if used["soot_temperature"].unit != "K":
+        raise ValueError("soot_temperature must be in K")
+    if used["soot_optical_depth"].unit != "1":
+        raise ValueError("soot_optical_depth is an optical depth at 550 nm, unit 1")
+    t, tau = used["soot_temperature"].value, used["soot_optical_depth"].value
+    cont = soot.SootContinuum(t, tau)
+    return EmissionProfile(
+        zones=(Zone(Spectrum.of(cont, quantity="W m-2 sr-1 nm-1", name=f"soot {t:g} K, depth {tau:g}"), name="flame"),),
+        power=None,  # radiance only: no flame size or soot load beyond the optical depth yet
+        includes=frozenset(),
+        metadata={
+            "generator": "soot",
+            "level": spec.level,
+            "params": {k: p.as_dict() for k, p in used.items()},
+            "valid_range_nm": cont.support,
+            "data_versions": ["CODATA 2018 constants", soot.data_version() + ": chang1990"],
+        },
+    )
+
+
 GENERATORS = {"reference": _reference, "planck": _planck, "tungsten": _tungsten, "tungsten_coil": _tungsten_coil,
               "tungsten_resistance": _tungsten_resistance, "tungsten_balance": _tungsten_balance,
               "led_two_band": _led_two_band, "led_phosphor_layer": _led_phosphor_layer, "led_thermal": _led_thermal,
-              "fluorescent_triband": _fluorescent_triband}
+              "fluorescent_triband": _fluorescent_triband, "soot": _soot}
 
 
 def run(lamp, spec) -> EmissionProfile:

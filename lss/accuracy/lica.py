@@ -38,6 +38,9 @@ FILES = {
     # A smooth spectrum, for LICA's response correction.
     "halogen": ("H_Halogen_2911K_LICA_Philips_cor.txt",
                 "5d18cefb438474aab0fbd9dadacab3add6d0a9ff0d03331355cb8241bcd4c6fd"),
+    # A flame: "Propane lighter" in the file's header (retrieved 2026-10-18; note "_corr").
+    "lighter": ("F_Flame_lighter_2165K_corr.txt",
+                "eccfdce5c027685046483e0b6db459514cb5994846dda5bc4fb1a58cb96305b0"),
     # High-pressure sodium street lamps (no electrical data, wattage or arc-tube size).
     "hps-1732k-toledo": ("HPS_High_Pressure_Sodium_1732K_SFH_Toledo_cor.txt",
                          "e51213714b475c05533e96f91ad53faf5cbd98f4903ddeb8794b3d072d63cca4"),

@@ -44,6 +44,9 @@ lss streethps                         # nine measured HPS street lamps (LICA-UCM
 lss streethpsfit                      # each of them with its own arc temperature and sodium pressure,
                                       # fitted to its blue peak and three lines (six tables built on
                                       # first use, about half an hour on 16 cores); the red wing held out
+lss flame                             # LICA's propane lighter flame (downloaded on first use) against a grey
+                                      # body and soot with three sets of soot optics; two floor treatments
+lss lampsheet candle_paraffin         # a wax candle as soot at 1810 K (unscored: no measured candle yet)
 ```
 
 Rendering (needs the `render` extra):

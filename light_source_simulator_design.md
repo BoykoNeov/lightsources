@@ -473,6 +473,27 @@ A candle or a lighter is not a lamp in a socket, but it is a light source people
 4. Optical depth raises the temperature towards the grey body's: by 10–40 K at 0.1, about a third of the way at 0.3, two thirds at 1.
 5. Subtracting the floor lowers every temperature, by 10–60 K.
 
+**Built (2026-10-18)** (`lss/physics/flame/soot.py`, `lss/data/soot_optics.yaml`, generator `soot`, `lss/studies/flame.py`, `lss flame`, preset `candle_paraffin`). Chang's equations as transcribed differ from their own Table 3 (8 mm) by 1.4 % in n and 3.7 % in k on average, within the 5 % and 6 % they state; their Table 4 cannot be reproduced from Table 3 and the equations as printed (at 1 µm eq. 19a is 1.811 exactly against 1.82, where Table 4 says 2.0 %), so the paper's tables disagree with each other there. The lighter (temperature in K, rms of model/measured − 1):
+
+| Model | T, floor as measured | rms | T, floor subtracted | rms |
+|---|---|---|---|---|
+| grey body (L1) | 2149 | 0.017 | 2096 | 0.023 |
+| soot, thin, α = 1 (flat E(m)) | 1966 | 0.031 | 1923 | 0.019 |
+| soot, thin, Chang (α ≈ 1.28) | 1922 | 0.023 | 1881 | 0.019 |
+| soot, thin, Hottel–Broughton (α = 1.39) | 1903 | 0.036 | 1863 | 0.021 |
+| soot, Chang, depth 0.1 / 0.3 / 1 | 1931 / 1948 / 2001 | 0.024–0.028 | 1889 / 1905 / 1956 | 0.018–0.019 |
+
+Against the predictions:
+- *1, half held.* Floor subtracted, every fit is within 1.8–2.3 % rms, 1.3× apart. As measured they are 1.7–3.6 %, 2.1× apart, and the grey body fits best. Which model the shape prefers is decided by the floor, which is not physics: the shape cannot pick a model.
+- *2, held.* The order is as predicted; the optics span 63 K (as measured) and 60 K (subtracted); thin soot with Chang's optics at 1922 and 1881 K, the grey body at 2149 and 2096 K. LICA's own header gives 2165 K as the file's correlated colour temperature, close to the grey body's, as it should be.
+- *3, held.* The highest temperature, the grey body's 2149 K, is under propane's 2270 K.
+- *4, missed: optical depth moves the temperature less than predicted.* +9 / +26 / +79 K at 0.1 / 0.3 / 1 (as measured), 4 %, 11 % and 35 % of the way to the grey body, against about 10–40 K, a third and two thirds. At depth 1 at 550 nm the soot's emissivity still falls from 0.74 at 450 nm to 0.45 at 850 nm, so it is far from grey; the guess underrated how slowly a layer saturates when its depth itself falls with wavelength.
+- *5, held.* Subtracting the floor lowers every temperature by 40–53 K.
+
+**So, for the lighter:** thin, its soot is at 1863–1966 K across the three optics and both floors; an optical depth of up to 1 at 550 nm (run with Chang's optics) adds up to 79 K (to 2001 K). So about 1860–2050 K, the top inferred, not run (the flat optics' 1966 K moved as Chang's did), some 150–250 K below the grey body's temperature. The spread comes from the optics (about 60 K), the floor (about 45 K) and the unknown optical depth (up to about 80 K), in similar parts. Only an absolute spectrum with the flame's size, or a measured soot load, would remove the last.
+
+**Finding (likely, not settled): one temperature does not fit the flame's shape.** Per 50 nm band the residual reaches 2–5 % (as measured) and 1–2.5 % (subtracted), where LICA's correction showed no structure beyond 0.6 % on the halogen lamp (§15). As measured, every model leaves a bowl: the flame is brighter than the model at both ends of the window. A flame is not at one temperature, and a mix of temperatures makes exactly that bowl (its log spectrum is convex in 1/λ). But the floor, if it is stray light, also raises the blue end, and subtracting it removes the blue arm of the bowl and leaves a 2 % hump at 500–600 nm, which the masked Swan bands' wings might make. The two cannot be told apart from this file. L5's temperature spread would test the first.
+
 ### 4.6 Later physics rungs (each a defined plug-in point)
 
 | Rung | Plugs into |
@@ -913,7 +934,7 @@ The GUI wraps the same library.
    - Voigt profiles, (b, θ) chords, zone spectra.
    - HP-Hg and HPS presets; self-reversal tests.
    - The headline result needs no renderer, so it arrives here.
-   - **Flames** (§4.5), alongside: *in progress (2026-10-18): first piece planned, the soot cloud (L2) against LICA's lighter flame, a candle preset unscored.* Next: the candle against Luizova et al.'s absolute spectrum (optical depth from the emitting area), then the alkali lines and the fuel budget.
+   - **Flames** (§4.5), alongside: *in progress (2026-10-18): the soot cloud (L2) with three sets of soot optics, against LICA's lighter flame: soot at about 1860–2050 K, the grey body 2100–2150 K, the shape unable to pick between them, one temperature missing the shape by 2–5 %; a candle preset, unscored.* Next: the candle against Luizova et al.'s absolute spectrum (optical depth from the emitting area), then the alkali lines and the fuel budget.
 4. **Renderer spike** (§8.3). It decides the CPU or GPU variant, the emitter plugin approach, and direct vs proxy-wavelength UV/IR. *Done (2026-10-18):* GPU (`cuda_ad_spectral`) for the lighting maps, CPU for tests and as a fallback; the zone emitter as a Python plugin; UV and IR rendered directly, not by proxy wavelengths (300–900 nm tested; §3.2's extended band reaches 200–3000 nm).
 5. **Renderer adapter.** *In progress: the first slice (§8.4, 2026-10-18): isotropic lamps as spheres scaled to the study's luminous flux, lighting maps with a per-bin noise record, the first reference lab, re-colouring, `lss render`, and §12's furnace, inverse-square, re-colouring and direct-calculation tests, which pass. Next: the render worker and its progress, the arc and LED zone emitters, probes and instruments, the bin and zone convergence tests.*
    - Zone emitters, lighting maps, reference lab, CLI render.

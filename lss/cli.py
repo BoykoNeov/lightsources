@@ -189,6 +189,23 @@ def _cmd_streethps(args) -> int:
     return 0
 
 
+def _cmd_flame(args) -> int:
+    from lss.accuracy import lica
+    from lss.studies import flame
+
+    if not lica.available(["lighter"]):
+        print(f"downloading LICA-UCM's lighter flame ({lica.CITATION})\ninto {lica.path('lighter').parent} "
+              "(set LSS_CACHE to change); it stays out of the repository at the site's request",
+              file=sys.stderr)
+    try:
+        lica.fetch("lighter")
+    except (OSError, ValueError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    print(flame.format_text())
+    return 0
+
+
 def _cmd_streethpsfit(args) -> int:
     from lss.accuracy import lica
     from lss.studies import street_hps_fit
@@ -360,6 +377,9 @@ def main(argv=None) -> int:
     p = sub.add_parser("streethps", help="nine measured HPS street lamps (downloaded on first use) "
                                          "against the rung-1 sodium arc, through the instrument's response")
     p.set_defaults(func=_cmd_streethps)
+    p = sub.add_parser("flame", help="LICA's lighter flame (downloaded on first use) against a grey body and soot "
+                                     "with three sets of optics, two treatments of the file's floor")
+    p.set_defaults(func=_cmd_flame)
     p = sub.add_parser("streethpsfit", help="each HPS street lamp's arc temperature and sodium pressure, "
                                             "fitted to its blue peak and line powers; the red wing held out")
     p.set_defaults(func=_cmd_streethpsfit)

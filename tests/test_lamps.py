@@ -47,7 +47,8 @@ def test_cie_tables_are_marked_coarse():
 @pytest.mark.parametrize("preset", lamps.preset_ids())
 def test_presets_generate_every_level(preset):
     lamp = lamps.load(preset)
-    assert lamp.reference in references.library()
+    # A preset may be unscored (no measured reference yet), never pointed at a missing one.
+    assert lamp.reference is None or lamp.reference in references.library()
     for level in lamp.models:
         profile = lamp.generate(level)
         assert profile.metadata["level"] == level
