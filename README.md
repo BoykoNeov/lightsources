@@ -13,7 +13,8 @@ uv pip install --python .venv/Scripts/python.exe -e ".[dev]"
 The renderer (Mitsuba 3) is the optional `render` extra (`-e ".[dev,render]"`). Its GPU
 variant needs only an NVIDIA driver. Its CPU variant needs an installed LLVM, named by
 `DRJIT_LIBLLVM_PATH` (e.g. `C:\Program Files\LLVM\bin\LLVM-C.dll`), and, with LLVM 22
-and Dr.Jit 1.5.0, a fresh `TEMP` per process for large kernels (design doc §8.3).
+and Dr.Jit 1.5.0, at most 8 worker threads (`drjit.set_thread_count(8)`): at 16 it
+crashes at random on large kernels (design doc §8.3).
 
 ## Use
 

@@ -50,8 +50,12 @@ def main():
     ap.add_argument("--width", type=float, default=10)
     ap.add_argument("--res", type=int, default=64)
     ap.add_argument("--spp", default="16,64,256,1024")
+    ap.add_argument("--threads", type=int, help="Dr.Jit CPU worker threads (default: all)")
     args = ap.parse_args()
     mi.set_variant(args.variant)
+    if args.threads:
+        import drjit as dr
+        dr.set_thread_count(args.threads)
     import numpy as np
 
     n = round((args.hi - args.lo) / args.width)

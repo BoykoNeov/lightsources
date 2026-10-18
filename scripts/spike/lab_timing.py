@@ -10,12 +10,14 @@ specfilm with 47 box channels of 10 nm over 360–830 nm.
 """
 import argparse
 import json
+import os
+import tempfile
 import time
 
 import mitsuba as mi
 import numpy as np
 
-PLY = "W:/temp/claude/render_spike/tess_sphere.ply"
+PLY = os.path.join(tempfile.gettempdir(), "lss_spike_tess_sphere.ply")
 
 
 def box(lo, hi, eps=1e-3):
@@ -106,8 +108,12 @@ def main():
     ap.add_argument("--spp", type=int, default=64)
     ap.add_argument("--repeat", type=int, default=3)
     ap.add_argument("--recompile", action="store_true")
+    ap.add_argument("--threads", type=int, help="Dr.Jit CPU worker threads (default: all)")
     args = ap.parse_args()
     mi.set_variant(args.variant)
+    if args.threads:
+        import drjit as dr
+        dr.set_thread_count(args.threads)
     w, h = map(int, args.res.split("x"))
     out = {"variant": args.variant, "res": [w, h], "spp": args.spp}
     sc, ntri = load(w, h, 8)
@@ -118,7 +124,14 @@ def main():
                ms_per_spp=round(1000 * min(later) / args.spp, 2),
                mean_px=float(img.mean()), finite=bool(np.isfinite(img).all()))
     if args.recompile:
-        rec = {}
+        # An edit in place, on the loaded scene: a chart patch's reflectance and the light's radiance.
+        params = mi.traverse(sc)
+        params["patch0.bsdf.reflectance.values"] *= 0.9
+        params["light.emitter.radiance.value"] *= 1.1
+        params.update()
+        a, _ = timed(sc, args.spp, seed=7)
+        b, _ = timed(sc, args.spp, seed=8)
+        rec = {"edit in place": {"first_s": round(a, 3), "second_s": round(b, 3)}}
         for label, (ww, hh, md) in {"res 640x480": (640, 480, 8), "depth 4": (w, h, 4),
                                     "back to start": (w, h, 8)}.items():
             t0 = time.perf_counter()
