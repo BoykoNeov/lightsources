@@ -440,7 +440,40 @@ emission coefficient     ε_λ = κ_λ · B_λ(T)                               
 
 **Metal halide** adds chemistry: dissociation equilibria of NaI, TlI, ScI₃, DyI₃ … by Gibbs-energy minimisation, giving radially varying free-metal densities. It is a plug-in providing n_species(T, p) to Stage A. HP-Hg and HPS come first.
 
-### 4.5 Later physics rungs (each a defined plug-in point)
+### 4.5 Flames: candles and open flames
+
+A candle or a lighter is not a lamp in a socket, but it is a light source people light rooms with, and its physics sits between the filament's and the arc's. Almost all of its visible light is thermal glow from soot: carbon particles of 10–50 nm, formed in the fuel-rich inside of the flame, heated by it and burnt off at its edge. On top of that, the flame's base and edge give out molecular bands (OH near 309 nm, CH near 431 nm, C₂'s Swan bands near 474, 516 and 563 nm), and any sodium or potassium in the wick or fuel gives atomic lines (Na D at 589 nm, K at 766/770 nm).
+
+- **L0 — measured.** Openly available (searched 2026-10-18): one flame in the LICA-UCM database, a "propane lighter" (its header's words), on the same spectrograph as the street lamps (§15), relative, 300–900 nm at 1 nm. No open candle spectrum was found. Luizova, Smirnov, Khakhaev & Chugin, "Radiative properties of a candle flame", Teplofiz. Vys. Temp. 28, 897 (1990) [High Temp. 28, 674], measured a candle's spectral intensity in absolute units, with the emitting area (2.5 ± 0.6 cm²) and a temperature (1810 ± 50 K, as its abstract states); it is the candle's reference once in hand (§15).
+- **L1 — grey body.** Planck at one temperature, times a constant emissivity. Its colour is Planck's at that temperature, so a fitted L1 temperature is a colour temperature, as for tungsten (§4.1).
+- **L2 — soot cloud.** A uniform layer of soot at one temperature, absorbing but not scattering:
+  - radiance = (1 − exp(−κ_λ·L))·B_λ(T), with κ_λ = 6π·E(m_λ)·f_v / λ, the absorption of particles much smaller than the wavelength (Rayleigh limit; a soot aggregate absorbs as the sum of its primary particles to first order). f_v is the soot volume fraction, L the path through the flame, m_λ = n − ik soot's complex refractive index and E(m) = −Im[(m² − 1)/(m² + 2)].
+  - Optically thin (κL ≪ 1) the emissivity falls with wavelength, roughly as λ^−α, so soot looks bluer than a grey body at the same temperature, like tungsten. Optically thick it tends to a black body. For a given colour, the thin limit therefore gives the lowest temperature and L1 the highest; a real flame lies between.
+  - **α is not fitted.** Across 450–850 nm, ln λ and 1/λ are nearly collinear, so the exponent and the temperature trade off, about 18 K per 0.1 of α at 2000 K. The soot's optics come from sources instead (`lss/data/soot_optics.yaml`), three of them, and their spread is reported as the temperature's uncertainty:
+    - Chang & Charalampopoulos, Proc. R. Soc. Lond. A 430, 577 (1990), eqs. 19a/b: n and k of premixed propane–oxygen soot as polynomials in ln λ, 0.4–30 µm, within about 5 % (n) and 6 % (k) of their Kramers–Kronig values on average; their combined rms uncertainty is 11–16 % in n and 4–15 % in k (Table 5). E(m) falls from 0.26 at 450 nm to 0.22 at 850 nm: α ≈ 1.28 there.
+    - E(m) constant (α = 1): the Rayleigh limit with an index that does not change with wavelength, the usual assumption for mature soot in two-colour pyrometry. A bound, not a measurement.
+    - Hottel & Broughton, Ind. Eng. Chem. Anal. Ed. 4, 166 (1932): α = 1.39 in the visible, fitted to luminous flames. An empirical exponent, the other bound. The original was not seen; the value is as later papers quote it.
+  - Scattering is left out. Soot absorbs far more than it scatters in the visible (not checked against a source here), and in a thin flame scattering moves light about without changing what the soot emits.
+  - Parameters: temperature, and the optical depth at 550 nm, κ_550·L (f_v and L only enter as their product). A relative spectrum cannot fix the optical depth; an absolute one with the emitting area can (Luizova).
+- **L3 — bands and lines** (later). The molecular bands are chemiluminescence: they come from chemistry, not from the temperature, so their strengths stay empirical unless a flame-chemistry model is built. The alkali lines are thermal at the flame's temperature and optically thick at their centres in a salted flame, so they go through the line-by-line transfer of §3.1 with the sodium data the arc already uses (Luizova salted their candle to measure the D lines).
+- **L4 — light from fuel burned** (later). A candle's heat release is its wax burn rate times the heat of combustion; the soot's share radiated, and from it the luminous flux, follow if the soot load and temperature are known. Hamins, Bundy & Dillon (NIST; J. Fire Prot. Eng. 15(4), 265–285 (2005)) measured burn rates, flame heights and heat flux of candles. The old British standard candle (spermaceti, burning 120 grains an hour), which defined the unit of luminous intensity before the candela, is a sanity check on a candle's output (about 1 cd, some 12 lm), not a measurement.
+- **L5 — the flame's structure** (later). Temperature and soot vary through the flame, with a blue base and a sooty tip, which gives zones (§2). Flicker is time-dependent, a non-goal (§1).
+
+**First piece (2026-10-18), planned before any fit.** Generator `soot` (L2) and the soot optics; the LICA lighter as a downloaded study (`lss flame`, like the street lamps: LICA files stay out of the reference library so `lss accuracy` stays offline); a candle preset, unscored until Luizova's spectrum is in hand. The rules, fixed now:
+- **Window.** 450–850 nm. Below 450 nm the lighter file sits on a flat floor of about 0.0047 (on its 900 nm value 1) from 320 to 380 nm, which soot at 2000 K cannot make there (about 5×10⁻⁴ of its 900 nm value at 350 nm). It is most likely the spectrograph's stray light: its low-pressure sodium lamp shows 2×10⁻⁴ of its peak there, and the lighter's broad red puts far more light on the detector. A weak CO₂* chemiluminescence continuum in the blue would also do it. At 450 nm the floor is about 20 % of the signal. 850 nm is where LICA's response correction was last checked (§15).
+- **Masks.** The C₂ Swan band heads (Δv = +1, 0, −1 at 473.7, 516.5, 563.6 nm): 465–476, 505–519 and 553–566 nm; Na D 585–593 nm and K 763–773 nm in case they are there. CH (431 nm) is outside the window.
+- **Floor.** Two variants, both reported: as measured, and with the 320–380 nm mean subtracted as a constant.
+- **Fit.** Temperature and scale, least squares on the relative residual (model/measured − 1) at the window's nodes. The instrument's 1.6 nm response does nothing to a smooth continuum, so it is not applied.
+- **Models.** L1 grey body; L2 thin soot with each of the three optics; L2 with Chang's optics at optical depths 0.1, 0.3 and 1 at 550 nm.
+
+**Predictions** (set after one hand check: the 600/900 nm ratio alone gives about 1860 K for α = 1.39 and 1950 K for α = 1, thin):
+1. The shape cannot pick a model: every fit's rms relative residual within 1.5× of the others', and each below 3 % with the floor subtracted.
+2. Temperatures in the order grey body > soot α = 1 > Chang > Hottel–Broughton, the three soot optics spanning 50–90 K. Thin soot with Chang's optics at 1800–2000 K; the grey body 2000–2200 K.
+3. Every temperature below the adiabatic flame temperature of propane in air, about 2270 K: a hard physical ceiling, since soot cannot be hotter than the gas around it. No published soot temperature for a lighter-sized propane flame was found to compare against; Luizova's candle (1810 ± 50 K, another fuel and method) is a soft cross-check only.
+4. Optical depth raises the temperature towards the grey body's: by 10–40 K at 0.1, about a third of the way at 0.3, two thirds at 1.
+5. Subtracting the floor lowers every temperature, by 10–60 K.
+
+### 4.6 Later physics rungs (each a defined plug-in point)
 
 | Rung | Plugs into |
 |------|-----------|
@@ -454,7 +487,7 @@ emission coefficient     ε_λ = κ_λ · B_λ(T)                               
 | PCA as a scattering medium | Renderer material |
 | Volumetric phosphor (LED L4) | LED generator |
 
-### 4.6 Data the physics layer needs (each with citation and stated uncertainty)
+### 4.7 Data the physics layer needs (each with citation and stated uncertainty)
 
 - NIST ASD line lists for Hg, Na, Sc, Tl, Dy, In, Xe: curated CSV subsets.
 - Partition functions (Irwin polynomials or tabulated).
@@ -843,6 +876,7 @@ lss/
     hid/         sodium.py (NIST levels and lines, partition function), composition.py (Saha),
                  broadening.py (pressure-broadening widths; later quasistatic wings),
                  arc.py (Stages A and B), later: Stage C, electrodes.py, chemistry.py (optional)
+    flame/       soot.py (soot optics, the soot cloud's radiance); later: bands and lines, fuel budget
   lamp/          physical description, components, EmissionProfile (zones), ProfileCache
   accuracy/      reference library, fit.py, report.py
   studies/       no-render studies: reflectance samples, appearance, colour chart, metameric pairs
@@ -879,6 +913,7 @@ The GUI wraps the same library.
    - Voigt profiles, (b, θ) chords, zone spectra.
    - HP-Hg and HPS presets; self-reversal tests.
    - The headline result needs no renderer, so it arrives here.
+   - **Flames** (§4.5), alongside: *in progress (2026-10-18): first piece planned, the soot cloud (L2) against LICA's lighter flame, a candle preset unscored.* Next: the candle against Luizova et al.'s absolute spectrum (optical depth from the emitting area), then the alkali lines and the fuel budget.
 4. **Renderer spike** (§8.3). It decides the CPU or GPU variant, the emitter plugin approach, and direct vs proxy-wavelength UV/IR. *Done (2026-10-18):* GPU (`cuda_ad_spectral`) for the lighting maps, CPU for tests and as a fallback; the zone emitter as a Python plugin; UV and IR rendered directly, not by proxy wavelengths (300–900 nm tested; §3.2's extended band reaches 200–3000 nm).
 5. **Renderer adapter.** *In progress: the first slice (§8.4, 2026-10-18): isotropic lamps as spheres scaled to the study's luminous flux, lighting maps with a per-bin noise record, the first reference lab, re-colouring, `lss render`, and §12's furnace, inverse-square, re-colouring and direct-calculation tests, which pass. Next: the render worker and its progress, the arc and LED zone emitters, probes and instruments, the bin and zone convergence tests.*
    - Zone emitters, lighting maps, reference lab, CLI render.
@@ -900,7 +935,7 @@ The GUI wraps the same library.
    - PCA as a scattering medium;
    - AC operation and warm-up;
    - non-LTE;
-   - the other rungs in §4.5.
+   - the other rungs in §4.6.
 
 ---
 
@@ -918,6 +953,7 @@ The GUI wraps the same library.
     - **LICA's response correction, checked.** The halogen lamp against a coiled tungsten filament (temperature, open fraction and scale free) fits at 2906 K within 0.6 % in every 50 nm band from 450 to 850 nm, so the correction has no structure beyond a smooth tilt. The open fraction goes to its bound (0.05, near a blackbody), so a small tilt may be absorbed there. The mercury lines' powers do not settle it either: against Reader et al.'s pencil lamp the 365 nm group is 1.5–1.6 times and 404.7 nm 1.2–1.3 times as strong relative to 546.1 nm (depending on the response fitted alongside), but all three end on metastable 6p levels and can self-absorb by an amount that depends on the lamp, so this cannot tell the correction from the lamp.
     - **Terms.** The site asks to be contacted before the data are used. The repository therefore does not include the files: it downloads them on first use into a cache outside git, checked by checksum, and keeps only the citation, the links and the numbers derived from them (decision, 2026-10-15).
 - **Sodium–mercury curves.** *Partly answered (2026-10-15):* the upper curves come from one figure (Windholz et al. 1991), digitised from a scan, with no transition dipoles. Czuchaj, Rebentrost, Stoll & Preuss (Chem. Phys. Lett. 178, 246 (1991)) tabulates curves and dipoles and would replace both the drawing and the dipole bracket. Measured Na–Hg far-wing absorption (Schlejen, Woerdman & Pichler 1988; Woerdman et al., J. Phys. B 18, 4205 (1985)) would test the wing's strength, as Chung et al.'s calculation did for sodium pairs; none of these is openly available.
+- **Candle reference.** No open, measured candle spectrum was found (2026-10-18: LICA and colour-science checked, and a general web search; LSPDD not checked directly). Luizova, Smirnov, Khakhaev & Chugin, "Radiative properties of a candle flame", Teplofiz. Vys. Temp. 28(5), 897–902 (1990); English: High Temperature 28(5), 674–679 (1990), measured one in absolute units with its emitting area; Math-Net.Ru lists it (tvt3663) but refused connections from here, and no DOI was found for the translation. With it the candle's temperature and optical depth can both be fitted, and the soot optics tested beyond a relative shape. A candle measured with a spectroradiometer and its burn rate weighed would test L4.
 - **Metameric pairs.** The study's pair is constructed (§7). The CIE's standard virtual pairs (ISO/CIE 23603, the successor of CIE 51.2's metamerism index: pairs matched under D55, D65 or D75 for the 10° observer) are distributed only on the standard's companion disk, not openly (checked 2026-10-14). Those pairs, or a measured pair of real samples, would make the split a standard or a real result rather than a demonstration.
 - **LED phosphor spectra.** No tabulated excitation or emission spectra of LED garnets or nitrides were found (2026-10-14; papers, patents and maker leaflets show them as plots only). LED Level 2's shared phosphor constants are therefore fitted to the five CIE LED tables they are scored on (§4.2). A measured spectrum of a single garnet or nitride, or measured LEDs outside the CIE set, would make the scores a real test and pin the garnet's coupling S.
 - **LED drive data.** *Partly answered (2026-10-15):* the first measured LEDs at several currents (Wu et al. 2026, §4.2 L3) give the voltage and radiant power, but not the board temperature, the thermal resistance, the die count or the phosphors, and their spectra are clipped where the signal is weak. They show the die's cited peak shift is consistent and that their green phosphor quenches far faster than the cited garnet, but cannot test Level 3's quenching of the garnet and nitride it models. A real test needs an LED of known phosphors (or their measured quenching curves) measured at several currents and board temperatures, with the board's temperature and the forward voltage at each, and spectra without a signal floor.
