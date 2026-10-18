@@ -30,6 +30,9 @@ packages = ["lss"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Renderer tests (design §12) are slower and need the 'render' extra: run them with -m render.
+addopts = "-m 'not render'"
+markers = ["render: needs Mitsuba; left out of the default run (pytest -m render)"]
 filterwarnings = [
     # colour-science: matplotlib-absent notice (plotting is unused) and its notices
     # when it resamples a table to the shape a metric needs.

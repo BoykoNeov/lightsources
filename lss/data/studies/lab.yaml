@@ -1,0 +1,23 @@
+# The reference lighting lab (design §8.2, §8.4) under one lamp.
+# The lamp is a sphere placed here, scaled to flux_lm: a render's brightness is this
+# setting, not the lamp's own output (no preset has an emitting surface yet).
+id: lab
+description: reference lab, ColorChecker and cards on the back wall, one lamp above and out of view
+scene: reference-lab
+camera:
+  origin: [0.0, -0.5, 1.3]
+  target: [0.0, 3.0, 1.2]
+  up: [0, 0, 1]
+  fov_deg: 60
+  width: 512
+  height: 384
+render:
+  bin_nm: 10
+  max_depth: 8
+lamps:
+  - id: lamp
+    lamp: incandescent_cie_a
+    flux_lm: 1000
+    sphere:
+      centre: [0.0, 0.8, 2.4]
+      radius: 0.03

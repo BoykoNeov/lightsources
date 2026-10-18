@@ -1,4 +1,4 @@
-"""Command-line interface (design §13): ``lss refs | lampsheet | accuracy | fit | chart | metamers``."""
+"""Command-line interface (design §13): ``lss refs | lampsheet | accuracy | fit | chart | metamers | render``."""
 
 import argparse
 import json
@@ -252,6 +252,50 @@ def _cmd_streethpstail(args) -> int:
     return 0
 
 
+def _cmd_render(args) -> int:
+    from lss.render import env
+
+    if not env.available():
+        print(f"error: {env.INSTALL_HINT}", file=sys.stderr)
+        return 2
+    from lss.render import image, maps, recolour
+    from lss.render.lamps import place
+    from lss.scene import study as studies
+
+    study = studies.load(args.study)
+    placed = [place(p) for p in study.lamps]
+    for pl in placed:
+        print(pl.note)
+    variant = env.setup(args.variant)
+    stored = [None if args.force else maps.load(study, p.id) for p in study.lamps]
+    if all(m is not None and m.info.passes * m.info.spp_per_pass >= args.spp * args.passes for m in stored):
+        result = stored
+        print(f"maps from {maps.folder(study)}")
+    else:
+        result = maps.render(study, placed, args.spp, args.passes, variant,
+                             progress=lambda lamp, i, n: print(f"\r{lamp}: pass {i}/{n}", end="", file=sys.stderr))
+        print(file=sys.stderr)
+        for m in result:
+            maps.save(study, m)
+        print(f"maps written to {maps.folder(study)}")
+    for m in result:
+        i = m.info
+        print(f"{i.lamp_id}: {i.passes} x {i.spp_per_pass} spp on {i.variant}, {i.seconds:g} s; "
+              f"noise under the study's spectrum {100 * i.noise_under_study_lamp:.2f} %")
+    xyz = recolour.recolour([m.mean for m in result], [maps.summed(pl) for pl in placed], study.grid)
+    white = next(s for s in study.shapes if s.id == "white card")
+    white_xyz = image.region_mean(xyz, study.camera, white.centre)
+    if args.png:
+        image.write_png(args.png, image.to_srgb(xyz, white_xyz))
+        print(f"image written to {Path(args.png).resolve()} (balanced on the white card)")
+    print("\nColorChecker in the image (CIE 1931 xy):")
+    for s in study.shapes:
+        if s.id.startswith("cc "):
+            v = image.region_mean(xyz, study.camera, s.centre)
+            print(f"  {s.id[3:]:<22} x {v[0] / v.sum():.4f}  y {v[1] / v.sum():.4f}  Y/Y_white {v[1] / white_xyz[1]:.4f}")
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="lss", description="Light source simulator")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -326,6 +370,17 @@ def main(argv=None) -> int:
     p = sub.add_parser("streethpstail", help="the D1 band's long-range Na-Hg tail in each HPS street lamp at its "
                                              "fitted point: fitted against dispersion, the mercury it moves")
     p.set_defaults(func=_cmd_streethpstail)
+
+    p = sub.add_parser("render", help="a study's lighting maps (Mitsuba, the 'render' extra), re-coloured under "
+                                      "its lamps; each lamp scaled to the study's luminous flux")
+    p.add_argument("study", help="study id (lss/data/studies) or YAML path")
+    p.add_argument("--spp", type=int, default=64, help="samples per pixel per pass (default 64)")
+    p.add_argument("--passes", type=int, default=8, help="independent passes, for the noise (default 8)")
+    p.add_argument("--variant", choices=["cuda_ad_spectral", "llvm_ad_spectral"],
+                   help="Mitsuba variant (default: GPU if it runs, else CPU)")
+    p.add_argument("--force", action="store_true", help="render even if stored maps have enough samples")
+    p.add_argument("--png", metavar="PATH", help="write the re-coloured image as PNG")
+    p.set_defaults(func=_cmd_render)
 
     args = parser.parse_args(argv)
     for stream in (sys.stdout, sys.stderr):

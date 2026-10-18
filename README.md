@@ -46,6 +46,17 @@ lss streethpsfit                      # each of them with its own arc temperatur
                                       # first use, about half an hour on 16 cores); the red wing held out
 ```
 
+Rendering (needs the `render` extra):
+
+```
+lss render lab --png lab.png          # the reference lab's lighting maps, re-coloured under its lamp
+```
+
+A study (`lss/data/studies/*.yaml`) places each lamp as a sphere and gives its luminous
+flux. Every lamp is scaled to that flux, so a render's brightness is the study's setting,
+not the lamp's own output: compare colours across renders, not brightness. Maps are
+stored under `$LSS_CACHE/maps/`; a lamp-physics edit re-colours them without a render.
+
 ## Tests
 
 On Windows, from a POSIX shell, at below-normal priority:
@@ -53,3 +64,6 @@ On Windows, from a POSIX shell, at below-normal priority:
 ```
 cmd //v:on //c "start /belownormal /b /wait .venv\Scripts\python -m pytest & exit !errorlevel!"
 ```
+
+The renderer tests (furnace, inverse square, re-colouring, the direct calculation) are
+left out of the default run; add `-m render` to run them (they skip without Mitsuba).

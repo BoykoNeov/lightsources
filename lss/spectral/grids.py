@@ -71,8 +71,15 @@ def extended_grid() -> BinGrid:
     return BinGrid(np.concatenate([fine, coarse]), "extended")
 
 
-def render_grid(width: float = 10.0, lo: float = 360.0, hi: float = 830.0) -> BinGrid:
-    """Coarse render bins of ``width`` nm spanning [lo, hi] (the last bin may be narrower)."""
+def render_grid(width: float = 10.0, lo: float = 359.5, hi: float = 830.5) -> BinGrid:
+    """Coarse render bins of ``width`` nm spanning [lo, hi] (design §3.3, §8.4).
+
+    The defaults put every edge on an analysis-grid edge, so each render bin is a whole
+    number of 1 nm analysis bins and re-colouring uses the analysis grid's own sums. A
+    last bin narrower than half ``width`` is merged into the one before it.
+    """
     edges = np.arange(lo, hi, width)
+    if hi - edges[-1] < 0.5 * width and edges.size > 1:
+        edges = edges[:-1]
     edges = np.append(edges, hi)
     return BinGrid(edges, f"render {width:g} nm")
