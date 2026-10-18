@@ -19,6 +19,8 @@ dependencies = [
 dev = ["pytest>=8", "openpyxl>=3.1"]
 # Reading downloaded measurement data (`lss leddrive`).
 data = ["openpyxl>=3.1"]
+# The renderer (Mitsuba 3 spectral variants; design doc §8).
+render = ["mitsuba==3.9.1"]
 
 [project.scripts]
 lss = "lss.cli:main"
