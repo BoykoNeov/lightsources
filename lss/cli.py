@@ -278,10 +278,12 @@ def _cmd_render(args) -> int:
         for m in result:
             maps.save(study, m)
         print(f"maps written to {maps.folder(study)}")
-    for m in result:
+    for m, pl in zip(result, placed, strict=True):
         i = m.info
-        print(f"{i.lamp_id}: {i.passes} x {i.spp_per_pass} spp on {i.variant}, {i.seconds:g} s; "
-              f"noise under the study's spectrum {100 * i.noise_under_study_lamp:.2f} %")
+        noise = f"noise {100 * i.noise_under_study_lamp:.2f} % under {i.noise_lamp or 'an unrecorded lamp'}"
+        if i.noise_lamp != maps.noise_label(pl):
+            noise = f"noise under {maps.noise_label(pl)} not measured ({noise}, when rendered; --force to measure)"
+        print(f"{i.lamp_id}: {i.passes} x {i.spp_per_pass} spp on {i.variant}, {i.seconds:g} s; {noise}")
     xyz = recolour.recolour([m.mean for m in result], [maps.summed(pl) for pl in placed], study.grid)
     white = next(s for s in study.shapes if s.id == "white card")
     white_xyz = image.region_mean(xyz, study.camera, white.centre)

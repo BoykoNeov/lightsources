@@ -11,6 +11,8 @@ edit re-colours the stored maps without a render.
 For each map the render also reports the luminance-weighted relative standard error of
 the map re-coloured under the study's own spectrum (Σ se(Y) / Σ Y over the image, from
 each pass's re-coloured luminance), since a flat-spectrum noise flatters a line lamp (§8.3).
+That number belongs to the spectrum it was measured under (``MapInfo.noise_lamp``); maps
+reused for another lamp do not carry its noise.
 """
 
 import json
@@ -36,6 +38,9 @@ class MapInfo:
     variant: str
     seconds: float
     noise_under_study_lamp: float  # luminance-weighted relative standard error
+    #: The spectrum that noise was measured under ("<lamp> level <n>"). Maps are reused
+    #: for any lamp; under another spectrum their noise is not known (§8.3).
+    noise_lamp: str = ""
 
 
 @dataclass
@@ -71,6 +76,10 @@ def summed(placed: PlacedLamp) -> BinnedSpectrum:
     g = analysis_grid()
     vals = sum(z.radiance.values for z in placed.zones)
     return BinnedSpectrum(g, vals, 0.0, 0.0, placed.zones[0].radiance.quantity)
+
+
+def noise_label(placed: PlacedLamp) -> str:
+    return f"{placed.placement.lamp} level {placed.level}"
 
 
 def luminance_noise(se_y: np.ndarray, y: np.ndarray) -> float:
@@ -128,6 +137,6 @@ def render(study: Study, placed: list[PlacedLamp], spp_per_pass: int, passes: in
             if progress:
                 progress(p.id, i + 1, passes)
         info = MapInfo(p.id, passes, spp_per_pass, variant, round(time.perf_counter() - t0, 3),
-                       luminance_noise(acc_y.standard_error(), acc_y.mean))
+                       luminance_noise(acc_y.standard_error(), acc_y.mean), noise_label(pl))
         out.append(LightingMap(info, acc.mean, acc.m2))
     return out
