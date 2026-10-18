@@ -294,8 +294,7 @@ def _cmd_render(args) -> int:
         print(file=sys.stderr)
         for k, m in zip(todo, fresh, strict=True):
             result[k] = m
-        for m in result:
-            maps.save(study, m)
+            maps.save(study, m)  # only the new ones: stored maps are open read-only (memory-mapped)
         print(f"maps written to {maps.folder(study)}")
     else:
         print(f"maps from {maps.folder(study)}")

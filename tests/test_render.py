@@ -357,7 +357,8 @@ def test_bin_halving():
 def test_band_count_lab_led():
     """§12: doubling the zone count should change the image by ΔE00 < 0.3. For LED Level 2
     it does not, by far (§8.5): the bands are angles inside the layer, with no refraction at
-    its surface, and the colour changes steeply towards grazing. Recorded as a finding."""
+    its surface, and the colour changes steeply towards grazing. Recorded as a finding: once
+    refraction at the surface is modelled, turn the last assert into §12's < 0.3, not away."""
     from dataclasses import replace
 
     from lss.render import image, maps

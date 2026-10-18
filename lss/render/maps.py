@@ -8,8 +8,8 @@ in ``cache_dir()/maps/<study geometry hash>/``, as ``<map id>.mean.npy``, ``.m2.
 ``.json``, the map id being ``<lamp>@<zone>`` (``lamp@isotropic``, ``lamp@polar-0-30``).
 The hash leaves out the lamps' spectra and fluxes, so a physics edit re-colours the
 stored maps without a render; it also leaves out a disc's band edges, since one band's
-map does not depend on the others (the emitter is black), so a band is rendered once
-whatever layout it appears in.
+map does not depend on the others (the emitter is black): a band whose edges recur in
+another layout reuses its map (equal splits into different counts share none, §8.5).
 
 For each map the render also reports the luminance-weighted relative standard error of
 the map re-coloured under its zone's own spectrum in the study (Σ se(Y) / Σ Y over the

@@ -695,7 +695,8 @@ Mitsuba gives a spectral path tracer, BVH, BSDFs, a Python API and differentiabi
   - 5 nm bins: 1.07–1.48 times 10 nm, as predicted.
 
   A band switch's first render took 0.02–0.04 s: no compile. But the first compile of a 94-channel kernel took 20–88 s (the 47-channel one about 6 s). §8.4 saw cold compiles of 7–38 s on a loaded CPU, so how much of this is the channel count is not shown. The disk cache keeps the kernel for the next process.
-- **Not shown here.** Refraction at the LED layer's surface, which the zone-count test now waits on. A disc's back side, which is black and emits nothing (a real package's sides and back are not modelled). Whether the bin-halving result holds in the lab's inter-reflections, not just on the directly lit chart: the noise-free comparison needs a patch whose irradiance is known.
+- **Map reuse, overstated in the plan (found in review).** Keying maps by band keeps them correct, and a band reappears only when its edges do. But equal splits into n and m bands share no band unless n = m (0–30° is not among six 15° bands), so the 3- and 6-band renders shared nothing. The saving is only for edges chosen to coincide.
+- **Not shown here.** Refraction at the LED layer's surface, which the zone-count test now waits on. A disc's back side, which is black and emits nothing (a real package's sides and back are not modelled). Whether the bin-halving result holds in the lab's inter-reflections, not just on the directly lit chart: the noise-free comparison needs a patch whose irradiance is known. The CPU variant with 94 channels: every 5 nm render here ran on the GPU, and the CPU variant crashed on 47-channel kernels at 16 threads (§8.3); at its 8 threads, 94 channels have never been run.
 
 ---
 
