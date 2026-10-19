@@ -21,6 +21,8 @@ dev = ["pytest>=8", "openpyxl>=3.1"]
 data = ["openpyxl>=3.1"]
 # The renderer (Mitsuba 3 spectral variants; design doc §8).
 render = ["mitsuba==3.9.1"]
+# The viewer (design §9.7): Qt essentials only (no web engine) and pyqtgraph.
+ui = ["PySide6-Essentials==6.12.0", "pyqtgraph==0.14.0"]
 
 [project.scripts]
 lss = "lss.cli:main"
@@ -31,8 +33,11 @@ packages = ["lss"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # Renderer tests (design §12) are slower and need the 'render' extra: run them with -m render.
-addopts = "-m 'not render'"
-markers = ["render: needs Mitsuba; left out of the default run (pytest -m render)"]
+addopts = "-m 'not render and not ui'"
+markers = [
+    "render: needs Mitsuba; left out of the default run (pytest -m render)",
+    "ui: needs PySide6; opens the viewer offscreen; left out of the default run (pytest -m ui)",
+]
 filterwarnings = [
     # colour-science: matplotlib-absent notice (plotting is unused) and its notices
     # when it resamples a table to the shape a metric needs.

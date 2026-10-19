@@ -16,6 +16,9 @@ variant needs only an NVIDIA driver. Its CPU variant needs an installed LLVM, na
 and Dr.Jit 1.5.0, at most 8 worker threads (`drjit.set_thread_count(8)`): at 16 it
 crashes at random on large kernels (design doc §8.3).
 
+The viewer is the optional `ui` extra (`-e ".[dev,render,ui]"`: PySide6's essentials and
+pyqtgraph).
+
 ## Use
 
 ```
@@ -62,6 +65,21 @@ flux. Every lamp is scaled to that flux, so a render's brightness is the study's
 not the lamp's own output: compare colours across renders, not brightness. Maps are
 stored under `$LSS_CACHE/maps/`; a lamp-physics edit re-colours them without a render.
 
+The viewer (needs the `ui` extra; rendering missing maps needs `render` too):
+
+```
+lss view lab                          # the lab, re-coloured instantly when you pick a lamp or level
+lss view lab_led --backend fake       # try the window without Mitsuba (made-up maps)
+```
+
+It shows a study from its stored lighting maps. Pick any preset and level, dim it, and
+the picture re-colours; click it for the spectrum arriving there (with its noise), its
+luminance, chromaticity and CCT. The lamp sheet tab shows the chosen lamp's SPD and
+numbers. "White card" balances the picture on the lab's white card, as `lss render` does;
+"daylight display" does not, so a sodium lamp looks orange. A choice whose maps are not
+stored says "needs render"; the Renders tab renders them in a separate worker process,
+to a noise threshold, with an ETA, pause, cancel and restart (design doc §9.7).
+
 ## Tests
 
 On Windows, from a POSIX shell, at below-normal priority:
@@ -71,4 +89,6 @@ cmd //v:on //c "start /belownormal /b /wait .venv\Scripts\python -m pytest & exi
 ```
 
 The renderer tests (furnace, inverse square, re-colouring, the direct calculation, the
-disc's angle bands, and the bin-width and band-count convergence checks) are left out of the default run; add `-m render` to run them (they skip without Mitsuba).
+disc's angle bands, and the bin-width and band-count convergence checks, and the render
+worker with Mitsuba) are left out of the default run; add `-m render` to run them (they
+skip without Mitsuba). The viewer window's tests run offscreen with `-m ui`.

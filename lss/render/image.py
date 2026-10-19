@@ -38,13 +38,15 @@ def region_mean(xyz: np.ndarray, camera: Camera, centre, half_px: int = 3) -> np
     return xyz[yi - half_px:yi + half_px + 1, xi - half_px:xi + half_px + 1].reshape(-1, 3).mean(axis=0)
 
 
-def to_srgb(xyz: np.ndarray, white_xyz: np.ndarray) -> np.ndarray:
-    """Display sRGB (0-1, encoded), balanced and exposed on ``white_xyz``."""
+def to_srgb(xyz: np.ndarray, white_xyz: np.ndarray, balance: bool = True) -> np.ndarray:
+    """Display sRGB (0-1, encoded), exposed so ``white_xyz`` reads ``WHITE_LEVEL``, and
+    balanced on it; ``balance=False`` shows the XYZ with sRGB's own white (D65), as an
+    eye adapted to daylight sees the scene (§9.7)."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         import colour
 
-        white_xy = colour.XYZ_to_xy(white_xyz)
+        white_xy = colour.XYZ_to_xy(white_xyz) if balance else colour.RGB_COLOURSPACES["sRGB"].whitepoint
         scaled = xyz * (WHITE_LEVEL / white_xyz[1])
         rgb = colour.XYZ_to_sRGB(scaled, illuminant=white_xy, chromatic_adaptation_transform="CAT02",
                                  apply_cctf_encoding=True)

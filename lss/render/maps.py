@@ -19,6 +19,7 @@ line lamp (§8.3). That number belongs to the spectrum it was measured under
 """
 
 import json
+import os
 import re
 import time
 from dataclasses import asdict, dataclass
@@ -99,17 +100,29 @@ def folder(study: Study) -> Path:
     return cache_dir() / "maps" / study.geometry_hash()
 
 
+def _replace(path: Path, write) -> None:
+    """Write through a temporary file, then rename it over ``path``: a reader never sees
+    half a file (the viewer may load a map while the render worker saves it, §9.7)."""
+    tmp = path.with_name(path.name + ".tmp")
+    with open(tmp, "wb") as f:
+        write(f)
+    os.replace(tmp, path)
+
+
 def save(study: Study, m: LightingMap) -> Path:
+    """The arrays first, the JSON last: a map is complete once its JSON exists."""
     d = folder(study)
     d.mkdir(parents=True, exist_ok=True)
     mid = m.info.map_id
-    np.save(d / f"{mid}.mean.npy", m.mean.astype(np.float32))
-    np.save(d / f"{mid}.m2.npy", m.m2.astype(np.float32))
-    (d / f"{mid}.json").write_text(json.dumps(asdict(m.info), indent=1), encoding="utf-8")
+    _replace(d / f"{mid}.mean.npy", lambda f: np.save(f, m.mean.astype(np.float32)))
+    _replace(d / f"{mid}.m2.npy", lambda f: np.save(f, m.m2.astype(np.float32)))
+    _replace(d / f"{mid}.json", lambda f: f.write(json.dumps(asdict(m.info), indent=1).encode("utf-8")))
     return d
 
 
-def load(study: Study, lamp_id: str, shape: str = "isotropic") -> LightingMap | None:
+def load(study: Study, lamp_id: str, shape: str = "isotropic", mmap: bool = True) -> LightingMap | None:
+    """A stored map, memory-mapped; ``mmap=False`` reads it into memory and closes the files,
+    so they can be replaced while it is in use (Windows keeps a mapped file locked)."""
     d = folder(study)
     mid = map_id(lamp_id, shape)
     meta = d / f"{mid}.json"
@@ -119,8 +132,9 @@ def load(study: Study, lamp_id: str, shape: str = "isotropic") -> LightingMap | 
     if not meta.exists():
         return None
     info = MapInfo(**json.loads(meta.read_text(encoding="utf-8")))
-    mean = np.load(d / f"{mid}.mean.npy", mmap_mode="r")
-    m2 = np.load(d / f"{mid}.m2.npy", mmap_mode="r")
+    mode = "r" if mmap else None
+    mean = np.load(d / f"{mid}.mean.npy", mmap_mode=mode)
+    m2 = np.load(d / f"{mid}.m2.npy", mmap_mode=mode)
     return LightingMap(info, mean, m2)
 
 

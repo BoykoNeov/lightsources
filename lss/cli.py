@@ -319,6 +319,23 @@ def _cmd_render(args) -> int:
     return 0
 
 
+def _cmd_view(args) -> int:
+    try:
+        from lss.ui import viewer
+    except ImportError as e:
+        print(f'error: the viewer needs the ui extra: pip install -e ".[ui]" ({e})', file=sys.stderr)
+        return 2
+    if args.backend == "fake":
+        # Made-up maps must never sit where real ones are looked for (the worker inherits this).
+        import os
+
+        from lss.download import cache_dir
+
+        os.environ["LSS_CACHE"] = str(cache_dir() / "fake")
+        print(f"fake renderer: made-up maps, kept apart in {os.environ['LSS_CACHE']}")
+    return viewer.run(args.study, args.backend)
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="lss", description="Light source simulator")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -407,6 +424,14 @@ def main(argv=None) -> int:
     p.add_argument("--force", action="store_true", help="render even if stored maps have enough samples")
     p.add_argument("--png", metavar="PATH", help="write the re-coloured image as PNG")
     p.set_defaults(func=_cmd_render)
+
+    p = sub.add_parser("view", help="the viewer: a study re-coloured from its stored lighting maps, with lamp "
+                                    "and level choice, a spectral probe, the lamp sheet and background renders "
+                                    "(the 'ui' extra)")
+    p.add_argument("study", help="study id (lss/data/studies) or YAML path")
+    p.add_argument("--backend", choices=["mitsuba", "fake"], default="mitsuba",
+                   help="renderer for missing maps (default mitsuba; 'fake' makes made-up maps, for trying the window)")
+    p.set_defaults(func=_cmd_view)
 
     args = parser.parse_args(argv)
     for stream in (sys.stdout, sys.stderr):
