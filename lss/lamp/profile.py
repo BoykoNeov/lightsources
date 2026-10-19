@@ -2,9 +2,12 @@
 
 The renderer never sees a lamp, only zones: fixed grey spatial/angular shapes,
 each with its own spectrum. Most lamps have one shape, ``isotropic``. LED
-Level 2 gives emission-angle bands, ``polar <lo>-<hi> deg`` (polar angle inside
-its phosphor layer); the renderer gives these shapes their geometry, and adds
-the rest (bands in impact parameter and angle, bands along a filament).
+Level 2 gives emission-angle bands, ``polar <lo>-<hi> deg fresnel <n>``: polar
+angle in air, with the radiance inside the band following the Fresnel
+transmittance out of a flat surface of index n (taken as the same at every
+wavelength, so the shape is grey); without ``fresnel`` a band is flat. The
+renderer gives these shapes their geometry, and adds the rest (bands in impact
+parameter and angle, bands along a filament).
 """
 
 import re
@@ -12,7 +15,7 @@ from dataclasses import dataclass, field
 
 from lss.spectral.spectrum import Spectrum
 
-_POLAR = re.compile(r"polar (\d+(?:\.\d+)?)-(\d+(?:\.\d+)?) deg")
+_POLAR = re.compile(r"polar (\d+(?:\.\d+)?)-(\d+(?:\.\d+)?) deg(?: fresnel (\d+(?:\.\d+)?))?")
 
 
 def polar_band(shape: str) -> tuple[float, float] | None:
@@ -27,6 +30,17 @@ def polar_band(shape: str) -> tuple[float, float] | None:
     if not 0.0 <= lo < hi <= 90.0:
         raise ValueError(f"angle band {shape!r} is not inside 0-90 deg")
     return lo, hi
+
+
+def fresnel_index(shape: str) -> float:
+    """The index whose Fresnel transmittance shapes a band (``fresnel <n>``); 1 for a flat band."""
+    m = _POLAR.fullmatch(shape)
+    if m is None or m.group(3) is None:
+        return 1.0
+    n = float(m.group(3))
+    if n < 1.0:
+        raise ValueError(f"angle band {shape!r}: the index must be at least 1")
+    return n
 
 #: Components a profile may already contain, so they are never applied twice.
 COMPONENTS = frozenset({"phosphor", "envelope", "reflector", "luminaire"})

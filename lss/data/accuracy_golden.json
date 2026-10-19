@@ -495,19 +495,19 @@
   },
   "led_cie_b1@L2": {
     "band_nrms": {
-      "380-480": 0.07272939779067339,
-      "480-580": 0.011197890560908797,
-      "580-680": 0.007691038328623264,
-      "680-780": 0.02683781013416304
+      "380-480": 0.06893762236379168,
+      "480-580": 0.012674174644491382,
+      "580-680": 0.010241750680317137,
+      "680-780": 0.03802607249397119
     },
     "chi2_per_node": null,
     "comparable": true,
-    "delta_cct_k": 14.266903644059767,
+    "delta_cct_k": 18.899960454996744,
     "delta_efficacy": null,
     "delta_flux": null,
-    "delta_ra": 0.3329136051240482,
-    "delta_rf": 0.18156496258538368,
-    "delta_uv_prime": 0.0006690039813001055,
+    "delta_ra": 0.37649300425204046,
+    "delta_rf": 0.364152440406059,
+    "delta_uv_prime": 0.0009084932188121418,
     "empirical_params": 15,
     "empirical_shared": 8,
     "generator": "led_phosphor_layer",
@@ -524,7 +524,7 @@
     "reference_bandpass_nm": 5.0,
     "reference_nodes": null,
     "reference_sampling_nm": 5.0,
-    "spectral_nrms": 0.016855284078674704
+    "spectral_nrms": 0.018782832574200572
   },
   "led_cie_b2@L1": {
     "band_nrms": {
@@ -561,19 +561,19 @@
   },
   "led_cie_b2@L2": {
     "band_nrms": {
-      "380-480": 0.08764000875764028,
-      "480-580": 0.011378954084595765,
-      "580-680": 0.007788502645686938,
-      "680-780": 0.027247685993973984
+      "380-480": 0.09176057687255737,
+      "480-580": 0.011721300108923374,
+      "580-680": 0.007290054101527494,
+      "680-780": 0.023986452967895082
     },
     "chi2_per_node": null,
     "comparable": true,
-    "delta_cct_k": -12.341464451479169,
+    "delta_cct_k": -14.073824975070238,
     "delta_efficacy": null,
     "delta_flux": null,
-    "delta_ra": 0.07272247201893833,
-    "delta_rf": 0.06017398371093918,
-    "delta_uv_prime": 0.0005982347806768341,
+    "delta_ra": -0.0717849400048749,
+    "delta_rf": -0.0914165600997876,
+    "delta_uv_prime": 0.0005518664436577483,
     "empirical_params": 15,
     "empirical_shared": 8,
     "generator": "led_phosphor_layer",
@@ -590,7 +590,7 @@
     "reference_bandpass_nm": 5.0,
     "reference_nodes": null,
     "reference_sampling_nm": 5.0,
-    "spectral_nrms": 0.021435438236057376
+    "spectral_nrms": 0.021992920163138474
   },
   "led_cie_b3@L1": {
     "band_nrms": {
@@ -627,19 +627,19 @@
   },
   "led_cie_b3@L2": {
     "band_nrms": {
-      "380-480": 0.062342465447768884,
-      "480-580": 0.014263457997691997,
-      "580-680": 0.015697008393878307,
-      "680-780": 0.053167584916602235
+      "380-480": 0.07480469159180943,
+      "480-580": 0.014416530837201718,
+      "580-680": 0.018143530673488933,
+      "680-780": 0.04085550252925013
     },
     "chi2_per_node": null,
     "comparable": true,
-    "delta_cct_k": -11.587338912862833,
+    "delta_cct_k": -19.103820145561713,
     "delta_efficacy": null,
     "delta_flux": null,
-    "delta_ra": -0.5674666708396359,
-    "delta_rf": -0.34077171894887215,
-    "delta_uv_prime": 0.0002677572842742503,
+    "delta_ra": -0.4887978430867008,
+    "delta_rf": -0.29456728867506854,
+    "delta_uv_prime": 0.0004513278882824327,
     "empirical_params": 15,
     "empirical_shared": 8,
     "generator": "led_phosphor_layer",
@@ -656,7 +656,7 @@
     "reference_bandpass_nm": 5.0,
     "reference_nodes": null,
     "reference_sampling_nm": 5.0,
-    "spectral_nrms": 0.02793309235690177
+    "spectral_nrms": 0.03204641069449138
   },
   "led_cie_b4@L1": {
     "band_nrms": {
@@ -693,19 +693,19 @@
   },
   "led_cie_b4@L2": {
     "band_nrms": {
-      "380-480": 0.0656339804943772,
-      "480-580": 0.0490252048514117,
-      "580-680": 0.005525360879842188,
-      "680-780": 0.1299663785459924
+      "380-480": 0.07517091982448706,
+      "480-580": 0.0509863621676618,
+      "580-680": 0.006042387130970601,
+      "680-780": 0.12844282670680496
     },
     "chi2_per_node": null,
     "comparable": true,
-    "delta_cct_k": -14.336821416089151,
+    "delta_cct_k": -22.459490895786075,
     "delta_efficacy": null,
     "delta_flux": null,
-    "delta_ra": -0.010971211411813897,
-    "delta_rf": 0.18939355374506306,
-    "delta_uv_prime": 0.00024051550336282336,
+    "delta_ra": -0.08695390426190386,
+    "delta_rf": 0.1361157113917244,
+    "delta_uv_prime": 0.00039489890508914504,
     "empirical_params": 15,
     "empirical_shared": 8,
     "generator": "led_phosphor_layer",
@@ -722,7 +722,7 @@
     "reference_bandpass_nm": 5.0,
     "reference_nodes": null,
     "reference_sampling_nm": 5.0,
-    "spectral_nrms": 0.050568695979254556
+    "spectral_nrms": 0.05463369763146992
   },
   "led_cie_b5@L1": {
     "band_nrms": {
@@ -759,19 +759,19 @@
   },
   "led_cie_b5@L2": {
     "band_nrms": {
-      "380-480": 0.06874250341687527,
-      "480-580": 0.023408185005528253,
-      "580-680": 0.0250709072385439,
-      "680-780": 0.08105821542147354
+      "380-480": 0.07745663029955728,
+      "480-580": 0.02453058606713282,
+      "580-680": 0.021617238788627067,
+      "680-780": 0.06894274081429252
     },
     "chi2_per_node": null,
     "comparable": true,
-    "delta_cct_k": 9.706529746272281,
+    "delta_cct_k": -2.335455691615607,
     "delta_efficacy": null,
     "delta_flux": null,
-    "delta_ra": 0.20191071351020184,
-    "delta_rf": 0.23594273888201656,
-    "delta_uv_prime": 0.0005876819332083714,
+    "delta_ra": 0.12405879921502105,
+    "delta_rf": 0.14591179356547457,
+    "delta_uv_prime": 0.0004933994211630925,
     "empirical_params": 15,
     "empirical_shared": 8,
     "generator": "led_phosphor_layer",
@@ -788,6 +788,6 @@
     "reference_bandpass_nm": 5.0,
     "reference_nodes": null,
     "reference_sampling_nm": 5.0,
-    "spectral_nrms": 0.04702259449588001
+    "spectral_nrms": 0.051333584576293396
   }
 }

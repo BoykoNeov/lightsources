@@ -9,34 +9,34 @@ reference: cie-led-b5
 physical:
   # The blue die (read by Level 2; Level 1 fits the leaked blue as its own pump band).
   die_peak:
-    value: 460.681
+    value: 459.543
     unit: nm
     empirical: true
     reason: >-
       fitted by `lss fit` (spectral objective) to cie-led-b5, jointly with cie-led-b1,
-      cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS 4.70e-02, du'v'
-      5.9e-04, dCCT +9.63 K
+      cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-18: NRMS 5.13e-02, du'v'
+      4.9e-04, dCCT -2.30 K
     # InGaN pump dies for white LEDs ("royal blue") are made at about 440-460 nm; this is
     # the centre of the die's disorder-broadened band, before its blue Boltzmann tail.
     bounds: [435, 470]
   die_fwhm:
-    value: 21.1998
+    value: 22.2365
     unit: nm
     empirical: true
     reason: >-
       fitted by `lss fit` (spectral objective) to cie-led-b5, jointly with cie-led-b1,
-      cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS 4.70e-02, du'v'
-      5.9e-04, dCCT +9.63 K
+      cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-18: NRMS 5.13e-02, du'v'
+      4.9e-04, dCCT -2.30 K
     # Blue InGaN emitters are typically 18-25 nm wide; the margin allows broader dies.
     bounds: [12, 35]
   die_tail_temperature:
-    value: 378.928
+    value: 419.094
     unit: K
     empirical: true
     reason: >-
       fitted by `lss fit` (spectral objective) to cie-led-b5, jointly with cie-led-b1,
-      cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS 4.70e-02, du'v'
-      5.9e-04, dCCT +9.63 K
+      cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-18: NRMS 5.13e-02, du'v'
+      4.9e-04, dCCT -2.30 K
     # The slope of the die's short-wavelength tail, exp(-dE/kT), written as a temperature.
     # A shape parameter, not the junction temperature: with the phosphor's temperature
     # free as well, the warm LEDs' fits push it below room temperature (design doc §4.2).
@@ -54,34 +54,34 @@ physical:
   # Level 2's layer (read by Levels 2 and 3): this lamp's garnet composition and how much of
   # each phosphor the light crosses.
   garnet_zero_phonon:
-    value: 20369.3
+    value: 20392.5
     unit: cm-1
     empirical: true
     reason: >-
-      fitted by `lss fit` (spectral objective) to cie-led-b5, jointly with
-      cie-led-b1, cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS
-      4.70e-02, du'v' 5.9e-04, dCCT +9.63 K
+      fitted by `lss fit` (spectral objective) to cie-led-b5, jointly with cie-led-b1,
+      cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-18: NRMS 5.13e-02, du'v'
+      4.9e-04, dCCT -2.30 K
     # Ce3+ zero-phonon line: 20450 cm-1 in YAG (Bachmann et al., Chem. Mater. 21, 2077
     # (2009)); Lu and Ga raise it (greener), Gd lowers it (more orange).
     bounds: [19500, 22000]
   garnet_optical_depth:
-    value: 1.34455
+    value: 0.627091
     unit: "1"
     empirical: true
     reason: >-
-      fitted by `lss fit` (spectral objective) to cie-led-b5, jointly with
-      cie-led-b1, cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS
-      4.70e-02, du'v' 5.9e-04, dCCT +9.63 K
+      fitted by `lss fit` (spectral objective) to cie-led-b5, jointly with cie-led-b1,
+      cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-18: NRMS 5.13e-02, du'v'
+      4.9e-04, dCCT -2.30 K
     # Along the normal, at the garnet's absorption peak.
     bounds: [0, 8]
   nitride_optical_depth:
-    value: 0.0762368
+    value: 0.130078
     unit: "1"
     empirical: true
     reason: >-
-      fitted by `lss fit` (spectral objective) to cie-led-b5, jointly with
-      cie-led-b1, cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-14: NRMS
-      4.70e-02, du'v' 5.9e-04, dCCT +9.63 K
+      fitted by `lss fit` (spectral objective) to cie-led-b5, jointly with cie-led-b1,
+      cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5 on 2026-10-18: NRMS 5.13e-02, du'v'
+      4.9e-04, dCCT -2.30 K
     # Along the normal, on the nitride's blue absorption plateau.
     bounds: [0, 4]
 

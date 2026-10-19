@@ -481,16 +481,16 @@ led_phosphors:
     fitted_to: [cie-led-b1, cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5]
     params:
       huang_rhys:
-        value: 3.29331
+        value: 3.88092
         unit: "1"
         empirical: true
         reason: >-
-          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2,
-          cie-led-b3, cie-led-b4, cie-led-b5 jointly on 2026-10-14: NRMS 1.69e-02, du'v'
-          6.7e-04, dCCT +14.27 K (cie-led-b1); NRMS 2.14e-02, du'v' 6.0e-04, dCCT -12.33
-          K (cie-led-b2); NRMS 2.79e-02, du'v' 2.7e-04, dCCT -11.60 K (cie-led-b3); NRMS
-          5.06e-02, du'v' 2.4e-04, dCCT -14.30 K (cie-led-b4); NRMS 4.70e-02, du'v'
-          5.9e-04, dCCT +9.63 K (cie-led-b5)
+          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2, cie-led-b3,
+          cie-led-b4, cie-led-b5 jointly on 2026-10-18: NRMS 1.88e-02, du'v' 9.1e-04, dCCT
+          +18.90 K (cie-led-b1); NRMS 2.20e-02, du'v' 5.5e-04, dCCT -14.08 K (cie-led-b2);
+          NRMS 3.20e-02, du'v' 4.5e-04, dCCT -19.11 K (cie-led-b3); NRMS 5.46e-02, du'v'
+          4.0e-04, dCCT -22.48 K (cie-led-b4); NRMS 5.13e-02, du'v' 4.9e-04, dCCT -2.30 K
+          (cie-led-b5)
         # YAG:Ce has S ~ 6 with a 200 cm-1 phonon (Bachmann et al., Chem. Mater. 21, 2077 (2009)).
         bounds: [3, 10]
       phonon_energy:
@@ -500,42 +500,42 @@ led_phosphors:
           dominant phonon coupled to the Ce3+ 5d1 level in YAG:Ce, from its vibronic
           structure (Bachmann, Ronda, Meijerink, Chem. Mater. 21, 2077 (2009))
       inhomogeneous_fwhm:
-        value: 2951.21
+        value: 2602.42
         unit: cm-1
         empirical: true
         reason: >-
-          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2,
-          cie-led-b3, cie-led-b4, cie-led-b5 jointly on 2026-10-14: NRMS 1.69e-02, du'v'
-          6.7e-04, dCCT +14.27 K (cie-led-b1); NRMS 2.14e-02, du'v' 6.0e-04, dCCT -12.33
-          K (cie-led-b2); NRMS 2.79e-02, du'v' 2.7e-04, dCCT -11.60 K (cie-led-b3); NRMS
-          5.06e-02, du'v' 2.4e-04, dCCT -14.30 K (cie-led-b4); NRMS 4.70e-02, du'v'
-          5.9e-04, dCCT +9.63 K (cie-led-b5)
+          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2, cie-led-b3,
+          cie-led-b4, cie-led-b5 jointly on 2026-10-18: NRMS 1.88e-02, du'v' 9.1e-04, dCCT
+          +18.90 K (cie-led-b1); NRMS 2.20e-02, du'v' 5.5e-04, dCCT -14.08 K (cie-led-b2);
+          NRMS 3.20e-02, du'v' 4.5e-04, dCCT -19.11 K (cie-led-b3); NRMS 5.46e-02, du'v'
+          4.0e-04, dCCT -22.48 K (cie-led-b4); NRMS 5.13e-02, du'v' 4.9e-04, dCCT -2.30 K
+          (cie-led-b5)
         # Site-to-site spread of a concentrated, mixed-cation powder.
         bounds: [0, 4500]
       ground_splitting:
-        value: 3119.24
+        value: 3200
         unit: cm-1
         empirical: true
         reason: >-
-          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2,
-          cie-led-b3, cie-led-b4, cie-led-b5 jointly on 2026-10-14: NRMS 1.69e-02, du'v'
-          6.7e-04, dCCT +14.27 K (cie-led-b1); NRMS 2.14e-02, du'v' 6.0e-04, dCCT -12.33
-          K (cie-led-b2); NRMS 2.79e-02, du'v' 2.7e-04, dCCT -11.60 K (cie-led-b3); NRMS
-          5.06e-02, du'v' 2.4e-04, dCCT -14.30 K (cie-led-b4); NRMS 4.70e-02, du'v'
-          5.9e-04, dCCT +9.63 K (cie-led-b5)
+          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2, cie-led-b3,
+          cie-led-b4, cie-led-b5 jointly on 2026-10-18: NRMS 1.88e-02, du'v' 9.1e-04, dCCT
+          +18.90 K (cie-led-b1); NRMS 2.20e-02, du'v' 5.5e-04, dCCT -14.08 K (cie-led-b2);
+          NRMS 3.20e-02, du'v' 4.5e-04, dCCT -19.11 K (cie-led-b3); NRMS 5.46e-02, du'v'
+          4.0e-04, dCCT -22.48 K (cie-led-b4); NRMS 5.13e-02, du'v' 4.9e-04, dCCT -2.30 K
+          (cie-led-b5)
         # 2F5/2 to 2F7/2: ~2250 cm-1 in the free Ce3+ ion; the crystal field spreads the 2F7/2 levels upward.
         bounds: [1500, 3200]
       ratio_2f7_2f5:
-        value: 0.291882
+        value: 0.1
         unit: "1"
         empirical: true
         reason: >-
-          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2,
-          cie-led-b3, cie-led-b4, cie-led-b5 jointly on 2026-10-14: NRMS 1.69e-02, du'v'
-          6.7e-04, dCCT +14.27 K (cie-led-b1); NRMS 2.14e-02, du'v' 6.0e-04, dCCT -12.33
-          K (cie-led-b2); NRMS 2.79e-02, du'v' 2.7e-04, dCCT -11.60 K (cie-led-b3); NRMS
-          5.06e-02, du'v' 2.4e-04, dCCT -14.30 K (cie-led-b4); NRMS 4.70e-02, du'v'
-          5.9e-04, dCCT +9.63 K (cie-led-b5)
+          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2, cie-led-b3,
+          cie-led-b4, cie-led-b5 jointly on 2026-10-18: NRMS 1.88e-02, du'v' 9.1e-04, dCCT
+          +18.90 K (cie-led-b1); NRMS 2.20e-02, du'v' 5.5e-04, dCCT -14.08 K (cie-led-b2);
+          NRMS 3.20e-02, du'v' 4.5e-04, dCCT -19.11 K (cie-led-b3); NRMS 5.46e-02, du'v'
+          4.0e-04, dCCT -22.48 K (cie-led-b4); NRMS 5.13e-02, du'v' 4.9e-04, dCCT -2.30 K
+          (cie-led-b5)
         bounds: [0.1, 2]
       # Thermal quenching (Level 3, lss/physics/led/thermal.py): a yield 1/(1 + C exp(-dE/kT)),
       # with C set by the fraction kept at 150 C against 25 C.
@@ -563,54 +563,54 @@ led_phosphors:
     fitted_to: [cie-led-b1, cie-led-b2, cie-led-b3, cie-led-b4, cie-led-b5]
     params:
       emission_peak:
-        value: 594.517
+        value: 584.967
         unit: nm
         empirical: true
         reason: >-
-          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2,
-          cie-led-b3, cie-led-b4, cie-led-b5 jointly on 2026-10-14: NRMS 1.69e-02, du'v'
-          6.7e-04, dCCT +14.27 K (cie-led-b1); NRMS 2.14e-02, du'v' 6.0e-04, dCCT -12.33
-          K (cie-led-b2); NRMS 2.79e-02, du'v' 2.7e-04, dCCT -11.60 K (cie-led-b3); NRMS
-          5.06e-02, du'v' 2.4e-04, dCCT -14.30 K (cie-led-b4); NRMS 4.70e-02, du'v'
-          5.9e-04, dCCT +9.63 K (cie-led-b5)
+          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2, cie-led-b3,
+          cie-led-b4, cie-led-b5 jointly on 2026-10-18: NRMS 1.88e-02, du'v' 9.1e-04, dCCT
+          +18.90 K (cie-led-b1); NRMS 2.20e-02, du'v' 5.5e-04, dCCT -14.08 K (cie-led-b2);
+          NRMS 3.20e-02, du'v' 4.5e-04, dCCT -19.11 K (cie-led-b3); NRMS 5.46e-02, du'v'
+          4.0e-04, dCCT -22.48 K (cie-led-b4); NRMS 5.13e-02, du'v' 4.9e-04, dCCT -2.30 K
+          (cie-led-b5)
         # (Sr,Ca)AlSiN3:Eu ~610-630 nm; CaAlSiN3:Eu ~650 nm (Juestel group, phosphor leaflet L-N1-02).
         bounds: [580, 670]
       emission_fwhm:
-        value: 131.815
+        value: 131.75
         unit: nm
         empirical: true
         reason: >-
-          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2,
-          cie-led-b3, cie-led-b4, cie-led-b5 jointly on 2026-10-14: NRMS 1.69e-02, du'v'
-          6.7e-04, dCCT +14.27 K (cie-led-b1); NRMS 2.14e-02, du'v' 6.0e-04, dCCT -12.33
-          K (cie-led-b2); NRMS 2.79e-02, du'v' 2.7e-04, dCCT -11.60 K (cie-led-b3); NRMS
-          5.06e-02, du'v' 2.4e-04, dCCT -14.30 K (cie-led-b4); NRMS 4.70e-02, du'v'
-          5.9e-04, dCCT +9.63 K (cie-led-b5)
+          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2, cie-led-b3,
+          cie-led-b4, cie-led-b5 jointly on 2026-10-18: NRMS 1.88e-02, du'v' 9.1e-04, dCCT
+          +18.90 K (cie-led-b1); NRMS 2.20e-02, du'v' 5.5e-04, dCCT -14.08 K (cie-led-b2);
+          NRMS 3.20e-02, du'v' 4.5e-04, dCCT -19.11 K (cie-led-b3); NRMS 5.46e-02, du'v'
+          4.0e-04, dCCT -22.48 K (cie-led-b4); NRMS 5.13e-02, du'v' 4.9e-04, dCCT -2.30 K
+          (cie-led-b5)
         bounds: [50, 140]
       absorption_edge:
-        value: 579.358
+        value: 542.173
         unit: nm
         empirical: true
         reason: >-
-          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2,
-          cie-led-b3, cie-led-b4, cie-led-b5 jointly on 2026-10-14: NRMS 1.69e-02, du'v'
-          6.7e-04, dCCT +14.27 K (cie-led-b1); NRMS 2.14e-02, du'v' 6.0e-04, dCCT -12.33
-          K (cie-led-b2); NRMS 2.79e-02, du'v' 2.7e-04, dCCT -11.60 K (cie-led-b3); NRMS
-          5.06e-02, du'v' 2.4e-04, dCCT -14.30 K (cie-led-b4); NRMS 4.70e-02, du'v'
-          5.9e-04, dCCT +9.63 K (cie-led-b5)
+          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2, cie-led-b3,
+          cie-led-b4, cie-led-b5 jointly on 2026-10-18: NRMS 1.88e-02, du'v' 9.1e-04, dCCT
+          +18.90 K (cie-led-b1); NRMS 2.20e-02, du'v' 5.5e-04, dCCT -14.08 K (cie-led-b2);
+          NRMS 3.20e-02, du'v' 4.5e-04, dCCT -19.11 K (cie-led-b3); NRMS 5.46e-02, du'v'
+          4.0e-04, dCCT -22.48 K (cie-led-b4); NRMS 5.13e-02, du'v' 4.9e-04, dCCT -2.30 K
+          (cie-led-b5)
         # Eu2+ nitrides absorb from the UV through the blue and green, falling off before their own emission.
         bounds: [520, 640]
       edge_width:
-        value: 1484.44
+        value: 2119.07
         unit: cm-1
         empirical: true
         reason: >-
-          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2,
-          cie-led-b3, cie-led-b4, cie-led-b5 jointly on 2026-10-14: NRMS 1.69e-02, du'v'
-          6.7e-04, dCCT +14.27 K (cie-led-b1); NRMS 2.14e-02, du'v' 6.0e-04, dCCT -12.33
-          K (cie-led-b2); NRMS 2.79e-02, du'v' 2.7e-04, dCCT -11.60 K (cie-led-b3); NRMS
-          5.06e-02, du'v' 2.4e-04, dCCT -14.30 K (cie-led-b4); NRMS 4.70e-02, du'v'
-          5.9e-04, dCCT +9.63 K (cie-led-b5)
+          fitted by `lss fit` (spectral objective) to cie-led-b1, cie-led-b2, cie-led-b3,
+          cie-led-b4, cie-led-b5 jointly on 2026-10-18: NRMS 1.88e-02, du'v' 9.1e-04, dCCT
+          +18.90 K (cie-led-b1); NRMS 2.20e-02, du'v' 5.5e-04, dCCT -14.08 K (cie-led-b2);
+          NRMS 3.20e-02, du'v' 4.5e-04, dCCT -19.11 K (cie-led-b3); NRMS 5.46e-02, du'v'
+          4.0e-04, dCCT -22.48 K (cie-led-b4); NRMS 5.13e-02, du'v' 4.9e-04, dCCT -2.30 K
+          (cie-led-b5)
         bounds: [300, 4000]
       quench_retained_423k:
         value: 0.94
@@ -645,3 +645,16 @@ led_phosphors:
         source: >-
           width (FWHM) of the same blue GaInN LED: Chhajed et al. (2005), via Cengiz et al. (2022),
           Table 1; Lin et al. (2012) give 0.053 nm/K
+  layer:
+    name: the phosphor layer's silicone binder
+    params:
+      refractive_index:
+        value: 1.53
+        unit: "1"
+        source: >-
+          high-index (HRI) silicone encapsulants for LED packages, 1.53-1.54 after cure (Dow
+          Corning OE-6630, OE-6635, OE-6665: 1.53; OE-6450, OE-6520, OE-6550, JCR 6175: 1.54);
+          the normal-index (NRI) ones are 1.40-1.42. Dow Corning, "LED Packaging: Advanced
+          silicone technology for LED applications", Form No. 11-1679-01 (2007). Which binder
+          the CIE LEDs use is not known; 1.41 is the other end (design doc §4.2).
+        # Not fitted: with relative spectra a free index would trade against the optical depths.

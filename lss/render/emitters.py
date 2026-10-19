@@ -1,12 +1,14 @@
 """The flat emitter with an angle band (design §8.5), a Mitsuba emitter written in Python.
 
 ``polardisc`` sits on a ``disk`` shape and emits from its front only: radiance ``value``
-in the directions whose cosine to the normal μ satisfies ``mu_lo < μ ≤ mu_hi``, none
-elsewhere, with a flat unit spectrum (the renderer never sees a lamp spectrum, §8.1).
-One band is on at a time; each band's lighting map is rendered by moving the edges.
+times T(μ) in the directions whose cosine to the normal μ satisfies ``mu_lo < μ ≤ mu_hi``,
+none elsewhere, with a flat unit spectrum (the renderer never sees a lamp spectrum, §8.1).
+T is the unpolarised Fresnel transmittance out of a flat surface of index ``n`` into air,
+for light leaving at μ (§8.6); n = 1 gives T = 1, a flat band. One band is on at a time;
+each band's lighting map is rendered by moving the edges.
 
-The edges and the value are kernel inputs, made opaque in ``parameters_changed``: set as
-plain values, every new edge compiled the kernel again (§8.5). Built on the spike's arc
+The edges, the index and the value are kernel inputs, made opaque in
+``parameters_changed``: set as plain values, every new edge compiled the kernel again (§8.5). Built on the spike's arc
 emitter (§8.3): what the path tracer needs is written, not ``sample_ray`` (light tracing).
 """
 
@@ -27,10 +29,19 @@ def register() -> None:
             self.mu_lo = dr.opaque(mi.Float, props.get("mu_lo", 0.0))
             self.mu_hi = dr.opaque(mi.Float, props.get("mu_hi", 1.0))
             self.value = dr.opaque(mi.Float, props.get("value", 1.0))
+            self.n = dr.opaque(mi.Float, props.get("n", 1.0))
             self.m_flags = mi.EmitterFlags.Surface | mi.EmitterFlags.SpatiallyVarying
 
         def _radiance(self, mu, active):
-            return mi.Spectrum(dr.select(active & (mu > self.mu_lo) & (mu <= self.mu_hi) & (mu > 0), self.value, 0.0))
+            on = active & (mu > self.mu_lo) & (mu <= self.mu_hi) & (mu > 0)
+            # The same transmittance as lss.physics.led.layer.fresnel_transmittance, from the cosine
+            # in air: inside, sin θ is n times smaller.
+            n = self.n
+            mu_in = dr.sqrt(dr.maximum(1.0 - (1.0 - mu * mu) / (n * n), 0.0))
+            rs = (n * mu_in - mu) / (n * mu_in + mu)
+            rp = (mu_in - n * mu) / (mu_in + n * mu)
+            t = 1.0 - 0.5 * (rs * rs + rp * rp)
+            return mi.Spectrum(dr.select(on, self.value * t, 0.0))
 
         def eval(self, si, active=True):
             return self._radiance(mi.Frame3f.cos_theta(si.wi), active)
@@ -53,11 +64,11 @@ def register() -> None:
 
         def traverse(self, callback):
             super().traverse(callback)
-            for name in ("mu_lo", "mu_hi", "value"):
+            for name in ("mu_lo", "mu_hi", "value", "n"):
                 callback.put(name, getattr(self, name), mi.ParamFlags.NonDifferentiable)
 
         def parameters_changed(self, keys):
-            dr.make_opaque(self.mu_lo, self.mu_hi, self.value)
+            dr.make_opaque(self.mu_lo, self.mu_hi, self.value, self.n)
 
         def to_string(self):
             return "PolarDisc"

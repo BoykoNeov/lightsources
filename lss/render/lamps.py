@@ -6,11 +6,13 @@ a sphere or a disc, and each zone becomes uniform radiance on it:
 
 - an ``isotropic`` zone, the same in every direction (a Lambertian surface);
 - a ``polar <lo>-<hi> deg`` zone (LED Level 2, on a disc only), radiance in the directions
-  whose angle to the disc's normal is inside the band, none outside it.
+  whose angle to the disc's normal is inside the band, none outside it; with ``fresnel <n>``
+  the radiance inside the band goes as the transmittance T(θ) out of a surface of index n.
 
-A band's spectrum is the power the generator sends into it, P_k; a Lambertian surface
-sends a share sin²θ_hi − sin²θ_lo of its power into a band, so the band's radiance is
-L_k = c·P_k / (sin²θ_hi − sin²θ_lo), and an emitter of area A emits π·A·c·Σ_k P_k in
+A band's spectrum is the power the generator sends into it, P_k. A surface whose radiance
+goes as T(θ) (1 for a flat band) sends a share s_k = ∫_band T d(sin²θ) of π·A·(its radiance
+where T = 1) into the band, so the band's radiance is L_k·T(θ) with L_k = c·P_k / s_k (for a
+flat band s_k = sin²θ_hi − sin²θ_lo), and an emitter of area A emits π·A·c·Σ_k P_k in
 all. The zones are scaled together so that the lamp emits the study's luminous flux Φ_v:
 
     c = Φ_v / (K_m ∫ Σ_k P_k V dλ · π · A)
@@ -23,9 +25,12 @@ model has one.
 import math
 from dataclasses import dataclass
 
+import numpy as np
+
 from lss.lamp import lamp as lamps
 from lss.lamp import quickpath
-from lss.lamp.profile import EmissionProfile, polar_band
+from lss.lamp.profile import EmissionProfile, fresnel_index, polar_band
+from lss.physics.led import layer
 from lss.scene.study import LampPlacement
 from lss.spectral import colorimetry
 from lss.spectral.grids import analysis_grid
@@ -51,9 +56,16 @@ class PlacedLamp:
 
 
 def band_share(shape: str) -> float:
-    """Share of a Lambertian surface's power sent into the zone's band: sin²θ_hi − sin²θ_lo."""
+    """∫_band T d(sin²θ): sin²θ_hi − sin²θ_lo for a flat band, a Lambertian surface's share."""
     lo, hi = polar_band(shape)
-    return math.sin(math.radians(hi)) ** 2 - math.sin(math.radians(lo)) ** 2
+    n = fresnel_index(shape)
+    if n == 1.0:
+        return math.sin(math.radians(hi)) ** 2 - math.sin(math.radians(lo)) ** 2
+    x, w = np.polynomial.legendre.leggauss(64)  # T is smooth in the angle in air
+    a, b = math.radians(lo), math.radians(hi)
+    theta = a + (b - a) / 2.0 * (x + 1.0)
+    mu_in = np.sqrt(1.0 - (np.sin(theta) / n) ** 2)
+    return float((b - a) / 2.0 * np.sum(w * layer.fresnel_transmittance(mu_in, n) * np.sin(2.0 * theta)))
 
 
 def place(p: LampPlacement) -> PlacedLamp:

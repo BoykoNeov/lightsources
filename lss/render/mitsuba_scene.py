@@ -13,7 +13,7 @@ import math
 
 import numpy as np
 
-from lss.lamp.profile import polar_band
+from lss.lamp.profile import fresnel_index, polar_band
 
 from lss.scene.geometry import Shape
 from lss.scene.materials import Material
@@ -148,5 +148,6 @@ def set_emitting(params, study: Study, lamp_id: str, shape: str) -> None:
             params[f"{k}.emitter.value"] = 1.0 if on else 0.0
             if on:
                 params[f"{k}.emitter.mu_lo"], params[f"{k}.emitter.mu_hi"] = band_cosines(shape)
+                params[f"{k}.emitter.n"] = fresnel_index(shape)
         params[f"{k}.emitter.sampling_weight"] = 1.0 if on else 0.0
     params.update()

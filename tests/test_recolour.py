@@ -6,7 +6,7 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from lss.lamp.profile import polar_band
+from lss.lamp.profile import fresnel_index, polar_band
 from lss.render import maps, recolour
 from lss.render.image import project
 from lss.render.lamps import band_share, flux_lm, place, place_profile
@@ -101,10 +101,43 @@ def test_polar_band_shapes():
     assert band_cosines("isotropic") == (0.0, 1.0)
     assert maps.map_id("lamp", "polar 7.5-15 deg") == "lamp@polar-7.5-15"
     assert maps.map_id("lamp", "isotropic") == "lamp@isotropic"
+    assert polar_band("polar 60-90 deg fresnel 1.53") == (60.0, 90.0)
+    assert fresnel_index("polar 60-90 deg fresnel 1.53") == 1.53
+    assert fresnel_index("polar 60-90 deg") == fresnel_index("isotropic") == 1.0
+    # A shaped band is another map: a flat band's map is never reused for it.
+    assert maps.map_id("lamp", "polar 60-90 deg fresnel 1.53") == "lamp@polar-60-90-fresnel-1.53"
+
+
+def test_fresnel_band_share():
+    """§8.6: a band shaped by the transmittance T sends ∫_band T d(sin²θ); the shares add up
+    over the bands, and an empty layer's band powers (the layer's own Fresnel shares) come
+    out at one radiance."""
+    from scipy.integrate import quad
+
+    from lss.lamp.generators import equal_bands
+    from lss.physics.led import layer
+
+    n = 1.53
+
+    def t_out(theta):
+        return float(layer.fresnel_transmittance(math.sqrt(1.0 - (math.sin(theta) / n) ** 2), n))
+
+    for lo, hi in ((0.0, 30.0), (60.0, 90.0), (75.0, 90.0)):
+        exact = quad(lambda t: t_out(t) * math.sin(2 * t), math.radians(lo), math.radians(hi))[0]
+        assert band_share(f"polar {lo:g}-{hi:g} deg fresnel 1.53") == pytest.approx(exact, rel=1e-10)
+    whole = band_share("polar 0-90 deg fresnel 1.53")
+    assert sum(band_share(f"polar {lo:g}-{hi:g} deg fresnel 1.53") for lo, hi in equal_bands(6)) == pytest.approx(
+        whole, rel=1e-12)
+    out = layer.transfer(layer.die_emission(450.0, 20.0, 350.0), [layer.Phosphor(np.ones(layer.GRID_NM.size),
+                         np.ones(layer.GRID_NM.size), 0.0)], refractive_index=n, zones_deg=equal_bands(6))
+    power = [float(np.sum(out.photons(i))) for i in range(6)]
+    radiance = [p / band_share(f"polar {lo:g}-{hi:g} deg fresnel 1.53") for p, (lo, hi) in zip(power, equal_bands(6))]
+    assert np.allclose(radiance, radiance[0], rtol=1e-8)
 
 
 def test_disc_bands_are_scaled_to_the_study_flux():
-    """§8.5: Σ_k π·A·(sin²θ_hi − sin²θ_lo)·K_m∫L_k V = Φ_v, with A the disc's front."""
+    """§8.5, §8.6: Σ_k π·A·s_k·K_m∫L_k V = Φ_v, with A the disc's front and s_k the band's
+    share, ∫_band T d(sin²θ) for LED Level 2's Fresnel-shaped bands."""
     for bands in (None, 6):
         pl = place(disc(bands=bands))
         assert len(pl.zones) == (3 if bands is None else bands)
@@ -136,10 +169,10 @@ def test_angle_bands_split_the_same_light():
     led = lamps.load("led_cie_b3")
     three = led.generate(2).spectrum.bin(analysis_grid()).values
     six = led.generate(2, angle_bands=6)
-    assert [z.shape for z in six.zones][:2] == ["polar 0-15 deg", "polar 15-30 deg"]
-    # Each band has its own 12 Gauss-Legendre directions, so finer bands resolve the steep
-    # grazing escape a little better: the sum moves by up to 0.044 % (0.067 % at 24 bands).
-    assert np.allclose(six.spectrum.bin(analysis_grid()).values, three, rtol=1e-3, atol=1e-9 * three.max())
+    assert [z.shape for z in six.zones][:2] == ["polar 0-15 deg fresnel 1.53", "polar 15-30 deg fresnel 1.53"]
+    # The directions are taken over the angle in air, where the transmittance is smooth, and the
+    # light the top reflects on its own directions (§8.6), so the sum moves only by rounding.
+    assert np.allclose(six.spectrum.bin(analysis_grid()).values, three, rtol=1e-9, atol=1e-15 * three.max())
     with pytest.raises(ValueError, match="no angle bands"):
         lamps.load("incandescent_cie_a").generate(1, angle_bands=6)
 
@@ -156,7 +189,7 @@ def test_led_lab_study():
                            s.bin_nm, s.max_depth, s.shapes, s.materials)
     assert tilted.geometry_hash() != s.geometry_hash()
     jobs = maps.jobs([place(p)])
-    assert [shape for _, shape, _ in jobs] == ["polar 0-30 deg", "polar 30-60 deg", "polar 60-90 deg"]
+    assert [shape for _, shape, _ in jobs] == [f"polar {b} deg fresnel 1.53" for b in ("0-30", "30-60", "60-90")]
 
 
 def test_study_hash_ignores_the_lamp_physics():

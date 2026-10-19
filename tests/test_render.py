@@ -271,16 +271,24 @@ def disc_patch_scene(theta_deg, r=0.01, d=1.0, rho=0.5, mu=(0.0, 1.0)):
                  "emitter": {"type": "polardisc", "mu_lo": mu[0], "mu_hi": mu[1]}}})
 
 
-def test_disc_angle_bands():
+@pytest.mark.parametrize("fresnel", ["", " fresnel 1.53"])
+def test_disc_angle_bands(fresnel):
     """§8.5: with one band on, a patch inside it reads ρ·L·r²·cos θ/d² (the finite disc
-    changes this by 10⁻⁴); patches in the other bands read exactly 0; the bands' maps add
-    up to one render with a single 0-90° band."""
-    bands = ["polar 0-30 deg", "polar 30-60 deg", "polar 60-90 deg"]
+    changes this by 10⁻⁴), times the transmittance T(θ) for a Fresnel-shaped band (§8.6);
+    patches in the other bands read exactly 0; the bands' maps add up to one render with a
+    single 0-90° band."""
+    from lss.lamp.profile import fresnel_index
+    from lss.physics.led import layer
+
+    bands = [f"polar {b} deg{fresnel}" for b in ("0-30", "30-60", "60-90")]
+    n = fresnel_index(bands[0])
     for theta in (15.0, 45.0, 75.0):
         sc = disc_patch_scene(theta)
         params = mi.traverse(sc)
-        expect = 0.5 * 0.01**2 * math.cos(math.radians(theta))
+        t = float(layer.fresnel_transmittance(math.sqrt(1.0 - (math.sin(math.radians(theta)) / n) ** 2), n))
+        expect = 0.5 * 0.01**2 * math.cos(math.radians(theta)) * t
         total = 0.0
+        params["lamp.emitter.n"] = n
         for shape in bands:
             params["lamp.emitter.mu_lo"], params["lamp.emitter.mu_hi"] = ms.band_cosines(shape)
             params.update()
@@ -355,10 +363,14 @@ def test_bin_halving():
 
 
 def test_band_count_lab_led():
-    """§12: doubling the zone count should change the image by ΔE00 < 0.3. For LED Level 2
-    it does not, by far (§8.5): the bands are angles inside the layer, with no refraction at
-    its surface, and the colour changes steeply towards grazing. Recorded as a finding: once
-    refraction at the surface is modelled, turn the last assert into §12's < 0.3, not away."""
+    """§12: doubling the zone count should change the image by ΔE00 < 0.3. LED Level 2's
+    bands are angles in air after refraction at the layer's surface, each shaped by its
+    transmittance (§8.6); 3 → 6 is §12's test, 6 → 12 is printed to show the trend.
+
+    Recorded as a finding (§8.6): the brightness now agrees (the card within 0.1 %) and each
+    image against its own white card changes by < 0.15, but against a fixed white card the
+    chart still moves by about 0.5, on colour: a flat band is right at one angle inside it.
+    When the zones blend smoothly between angles, turn the middle assert into §12's < 0.3."""
     from dataclasses import replace
 
     from lss.render import image, maps
@@ -366,7 +378,7 @@ def test_band_count_lab_led():
 
     base = studies.load("lab_led")
     labs = {}
-    for n in (3, 6):
+    for n in (3, 6, 12):
         s = replace(base, lamps=(replace(base.lamps[0], angle_bands=n),))
         placed = [place(p) for p in s.lamps]
         result = maps.render(s, placed, 512, 8, env.setup())
@@ -377,11 +389,19 @@ def test_band_count_lab_led():
         chart = [sh for sh in s.shapes if sh.id.startswith("cc ")]
         labs[n] = (image.region_mean(xyz, s.camera, white.centre),
                    [image.region_mean(xyz, s.camera, sh.centre) for sh in chart])
-    w6 = labs[6][0]
-    fixed = np.array([delta_e00(lab(a, w6), lab(b, w6)) for a, b in zip(labs[3][1], labs[6][1])])
-    own = np.array([delta_e00(lab(a, labs[3][0]), lab(b, w6)) for a, b in zip(labs[3][1], labs[6][1])])
-    card = float(delta_e00(lab(labs[3][0], w6), lab(w6, w6)))
-    print(f"3 -> 6 bands: chart dE00 against the 6-band white card {fixed.min():.2f}..{fixed.max():.2f} "
-          f"(mean {fixed.mean():.2f}), the card itself {card:.2f}; each against its own card "
-          f"{own.min():.2f}..{own.max():.2f} (mean {own.mean():.2f})")
-    assert fixed.max() > 1.0  # the finding: far from §12's 0.3
+
+    def change(a, b):
+        wb = labs[b][0]
+        fixed = np.array([delta_e00(lab(x, wb), lab(y, wb)) for x, y in zip(labs[a][1], labs[b][1])])
+        own = np.array([delta_e00(lab(x, labs[a][0]), lab(y, wb)) for x, y in zip(labs[a][1], labs[b][1])])
+        card = float(delta_e00(lab(labs[a][0], wb), lab(wb, wb)))
+        print(f"{a} -> {b} bands: chart dE00 against the {b}-band white card {fixed.min():.3f}..{fixed.max():.3f} "
+              f"(mean {fixed.mean():.3f}), the card itself {card:.3f}, its luminance {labs[a][0][1] / wb[1]:.4f}; "
+              f"each against its own card {own.min():.3f}..{own.max():.3f} (mean {own.mean():.3f})")
+        return fixed, own, labs[a][0][1] / wb[1]
+
+    fixed, own, luminance = change(3, 6)
+    change(6, 12)
+    assert abs(luminance - 1.0) < 0.005  # shaped bands: the brightness has converged
+    assert 0.3 < fixed.max() < 1.0  # the finding: just above §12's 0.3, on colour
+    assert own.max() < 0.15

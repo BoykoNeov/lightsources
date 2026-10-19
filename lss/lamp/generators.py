@@ -208,8 +208,9 @@ def _unit(lamp, spec, name, unit, used):
     return p.value
 
 
-#: Reflectance of the die and package under the phosphor layer. A perfect mirror at this
-#: rung: with relative spectra a lower value mainly trades against the optical depths.
+#: Reflectance of the die and package under the phosphor layer, which reflect diffusely. A
+#: perfect white at this rung: with relative spectra a lower value mainly trades against the
+#: optical depths.
 DIE_REFLECTANCE = 1.0
 
 
@@ -238,11 +239,15 @@ def _led_layer(lamp, spec, used, warming_k: float | None = None, yields=(1.0, 1.
                                    val("nitride.absorption_edge", "nm"), val("nitride.edge_width", "cm-1"))
     phosphors_ = [layer.Phosphor(g_abs, g_em, val("garnet_optical_depth", "1"), yields[0]),
                   layer.Phosphor(n_abs, n_em, val("nitride_optical_depth", "1"), yields[1])]
+    n = val("layer.refractive_index", "1")
     out = layer.transfer(pump, phosphors_, die_reflectance=DIE_REFLECTANCE,
-                         zones_deg=layer.ZONES_DEG if zones_deg is None else zones_deg)
+                         zones_deg=layer.ZONES_DEG if zones_deg is None else zones_deg, refractive_index=n)
+    # Within a band the radiance follows the surface's transmittance, which the renderer gives
+    # the band from the same index (design §8.6).
+    shaped = f" fresnel {n:g}" if n != 1.0 else ""
     return tuple(
         Zone(Spectrum.of(TabulatedContinuum(layer.GRID_NM, out.power_per_nm(i)), name=f"LED layer {lo:g}-{hi:g} deg"),
-             shape=f"polar {lo:g}-{hi:g} deg", name=f"emission {lo:g}-{hi:g} deg")
+             shape=f"polar {lo:g}-{hi:g} deg{shaped}", name=f"emission {lo:g}-{hi:g} deg")
         for i, (lo, hi) in enumerate(out.zones_deg))
 
 
@@ -258,7 +263,7 @@ def _led_phosphor_layer(lamp, spec, zones_deg=None) -> EmissionProfile:
             "level": spec.level,
             "params": {k: p.as_dict() for k, p in used.items()},
             "shared": sorted(k for k in used if lamp.reads_from_library(k, spec)),
-            "zones": "polar angle inside the layer; refraction at its surface not modelled",
+            "zones": "polar angle in air, refracted at the layer's flat top",
             "data_versions": [phosphors.LIBRARY_PATH],
         },
     )
@@ -290,7 +295,7 @@ def _led_thermal(lamp, spec, zones_deg=None) -> EmissionProfile:
             "shared": sorted(k for k in used if lamp.reads_from_library(k, spec)),
             "junction_temperature_k": t_j,
             "relative_yields": {"garnet": yields[0], "nitride": yields[1]},
-            "zones": "polar angle inside the layer; refraction at its surface not modelled",
+            "zones": "polar angle in air, refracted at the layer's flat top",
             "data_versions": [phosphors.LIBRARY_PATH],
         },
     )

@@ -1,6 +1,6 @@
 # The reference lighting lab (design §8.2, §8.5) under an LED with emission-angle bands.
-# LED-B3 at Level 2 gives one spectrum per band of polar angle (inside its phosphor layer;
-# refraction at the layer's surface is not modelled, §4.2). The bands are spread over a
+# LED-B3 at Level 2 gives one spectrum per band of polar angle (in air, after refraction at
+# the layer's flat top, each band shaped by its transmittance, §8.6). The bands are spread over a
 # disc of 5 cm radius facing down, a downlight's face rather than a die, at the incandescent
 # lab's lamp position. From it the ColorChecker is about 65 degrees off the normal, the floor
 # below at 0-30 degrees. Scaled to flux_lm: a render's brightness is this setting, not the

@@ -6,7 +6,7 @@ from scipy.special import expn
 
 from lss.accuracy import report
 from lss.lamp import lamp as lamps
-from lss.lamp import phosphors
+from lss.lamp import generators, phosphors
 from lss.physics.led import layer
 
 LEDS = ["led_cie_b1", "led_cie_b2", "led_cie_b3", "led_cie_b4", "led_cie_b5"]
@@ -24,9 +24,10 @@ def _area(x):
     return float(np.sum(x * D))
 
 
+@pytest.mark.parametrize("n", [1.0, 1.53])
 @pytest.mark.parametrize("reflectance, eta", [(1.0, 1.0), (0.8, 1.0), (1.0, 0.85), (0.6, 0.7)])
-def test_every_pump_photon_leaves_or_is_lost(reflectance, eta):
-    out = layer.transfer(PUMP, _two(eta=eta), die_reflectance=reflectance)
+def test_every_pump_photon_leaves_or_is_lost(reflectance, eta, n):
+    out = layer.transfer(PUMP, _two(eta=eta), die_reflectance=reflectance, refractive_index=n)
     assert _area(out.photons()) + out.lost == pytest.approx(1.0, abs=1e-6)
     if reflectance == 1.0 and eta == 1.0:
         assert out.lost == 0.0
@@ -50,6 +51,68 @@ def test_blue_leakage_falls_with_angle():
     blue = [_area(out.leaked[i]) / _area(out.photons(i)) for i in range(len(out.zones_deg))]
     assert blue[0] > blue[1] > blue[2]
     assert sum(_area(out.photons(i)) for i in range(3)) == pytest.approx(_area(out.photons()), rel=1e-12)
+
+
+def test_fresnel_transmittance():
+    # Normal incidence: 1 − ((n − 1)/(n + 1))²; nothing past the critical angle; all of it at n = 1.
+    n = 1.53
+    assert layer.fresnel_transmittance(1.0, n) == pytest.approx(1.0 - ((n - 1) / (n + 1)) ** 2, rel=1e-12)
+    mu_c = np.sqrt(1.0 - 1.0 / n**2)
+    assert layer.fresnel_transmittance(mu_c * 0.999, n) == 0.0
+    assert 0.0 < layer.fresnel_transmittance(mu_c * (1 + 1e-6), n) < 0.02  # rises as √(μ − μc)
+    np.testing.assert_allclose(layer.fresnel_transmittance(np.linspace(0.01, 1, 9), 1.0), 1.0, rtol=1e-12)
+
+
+def test_an_empty_refracting_layer_sends_out_all_light_by_fresnel_shares():
+    # With nothing to absorb and a white die, every photon leaves in the end; each pass sends
+    # ∫T d(sin²θ) over a band (θ in air) out through it, so the bands share the light in that ratio.
+    from scipy.integrate import quad
+
+    n = 1.53
+    out = layer.transfer(PUMP, [layer.Phosphor(*GARNET, 0.0)], refractive_index=n)
+    np.testing.assert_allclose(out.photons(), PUMP / _area(PUMP), rtol=1e-9, atol=1e-15)
+
+    def t_out(theta):  # transmittance for light leaving at θ in air
+        return float(layer.fresnel_transmittance(np.sqrt(1.0 - (np.sin(theta) / n) ** 2), n))
+
+    def band(lo, hi):
+        return quad(lambda t: t_out(t) * np.sin(2 * t), np.radians(lo), np.radians(hi))[0]
+
+    whole = band(0.0, 90.0)
+    for i, (lo, hi) in enumerate(out.zones_deg):
+        assert _area(out.photons(i)) == pytest.approx(band(lo, hi) / whole, rel=1e-8)
+
+
+def test_band_layout_leaves_the_lamp_alone():
+    # The light the top reflects is integrated on its own directions, so asking for more bands only
+    # splits the same light.
+    totals = [layer.transfer(PUMP, _two(), refractive_index=1.53, zones_deg=generators.equal_bands(k)).photons()
+              for k in (1, 3, 6, 12)]
+    for t in totals[1:]:
+        np.testing.assert_allclose(t, totals[0], rtol=1e-9, atol=1e-18)
+
+
+def test_directions_converge(monkeypatch):
+    # The transmittance falls to 0 at the critical angle; integrated over the angle in air it is smooth.
+    base = layer.transfer(PUMP, _two(), refractive_index=1.53, zones_deg=generators.equal_bands(6))
+    monkeypatch.setattr(layer, "_DIRECTIONS", 2 * layer._DIRECTIONS)
+    monkeypatch.setattr(layer, "_CONE_DIRECTIONS", 2 * layer._CONE_DIRECTIONS)
+    fine = layer.transfer(PUMP, _two(), refractive_index=1.53, zones_deg=generators.equal_bands(6))
+    for i in range(6):
+        assert _area(fine.photons(i)) == pytest.approx(_area(base.photons(i)), rel=1e-9)
+        np.testing.assert_allclose(fine.photons(i), base.photons(i), rtol=1e-7, atol=1e-12 * base.photons(i).max())
+
+
+def test_refraction_narrows_the_colour_over_angle():
+    # Inside, the bands reach grazing; in air all of 0–90° comes from inside 0–41° (n = 1.53), so
+    # the blue's share changes less from the first band to the last, and still falls with angle.
+    def blue(n):
+        out = layer.transfer(PUMP, _two(), refractive_index=n)
+        return [_area(out.leaked[i]) / _area(out.photons(i)) for i in range(3)]
+
+    flat, refracted = blue(1.0), blue(1.53)
+    assert refracted[0] > refracted[1] > refracted[2]
+    assert refracted[0] / refracted[2] < 0.5 * flat[0] / flat[2]
 
 
 def test_thicker_layer_leaks_less_blue():
@@ -110,7 +173,7 @@ def test_generator_zones_make_up_the_lamp(preset):
     lamp = lamps.load(preset)
     profile = lamp.generate(2)
     assert profile.includes == {"phosphor"}
-    assert [z.shape for z in profile.zones] == ["polar 0-30 deg", "polar 30-60 deg", "polar 60-90 deg"]
+    assert [z.shape for z in profile.zones] == [f"polar {b} deg fresnel 1.53" for b in ("0-30", "30-60", "60-90")]
     total = sum(z.spectrum.total() for z in profile.zones)
     assert profile.spectrum.total() == pytest.approx(total, rel=1e-12)
     shared = set(profile.metadata["shared"])
@@ -133,8 +196,10 @@ def test_die_tail_and_phosphor_temperatures_are_separate_inputs():
 
     cold = binned({})
     for name in ("die_tail_temperature", "phosphor_temperature"):
-        hot = binned({name: lamp.physical[name].value + 40.0})
-        assert np.max(np.abs(hot / hot.sum() - cold / cold.sum())) > 1e-4
+        p = lamp.physical[name]
+        step = 40.0 if p.bounds is None or p.value + 40.0 <= p.bounds[1] else -40.0  # B4's tail is at its top
+        moved = binned({name: p.value + step})
+        assert np.max(np.abs(moved / moved.sum() - cold / cold.sum())) > 1e-4
 
 
 @pytest.mark.parametrize("preset", LEDS)
@@ -148,8 +213,11 @@ def test_calibrated_findings():
     # The layer explains L1's too-wide pump: the die widths fall inside InGaN's usual 18-25 nm.
     for preset in LEDS:
         assert 18.0 <= lamps.load(preset).physical["die_fwhm"].value <= 25.0
-    # Findings the design doc records (§4.2); a refit that moves them should update it.
-    warm = [lamps.load(p).physical["die_tail_temperature"] for p in LEDS[:3]]
-    assert all(t.value == pytest.approx(t.bounds[0], abs=0.1) for t in warm)
+    # Findings the design doc records (§4.2); a refit that moves them should update it. Since
+    # the refraction refit (§8.6) the two warmest LEDs' tails sit at or near the lower bound and
+    # the two coolest at the upper one.
+    tails = [lamps.load(p).physical["die_tail_temperature"] for p in LEDS]
+    assert all(t.value < t.bounds[0] + 10.0 for t in tails[:2])
+    assert all(t.value > t.bounds[1] - 2.0 for t in tails[3:])
     s = phosphors.parameters()["garnet.huang_rhys"].value
-    assert s < 4.0  # below YAG:Ce's measured S ~ 6: half its Stokes shift
+    assert s < 4.0  # below YAG:Ce's measured S ~ 6: about two thirds of its Stokes shift
