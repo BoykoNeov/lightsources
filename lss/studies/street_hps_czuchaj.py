@@ -50,6 +50,23 @@ def runs(workers: int = 16) -> dict[tuple, dict]:
     return dict(zip(jobs, rows))
 
 
+def stand_in(temperature_k: float, curves: str, dipole: str) -> dict[str, float]:
+    """The stand-in the lamp predictions rested on (design §4.4): the Na–Hg pair κ alone, times
+    a Planck source, through the instrument's response at the 1 nm nodes, with the study's
+    measures. Its rise with Windholz's curves (0.00–0.03 at 3600–4600 K) matched the lamp runs'."""
+    from lss.physics.hid import mercury_pairs as mp
+    from lss.spectral.instrument import observe
+    from lss.spectral.units import C, H, K_B, vacuum_to_air
+
+    edges = mp.TABLE_EDGES_CM1
+    lam = vacuum_to_air(1e7 / (0.5 * (edges[1:] + edges[:-1])))[::-1]
+    planck = 1.0 / (lam * 1e-9) ** 5 / np.expm1(H * C / (lam * 1e-9 * K_B * temperature_k))
+    kappa = sum(mp.reduced_absorption(temperature_k, edges, dipole=dipole, curves=curves).values())[::-1]
+    x = street_hps.NODES_NM
+    f = street_hps.features(x, observe(lam, kappa * planck, street_hps.response().kernel, x))
+    return {"rise": f.red_bump, "slope": f.red_slope}
+
+
 def level_ratio(s: tuple) -> tuple[float, float]:
     """Lamp/model red wing: geometric mean over the nine and the standard deviation of its log."""
     r, m = runs(), xe.measured()
