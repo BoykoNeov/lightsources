@@ -1,0 +1,39 @@
+# Sodium-mercury pairs (NaHg), second set of curves: Czuchaj et al.'s tables (design §4.4,
+# "Czuchaj et al.'s tabulated Na-Hg curves").
+#
+#   E. Czuchaj, F. Rebentrost, H. Stoll and H. Preuss, "Pseudopotential calculations for
+#   the potential energy curves and transition dipole moments of the NaHg system",
+#   Chem. Phys. Lett. 178, 246-252 (1991), DOI 10.1016/0009-2614(91)87064-I.
+#   MRSD-CI for the three valence electrons, semi-empirical l-dependent pseudopotentials
+#   for the cores; no spin-orbit coupling (Lambda-S states only).
+#
+# Transcribed by hand (2026-10-21) from 500 dpi page images of a copy of the paper (not
+#   in the repository): Table 5 (p. 251), potential energies in hartree, and Table 6
+#   (p. 252), transition dipole moments in atomic units. Checked: the well depths from these
+#   numbers (X 604 cm-1 at 6.5 a0, A 7053 at 5.0, B 2425 at 6.0) against the text's 593,
+#   7076 and 2436, within the paper's stated 1e-4 au asymptote agreement; third differences
+#   down each column (4-8 a0) fall smoothly.
+#
+# Table 5's last row has no R: the asymptote, which the text gives as the energies at
+#   40 a0 (agreeing with the sums of atomic energies within 1e-4 au). The text says the
+#   B-X difference potential has its minimum at 678 nm; the table gives about 673 nm
+#   before the asymptote is corrected (recorded, not explained).
+# Only the 3s-3p states are kept (the 4s, 3d and 4p states lie beyond 400 nm). The code
+#   uses R <= 10 a0 for the curves: at 15 a0 A-X and B-X are equal, and at 20 a0 B-X lies
+#   above its own asymptote, inside the stated error.
+
+source: "Czuchaj, Rebentrost, Stoll & Preuss, Chem. Phys. Lett. 178, 246 (1991), Tables 5 and 6, transcribed 2026-10-21"
+potentials_hartree:
+  r_a0: [4.00, 4.50, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 9.00, 10.00, 12.00, 15.00, 20.00]
+  X: [-1.175324, -1.214519, -1.231326, -1.238164, -1.240529, -1.241040, -1.240840, -1.240401, -1.240019,
+      -1.239358, -1.238908, -1.238492, -1.238286, -1.238256]
+  A: [-1.151366, -1.183663, -1.193045, -1.192436, -1.187859, -1.182055, -1.176577, -1.171986, -1.168539,
+      -1.164400, -1.162446, -1.161199, -1.160937, -1.160900]
+  B: [-1.103299, -1.145582, -1.163602, -1.170370, -1.171883, -1.171167, -1.169718, -1.168164, -1.166808,
+      -1.164747, -1.163389, -1.161941, -1.160938, -1.160696]
+asymptote_hartree: {X: -1.238290, A: -1.160908, B: -1.160833}
+dipoles_au:   # 3s-3p: sigma->sigma (X -> B), sigma->pi_x (X -> A, one of the two Pi components)
+  r_a0: [4.00, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00, 12.00, 15.00]
+  sigma_sigma: [2.968, 3.187, 3.207, 3.130, 3.005, 2.880, 2.783, 2.664, 2.594]
+  sigma_pi: [0.864, 0.952, 1.272, 1.675, 2.048, 2.276, 2.394, 2.475, 2.510]
+  atomic: 2.534

@@ -28,6 +28,14 @@ fringe (the measured S1–S4 undulations at 640–669 nm are not reproduced by t
 The transition dipoles are not given by the source beyond the A ← X oscillator strength
 falling by 10× from 9.45 to 3.78 a₀: ``constant`` keeps d_z² at every R; ``falling``
 lowers the two I bands' oscillator strength log-linearly by that factor and keeps II ½.
+
+A second set of curves (``curves="czuchaj"``, ``lss/data/nahg_czuchaj.yaml``): Czuchaj,
+Rebentrost, Stoll & Preuss's tables (Chem. Phys. Lett. 178, 246 (1991)), X, A ²Π and B ²Σ
+with the σ→σ and σ→π transition dipoles, without spin–orbit coupling. Each Λ difference
+potential is taken from its own computed asymptote and put on the 3p centroid, interpolated
+out to 10 a₀, and only then coupled (Cohen–Schneider, the atomic fine structure at every R),
+so the A–B crossing at 8–9 a₀ is resolved on the fine grid. The dipoles are mixed as
+intensities by the coupled states' Σ and Π parts (``table``) or held at d_z² (``constant``).
 """
 
 from dataclasses import dataclass
@@ -36,14 +44,27 @@ from importlib import resources
 
 import numpy as np
 import yaml
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, PchipInterpolator
 
 from lss.physics.hid import broadening, sodium
 from lss.physics.hid.pairs import BOHR_M, ELEMENTARY_CHARGE_C, EPSILON_0, HARTREE_CM1
 from lss.spectral.units import C, H, K_B
 
 BANDS = ("II1/2", "I3/2", "I1/2")
+#: The sets of upper curves: Windholz et al.'s digitised figure, or Czuchaj et al.'s tables.
+CURVES = ("windholz", "czuchaj")
+#: Dipole forms for Windholz's curves; Czuchaj's take :data:`CZUCHAJ_DIPOLE_FORMS`.
 DIPOLE_FORMS = ("constant", "falling")
+CZUCHAJ_DIPOLE_FORMS = ("table", "constant")
+#: Czuchaj's curves are used out to here; beyond, the same join to the asymptote as Windholz's.
+CZUCHAJ_R_MAX_A0 = 10.0
+#: The splines run through the table's points out to here, so that their value and slope at
+#: 10 a₀ (which set the join) are the table's, not a not-a-knot extrapolation from inside: cut
+#: at 10 a₀, the Π curve's end slope came out 255 cm⁻¹/a₀, where the 12 a₀ point gives about 90
+#: on average, and the join's A₆ went negative (I3/2 rose above its asymptote near 16.6 a₀).
+CZUCHAJ_SPLINE_R_MAX_A0 = 12.0
+#: Beyond the last tabulated dipole (15 a₀) the PCHIP reaches the atomic value here and stays.
+CZUCHAJ_DIPOLE_ATOMIC_A0 = 20.0
 #: The A ← X oscillator strength falls by 10× from 500 to 200 pm (Windholz et al., p. 375).
 FALL_R_A0 = (200e-12 / BOHR_M, 500e-12 / BOHR_M)
 DELTA_C6_FACTORS = (1.0, 2.0)
@@ -104,6 +125,78 @@ def lower_potential_cm1(r_a0) -> np.ndarray:
     return np.where(r < r0, inner, np.where(r > 30.0, outer, middle)) * HARTREE_CM1
 
 
+@dataclass(frozen=True)
+class CzuchajData:
+    r_a0: np.ndarray  # the table's R up to CZUCHAJ_SPLINE_R_MAX_A0 (values used up to CZUCHAJ_R_MAX_A0)
+    sigma_cm1: np.ndarray  # B − X, from its own computed asymptote (0 far out)
+    pi_cm1: np.ndarray  # A − X, likewise
+    dipole_r_a0: np.ndarray
+    sigma_sigma_au: np.ndarray  # X → B
+    sigma_pi_au: np.ndarray  # X → A, one Π component
+    atomic_au: float
+    source: str
+
+
+@lru_cache(maxsize=1)
+def czuchaj_data() -> CzuchajData:
+    doc = yaml.safe_load(resources.files("lss.data").joinpath("nahg_czuchaj.yaml").read_text(encoding="utf-8"))
+    pot, asym, dip = doc["potentials_hartree"], doc["asymptote_hartree"], doc["dipoles_au"]
+    r = np.array(pot["r_a0"], dtype=float)
+    keep = r <= CZUCHAJ_SPLINE_R_MAX_A0
+    x = np.array(pot["X"], dtype=float) - asym["X"]
+
+    def diff(name):
+        return ((np.array(pot[name], dtype=float) - asym[name] - x) * HARTREE_CM1)[keep]
+
+    return CzuchajData(r[keep], diff("B"), diff("A"), np.array(dip["r_a0"], dtype=float),
+                       np.array(dip["sigma_sigma"], dtype=float), np.array(dip["sigma_pi"], dtype=float),
+                       float(dip["atomic"]), str(doc["source"]))
+
+
+@lru_cache(maxsize=1)
+def _czuchaj_splines():
+    cz = czuchaj_data()
+    r_dip = np.append(cz.dipole_r_a0, CZUCHAJ_DIPOLE_ATOMIC_A0)
+    return (CubicSpline(cz.r_a0, cz.sigma_cm1), CubicSpline(cz.r_a0, cz.pi_cm1),
+            PchipInterpolator(r_dip, np.append(cz.sigma_sigma_au, cz.atomic_au)),
+            PchipInterpolator(r_dip, np.append(cz.sigma_pi_au, cz.atomic_au)))
+
+
+def czuchaj_coupled(r_a0) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    """band -> (transition energy, vacuum cm⁻¹; its Σ fraction c_Σ²) from Czuchaj's Λ curves,
+    interpolated, put on the 3p centroid, then coupled with the atomic fine structure
+    (Cohen–Schneider: a = ⅔ ΔE_fs; Ω = 3/2 is Π + a/2, the two Ω = ½ the eigenvalues of
+    [[Π − a/2, a/√2], [a/√2, Σ]]). Beyond 10 a₀ the Λ curves are carried on as R⁻⁶ from their
+    10 a₀ values: used for the Σ fractions only (the energies there are the join's)."""
+    asym = data().asymptote_cm1
+    r = np.asarray(r_a0, dtype=float)
+    sig, pi, _, _ = _czuchaj_splines()
+    r0 = CZUCHAJ_R_MAX_A0
+    far = (r0 / np.maximum(r, r0)) ** 6
+    vs = np.where(r <= r0, sig(np.minimum(r, r0)), float(sig(r0)) * far)
+    vp = np.where(r <= r0, pi(np.minimum(r, r0)), float(pi(r0)) * far)
+    p32, p12 = asym["I3/2"], asym["I1/2"]
+    a = 2.0 * (p32 - p12) / 3.0
+    centroid = (p12 + 2.0 * p32) / 3.0
+    p = vp - a / 2.0
+    q2 = a * a / 2.0
+    mean, half = 0.5 * (p + vs), np.sqrt(0.25 * (p - vs) ** 2 + q2)
+    upper = mean + half
+    sigma_upper = (upper - p) ** 2 / (q2 + (upper - p) ** 2)  # eigenvector (q, λ − p)
+    return {"II1/2": (centroid + upper, sigma_upper), "I1/2": (centroid + mean - half, 1.0 - sigma_upper),
+            "I3/2": (centroid + vp + a / 2.0, np.zeros_like(r))}
+
+
+def czuchaj_dipole_factor(band: str, r_a0) -> np.ndarray:
+    """|D(R)|² / d_z² from Czuchaj's dipoles, mixed as intensities by the Σ and Π parts:
+    c_Σ² D_σσ² + c_Π² D_σπ², over the table's atomic value squared (1 far out)."""
+    _, _, dss, dsp = _czuchaj_splines()
+    r = np.asarray(r_a0, dtype=float)
+    rr = np.minimum(r, CZUCHAJ_DIPOLE_ATOMIC_A0)
+    c_sigma = czuchaj_coupled(r)[band][1]
+    return (c_sigma * dss(rr) ** 2 + (1.0 - c_sigma) * dsp(rr) ** 2) / czuchaj_data().atomic_au ** 2
+
+
 def delta_c6_unsold_au() -> float:
     """Unsöld's ΔC₆ between Na(3p)–Hg and Na(3s)–Hg (the estimate the impact widths use)."""
     return broadening.unsold_c6(sodium.data().line("D2"), "mercury") / broadening.C6_ATOMIC_UNIT
@@ -119,8 +212,15 @@ def shift_cm1(delta_c6_factor: float = 1.0) -> float:
     return d.asymptote_cm1[band] - tail - plotted
 
 
-def difference_potential_cm1(band: str, r_a0, delta_c6_factor: float = 1.0, tail: str = "fitted") -> np.ndarray:
-    """Transition energy at separation R, vacuum cm⁻¹: the shifted digitised curve on its grid;
+def grid_start_a0(band: str, curves: str = "windholz") -> float:
+    """The innermost R with data for the band."""
+    return float(czuchaj_data().r_a0[0]) if curves == "czuchaj" else float(data().grids_a0[band][0])
+
+
+def difference_potential_cm1(band: str, r_a0, delta_c6_factor: float = 1.0, tail: str = "fitted",
+                             curves: str = "windholz") -> np.ndarray:
+    """Transition energy at separation R, vacuum cm⁻¹: the shifted digitised curve on its grid
+    (``curves="czuchaj"``: Czuchaj's coupled curves out to 10 a₀, unshifted);
     beyond it a join to the asymptote with the value and the slope continuous at the grid's
     end (a slope step would make a step in the classical spectrum); NaN inside the grid (no
     data there).
@@ -133,11 +233,20 @@ def difference_potential_cm1(band: str, r_a0, delta_c6_factor: float = 1.0, tail
     two bands' fitted A₆ is 0.72–1.36 of Unsöld's already, and they keep it."""
     if tail not in TAILS:
         raise ValueError(f"tail must be one of {TAILS}")
+    if curves not in CURVES:
+        raise ValueError(f"curves must be one of {CURVES}")
     d = data()
     r = np.asarray(r_a0, dtype=float)
-    grid, values = d.grids_a0[band], d.plotted_cm1[band] + shift_cm1(delta_c6_factor)
-    r0, gap = grid[-1], d.asymptote_cm1[band] - values[-1]
-    slope = (values[-1] - values[-2]) / (grid[-1] - grid[-2])
+    if curves == "czuchaj":
+        r_in, r0, step = grid_start_a0(band, curves), CZUCHAJ_R_MAX_A0, 1e-6
+        end, before = czuchaj_coupled(np.array([r0, r0 - step]))[band][0]
+        gap, slope = d.asymptote_cm1[band] - end, (end - before) / step
+        inside = czuchaj_coupled(np.clip(r, r_in, r0))[band][0]
+    else:
+        grid, values = d.grids_a0[band], d.plotted_cm1[band] + shift_cm1(delta_c6_factor)
+        r_in, r0, gap = grid[0], grid[-1], d.asymptote_cm1[band] - values[-1]
+        slope = (values[-1] - values[-2]) / (grid[-1] - grid[-2])
+        inside = np.interp(r, grid, values)
     if tail == "dispersion" and band == "I1/2":
         c6 = delta_c6_factor * delta_c6_unsold_au() * HARTREE_CM1
         excess = gap - c6 / r0**6
@@ -149,8 +258,7 @@ def difference_potential_cm1(band: str, r_a0, delta_c6_factor: float = 1.0, tail
         a6 = (12.0 * gap - slope * r0) * r0**6 / 6.0
         a12 = (slope * r0 - 6.0 * gap) * r0**12 / 6.0
         outer = d.asymptote_cm1[band] - a6 / r**6 - a12 / r**12
-    inside = np.interp(r, grid, values)
-    return np.where(r < grid[0], np.nan, np.where(r > r0, outer, inside))
+    return np.where(r < r_in, np.nan, np.where(r > r0, outer, inside))
 
 
 @lru_cache(maxsize=1)
@@ -166,13 +274,20 @@ def dipole_squared_au() -> float:
     return total / 3.0 / (ELEMENTARY_CHARGE_C * BOHR_M) ** 2
 
 
+def dipole_forms(curves: str = "windholz") -> tuple[str, ...]:
+    return CZUCHAJ_DIPOLE_FORMS if curves == "czuchaj" else DIPOLE_FORMS
+
+
 def dipole_factor(band: str, r_a0, form: str = "constant", delta_c6_factor: float = 1.0,
-                  tail: str = "fitted") -> np.ndarray:
+                  tail: str = "fitted", curves: str = "windholz") -> np.ndarray:
     """|D(R)|² / d_z². ``falling``: the I bands' oscillator strength (∝ ΔV·|D|²) falls 10×
-    log-linearly from 9.45 to 3.78 a₀ and is held below; II ½ stays constant."""
-    if form not in DIPOLE_FORMS:
-        raise ValueError(f"dipole form must be one of {DIPOLE_FORMS}")
+    log-linearly from 9.45 to 3.78 a₀ and is held below; II ½ stays constant. ``table``
+    (Czuchaj's curves): :func:`czuchaj_dipole_factor`."""
+    if form not in dipole_forms(curves):
+        raise ValueError(f"dipole form must be one of {dipole_forms(curves)} for {curves}'s curves")
     r = np.asarray(r_a0, dtype=float)
+    if form == "table":
+        return czuchaj_dipole_factor(band, r)
     if form == "constant" or band == "II1/2":
         return np.ones_like(r)
     lo, hi = FALL_R_A0
@@ -200,15 +315,16 @@ def quasistatic(temperature_k: float, wavenumber_edges_cm1, r_a0, transition_cm1
 
 def reduced_absorption(temperature_k: float, wavenumber_edges_cm1, dipole: str = "constant",
                        delta_c6_factor: float = 1.0, r_max_a0: float = 400.0,
-                       points: int = 100_000, tail: str = "fitted") -> dict[str, np.ndarray]:
+                       points: int = 100_000, tail: str = "fitted",
+                       curves: str = "windholz") -> dict[str, np.ndarray]:
     """k / (n_Na n_Hg) per band, m⁵, averaged over each wavenumber bin (vacuum cm⁻¹ edges)."""
-    d = data()
     out = {}
     for band in BANDS:
-        r = np.geomspace(d.grids_a0[band][0], r_max_a0, points)
+        r = np.geomspace(grid_start_a0(band, curves), r_max_a0, points)
         out[band] = quasistatic(temperature_k, wavenumber_edges_cm1, r,
-                                difference_potential_cm1(band, r, delta_c6_factor, tail), lower_potential_cm1(r),
-                                dipole_squared_au() * dipole_factor(band, r, dipole, delta_c6_factor, tail))
+                                difference_potential_cm1(band, r, delta_c6_factor, tail, curves),
+                                lower_potential_cm1(r),
+                                dipole_squared_au() * dipole_factor(band, r, dipole, delta_c6_factor, tail, curves))
     return out
 
 
@@ -217,8 +333,9 @@ TABLE_EDGES_CM1 = np.arange(8000.0, 30000.0 + 1.0, 2.0)
 
 
 @lru_cache(maxsize=4096)
-def _table(temperature_k: float, dipole: str, delta_c6_factor: float, tail: str) -> dict[str, np.ndarray]:
-    return reduced_absorption(temperature_k, TABLE_EDGES_CM1, dipole, delta_c6_factor, tail=tail)
+def _table(temperature_k: float, dipole: str, delta_c6_factor: float, tail: str,
+           curves: str = "windholz") -> dict[str, np.ndarray]:
+    return reduced_absorption(temperature_k, TABLE_EDGES_CM1, dipole, delta_c6_factor, tail=tail, curves=curves)
 
 
 @dataclass(frozen=True)
@@ -233,18 +350,21 @@ class MercuryPairWings:
     Weisskopf detuning (0.36–0.47 nm at 2500–4000 K with Unsöld's C₆), outside which the
     quasi-static wing exceeds it as √(Δω/ω_W); the default hand-over is centred at about
     twice that. ``tail``: how the curves join their asymptotes beyond the digitised grid
-    (:func:`difference_potential_cm1`); it sets I ½ out to 15–20 nm red of D1.
+    (:func:`difference_potential_cm1`); it sets I ½ out to 15–20 nm red of D1. ``curves``:
+    Windholz et al.'s digitised figure or Czuchaj et al.'s tables (whose dipole forms are
+    ``table`` and ``constant``).
     """
 
     join_nm: float = 0.8
     dipole: str = "constant"
     delta_c6_factor: float = 1.0
     tail: str = "fitted"
+    curves: str = "windholz"
 
     def __post_init__(self):
-        if (self.join_nm <= 0 or self.dipole not in DIPOLE_FORMS or self.delta_c6_factor <= 0
-                or self.tail not in TAILS):
-            raise ValueError("join and ΔC₆ factor must be positive and the dipole form and tail known")
+        if (self.join_nm <= 0 or self.curves not in CURVES or self.dipole not in dipole_forms(self.curves)
+                or self.delta_c6_factor <= 0 or self.tail not in TAILS):
+            raise ValueError("join and ΔC₆ factor must be positive and the curves, dipole form and tail known")
 
     def kappa(self, temperature_k: float, ground_m3: float, mercury_m3: float, frequency_hz: np.ndarray,
               line=None) -> np.ndarray:
@@ -252,7 +372,7 @@ class MercuryPairWings:
         on ``line``'s upper level (a resonance :class:`~lss.physics.hid.sodium.Transition`),
         or all three (None)."""
         d = data()
-        tables = _table(float(temperature_k), self.dipole, float(self.delta_c6_factor), self.tail)
+        tables = _table(float(temperature_k), self.dipole, float(self.delta_c6_factor), self.tail, self.curves)
         bands = [b for b in BANDS if line is None
                  or abs(d.asymptote_cm1[b] - (line.upper_energy_cm1 - line.lower_energy_cm1)) < 0.01]
         if not bands:

@@ -269,6 +269,22 @@ def _cmd_streethpstail(args) -> int:
     return 0
 
 
+def _cmd_streethpsczuchaj(args) -> int:
+    from lss.accuracy import lica
+    from lss.studies import street_hps_czuchaj, street_hps_mercury
+
+    try:
+        lica.fetch_all()
+    except (OSError, ValueError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    if not street_hps_mercury.table_path().exists():
+        print("building the arc table with mercury on first use (about 40 minutes on 16 cores; cached afterwards)",
+              file=sys.stderr)
+    print(street_hps_czuchaj.format_text())
+    return 0
+
+
 def _cmd_render(args) -> int:
     from lss.render import env
 
@@ -413,6 +429,9 @@ def main(argv=None) -> int:
     p = sub.add_parser("streethpstail", help="the D1 band's long-range Na-Hg tail in each HPS street lamp at its "
                                              "fitted point: fitted against dispersion, the mercury it moves")
     p.set_defaults(func=_cmd_streethpstail)
+    p = sub.add_parser("streethpsczuchaj", help="Czuchaj et al.'s tabulated Na-Hg curves in each HPS street lamp at "
+                                                "its fitted point, against Windholz's digitised ones")
+    p.set_defaults(func=_cmd_streethpsczuchaj)
 
     p = sub.add_parser("render", help="a study's lighting maps (Mitsuba, the 'render' extra), re-coloured under "
                                       "its lamps; each lamp scaled to the study's luminous flux")

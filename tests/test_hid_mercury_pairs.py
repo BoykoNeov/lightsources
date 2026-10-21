@@ -3,9 +3,11 @@ second part): the curves against their sources, the counting against an analytic
 the satellite position predicted before it was compared, and the swap into the arc."""
 
 from dataclasses import replace
+from importlib import resources
 
 import numpy as np
 import pytest
+import yaml
 from scipy.special import voigt_profile
 
 from lss.physics.hid import arc, broadening, mercury_pairs as mp, sodium
@@ -225,3 +227,100 @@ def test_finding_the_tail_cuts_both_ways():
     assert ratio(1.0, 15.0) == pytest.approx(1.0, abs=0.015)
     assert ratio(2.0, 2.0) == pytest.approx(1.22, abs=0.03)
     assert ratio(2.0, 30.0) == pytest.approx(1.0, abs=0.01)
+
+
+def test_czuchaj_tables_as_transcribed_give_the_papers_well_depths():
+    """Table 5's numbers against the text's D_e (X 593 cm⁻¹, A 7076, B 2436): 11–23 cm⁻¹ off,
+    about the stated 1e-4 au (22 cm⁻¹; A just over it). A misread digit would be off by far more.
+    The splines keep R ≤ 12 a₀ (values used to 10 a₀)."""
+    cz = mp.czuchaj_data()
+    assert cz.r_a0[-1] == mp.CZUCHAJ_SPLINE_R_MAX_A0 and cz.atomic_au == pytest.approx(2.534)
+    doc = yaml.safe_load(resources.files("lss.data").joinpath("nahg_czuchaj.yaml").read_text(encoding="utf-8"))
+    pot, asym = doc["potentials_hartree"], doc["asymptote_hartree"]
+    for name, depth in (("X", 593.0), ("A", 7076.0), ("B", 2436.0)):
+        assert (asym[name] - min(pot[name])) * mp.HARTREE_CM1 == pytest.approx(depth, abs=25.0), name
+    # By 12 a₀ each Λ difference potential is bound by a few hundred cm⁻¹ at most.
+    assert -500.0 < cz.sigma_cm1[-1] < 0.0 and -500.0 < cz.pi_cm1[-1] < 0.0
+
+
+def test_czuchaj_coupling_has_the_right_limits():
+    """Short range: II½ is B ²Σ, I½ and I3/2 are A ²Π. Long range: the atomic recoupling
+    (3p₃/₂ Ω=½ is ⅔ Σ) and the three bands carry 3 d_z² between them."""
+    c = mp.czuchaj_coupled(np.array([4.0, 200.0]))
+    assert c["II1/2"][1][0] == pytest.approx(1.0, abs=1e-5)
+    assert c["I1/2"][1][0] == pytest.approx(0.0, abs=1e-5)
+    assert c["II1/2"][1][1] == pytest.approx(2.0 / 3.0, abs=1e-3)
+    assert sum(float(mp.czuchaj_dipole_factor(b, 40.0)) for b in mp.BANDS) == pytest.approx(3.0, abs=1e-6)
+    assert float(mp.czuchaj_dipole_factor("II1/2", 5.0)) == pytest.approx((3.187 / 2.534) ** 2, rel=1e-3)
+    assert float(mp.czuchaj_dipole_factor("I3/2", 5.0)) == pytest.approx((0.952 / 2.534) ** 2, rel=1e-3)
+    with pytest.raises(ValueError):
+        mp.MercuryPairWings(curves="czuchaj", dipole="falling")
+    with pytest.raises(ValueError):
+        mp.MercuryPairWings(curves="windholz", dipole="table")
+    with pytest.raises(ValueError):
+        mp.MercuryPairWings(curves="hess")
+
+
+def test_czuchaj_curves_shape_and_join():
+    """Only II½ has an extremum (one minimum); each curve rises monotonically from 6 a₀, through
+    the A–B crossing; beyond 10 a₀ each stays below its asymptote (the join's A₆ > 0; with the
+    splines cut at 10 a₀, I3/2 rose above it near 16.6 a₀) and meets it with no slope step."""
+    d = mp.data()
+    for band in mp.BANDS:
+        r = np.linspace(4.0, 40.0, 72001)
+        dv = mp.difference_potential_cm1(band, r, curves="czuchaj")
+        slope = np.diff(dv)
+        turns = int(np.sum(np.diff(np.sign(slope[slope != 0])) != 0))
+        assert turns == (1 if band == "II1/2" else 0), band
+        assert np.all(slope[r[1:] > 6.0] > 0), band
+        assert abs(dv[-1] - d.asymptote_cm1[band]) < 1.0
+        assert np.all(dv[r > mp.CZUCHAJ_R_MAX_A0] < d.asymptote_cm1[band]), band
+        g = np.gradient(dv, r)
+        i = np.searchsorted(r, mp.CZUCHAJ_R_MAX_A0)
+        assert g[i - 20] == pytest.approx(g[i + 20], rel=0.05)
+    assert np.isnan(mp.difference_potential_cm1("II1/2", 3.9, curves="czuchaj"))
+
+
+def test_czuchaj_satellite_where_predicted():
+    """Predicted before any code (design §4.4): the II½ minimum at 674.0–675.0 nm in air
+    (cubic spline: 14 810 cm⁻¹ at 5.21 a₀), within the lamps' 668–678 nm window and 4–7 nm
+    to the red of the measured S1 (a classical edge lies red of the Airy peak). Found 675.011 nm:
+    0.011 nm past the bound as written, which rounded 675.01 down; recorded as that miss."""
+    r = np.linspace(4.0, 7.0, 300001)
+    dv = mp.difference_potential_cm1("II1/2", r, curves="czuchaj")
+    nm = float(vacuum_to_air(1e7 / dv.min()))
+    assert 674.0 <= nm <= 675.02
+    assert r[np.argmin(dv)] == pytest.approx(5.21, abs=0.02)
+    assert 4.0 <= nm - S1_NM <= 7.0
+
+
+def test_czuchaj_satellite_stronger_and_no_false_structure():
+    """Computed before any lamp run (design §4.4): the II½ edge 3–11 times Windholz's at
+    4100 K (9.4 with the table's dipoles, 5.9 with constant ones), and no κ bin at 600–625 nm
+    more than 10 % above its neighbours ±4 nm (Windholz's: 83 %)."""
+    edges = mp.TABLE_EDGES_CM1
+    centres = 0.5 * (edges[1:] + edges[:-1])
+    air = vacuum_to_air(1e7 / centres)
+    w = mp.reduced_absorption(4100.0, edges)
+    cz = mp.reduced_absorption(4100.0, edges, dipole="table", curves="czuchaj")
+
+    def edge(tab, lo, hi):
+        sel = (centres > lo) & (centres < hi)
+        return tab[sel].max()
+
+    ratio = edge(cz["II1/2"], 14650, 15050) / edge(w["II1/2"], 14700, 15100)
+    assert 3.0 <= ratio <= 11.0 and ratio == pytest.approx(9.4, abs=0.3)
+    total = sum(cz.values())
+    worst = 0.0
+    for j in np.where((air > 600) & (air < 625))[0]:
+        near = (np.abs(air - air[j] - 4) < 0.3) | (np.abs(air - air[j] + 4) < 0.3)
+        worst = max(worst, total[j] / total[near].mean() - 1.0)
+    assert worst < 0.10
+
+
+def test_czuchaj_reaches_the_arc():
+    """The arc takes Czuchaj's curves through MercuryPairWings; tables are keyed by them."""
+    nu = C / (np.array([650.0, 675.0]) * 1e-9)
+    a = mp.MercuryPairWings().kappa(4000.0, 1e22, 1e23, nu)
+    b = mp.MercuryPairWings(curves="czuchaj", dipole="table").kappa(4000.0, 1e22, 1e23, nu)
+    assert np.all(a > 0) and np.all(b > 0) and not np.allclose(a, b)
